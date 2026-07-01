@@ -59,6 +59,7 @@ def _group_dict(g: StudyGroup, current_user_id: int, db: Session) -> dict:
         "member_count": len(member_ids),
         "members": member_list,
         "is_member": current_user_id in member_ids,
+        "is_creator": g.created_by == current_user_id,
         "checked_in_today": current_user_id in today_checkin_ids,
         "streak": _calc_streak(g.id, db),
     }
@@ -126,6 +127,24 @@ def checkin(
     ).first():
         raise HTTPException(status_code=400, detail="오늘 이미 체크인했습니다")
     db.add(StudyCheckin(group_id=group_id, user_id=current_user.id, date=date.today()))
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/groups/{group_id}")
+def delete_group(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    group = db.query(StudyGroup).filter(StudyGroup.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    if group.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="그룹 생성자만 삭제할 수 있습니다")
+    db.query(StudyCheckin).filter(StudyCheckin.group_id == group_id).delete()
+    db.query(StudyMember).filter(StudyMember.group_id == group_id).delete()
+    db.delete(group)
     db.commit()
     return {"ok": True}
 

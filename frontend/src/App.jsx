@@ -1606,6 +1606,12 @@ function StudyScreen() {
     load();
   };
 
+  const deleteGroup = async (id, name) => {
+    if (!window.confirm(`"${name}" 그룹을 삭제하시겠습니까?\n모든 멤버의 체크인 기록도 함께 삭제됩니다.`)) return;
+    await fetch(`${API}/api/study/groups/${id}`, { method:"DELETE", headers: authHeader() });
+    load();
+  };
+
   const inp = (placeholder, key) => (
     <input
       placeholder={placeholder} value={form[key]}
@@ -1706,10 +1712,17 @@ function StudyScreen() {
                     }}>
                       {g.checked_in_today ? "✓ 오늘 완료" : "오늘 학습 완료"}
                     </button>
-                    <button onClick={() => leaveGroup(g.id)} style={{
-                      padding:"9px 14px", borderRadius:8, border:`1px solid ${C.line}`,
-                      background:"transparent", color:C.muted, fontFamily:SANS, fontSize:12, cursor:"pointer",
-                    }}>탈퇴</button>
+                    {g.is_creator ? (
+                      <button onClick={() => deleteGroup(g.id, g.name)} style={{
+                        padding:"9px 12px", borderRadius:8, border:`1px solid ${C.coral}44`,
+                        background:"transparent", color:C.coral, fontFamily:SANS, fontSize:12, cursor:"pointer",
+                      }}>삭제</button>
+                    ) : (
+                      <button onClick={() => leaveGroup(g.id)} style={{
+                        padding:"9px 12px", borderRadius:8, border:`1px solid ${C.line}`,
+                        background:"transparent", color:C.muted, fontFamily:SANS, fontSize:12, cursor:"pointer",
+                      }}>탈퇴</button>
+                    )}
                   </>
                 )}
               </div>
