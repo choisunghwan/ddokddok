@@ -73,6 +73,153 @@ for i in range(len(arr)-1):
     sortData: [5, 3, 8, 1, 9, 2],
     isBubble: true,
   },
+  {
+    id: 3, title: "조건문 (if / elif / else)",
+    desc: "점수에 따라 학점을 결정하는 분기 흐름을 확인하세요.",
+    code: `score = 85
+if score >= 90:
+    grade = "A"
+elif score >= 80:
+    grade = "B"
+elif score >= 70:
+    grade = "C"
+else:
+    grade = "F"
+print(grade)`,
+    steps: [
+      { line:1, vars:{ score:"85" }, out:"" },
+      { line:2, vars:{ score:"85", "score>=90":"False" }, out:"" },
+      { line:4, vars:{ score:"85", "score>=80":"True" }, out:"" },
+      { line:5, vars:{ score:"85", grade:'"B"' }, out:"" },
+      { line:9, vars:{ score:"85", grade:'"B"' }, out:"B" },
+    ],
+  },
+  {
+    id: 4, title: "while 반복문",
+    desc: "1부터 5까지 누적 합계를 구하는 while 루프 흐름.",
+    code: `n, total = 1, 0
+while n <= 5:
+    total += n
+    n += 1
+print(total)`,
+    steps: [
+      { line:1, vars:{ n:"1", total:"0" }, out:"" },
+      { line:2, vars:{ n:"1", total:"0", "n<=5":"True" }, out:"" },
+      { line:3, vars:{ n:"1", total:"1" }, out:"" },
+      { line:4, vars:{ n:"2", total:"1" }, out:"" },
+      { line:2, vars:{ n:"3", total:"3", "n<=5":"True" }, out:"" },
+      { line:3, vars:{ n:"3", total:"6" }, out:"" },
+      { line:2, vars:{ n:"5", total:"10", "n<=5":"True" }, out:"" },
+      { line:3, vars:{ n:"5", total:"15" }, out:"" },
+      { line:4, vars:{ n:"6", total:"15" }, out:"" },
+      { line:2, vars:{ n:"6", total:"15", "n<=5":"False" }, out:"" },
+      { line:5, vars:{ n:"6", total:"15" }, out:"15" },
+    ],
+  },
+  {
+    id: 5, title: "함수 정의와 호출",
+    desc: "def로 함수를 만들고 인자를 전달하는 과정.",
+    code: `def greet(name, lang="ko"):
+    if lang == "ko":
+        return f"안녕하세요, {name}님"
+    return f"Hello, {name}"
+
+msg1 = greet("Alice")
+msg2 = greet("Bob", "en")`,
+    steps: [
+      { line:1, vars:{ "함수 정의":"greet(name, lang='ko')" }, out:"" },
+      { line:6, vars:{ name:'"Alice"', lang:'"ko"(기본값)' }, out:"" },
+      { line:2, vars:{ name:'"Alice"', lang:'"ko"', "lang=='ko'":"True" }, out:"" },
+      { line:3, vars:{ name:'"Alice"', "return":"'안녕하세요, Alice님'" }, out:"" },
+      { line:6, vars:{ msg1:'"안녕하세요, Alice님"' }, out:"" },
+      { line:7, vars:{ name:'"Bob"', lang:'"en"' }, out:"" },
+      { line:2, vars:{ name:'"Bob"', lang:'"en"', "lang=='ko'":"False" }, out:"" },
+      { line:4, vars:{ name:'"Bob"', "return":"'Hello, Bob'" }, out:"" },
+      { line:7, vars:{ msg1:'"안녕하세요, Alice님"', msg2:'"Hello, Bob"' }, out:"" },
+    ],
+  },
+  {
+    id: 6, title: "딕셔너리 (dict)",
+    desc: "키-값 쌍 저장·조회·수정·삭제 — 실무 필수 자료구조.",
+    code: `person = {"name": "Alice", "age": 30}
+person["email"] = "alice@mail.com"
+person["age"] = 31
+name = person.get("name")
+person.pop("email")
+keys = list(person.keys())`,
+    steps: [
+      { line:1, vars:{ person:'{"name":"Alice","age":30}', size:"2" }, out:"" },
+      { line:2, vars:{ person:'{"name":"Alice","age":30,"email":"alice@mail.com"}', size:"3" }, out:"" },
+      { line:3, vars:{ person:'{"name":"Alice","age":31,"email":"alice@mail.com"}', "age":"30→31" }, out:"" },
+      { line:4, vars:{ person:'{"name":"Alice","age":31,...}', name:'"Alice"' }, out:"" },
+      { line:5, vars:{ person:'{"name":"Alice","age":31}', "pop":"email 삭제됨", size:"2" }, out:"" },
+      { line:6, vars:{ person:'{"name":"Alice","age":31}', keys:'["name","age"]' }, out:"" },
+    ],
+  },
+  {
+    id: 7, title: "문자열 메서드",
+    desc: "split · join · strip · replace · upper — 데이터 전처리의 기본.",
+    code: `s = "  Hello, Python World  "
+clean = s.strip()
+up = clean.upper()
+rep = up.replace("PYTHON", "DATA")
+words = rep.split(", ")
+joined = " + ".join(words)`,
+    steps: [
+      { line:1, vars:{ s:'"  Hello, Python World  "' }, out:"" },
+      { line:2, vars:{ s:'...', clean:'"Hello, Python World"', "제거":"양쪽 공백" }, out:"" },
+      { line:3, vars:{ clean:'"Hello, Python World"', up:'"HELLO, PYTHON WORLD"' }, out:"" },
+      { line:4, vars:{ up:'"HELLO, PYTHON WORLD"', rep:'"HELLO, DATA WORLD"' }, out:"" },
+      { line:5, vars:{ rep:'"HELLO, DATA WORLD"', words:'["HELLO", "DATA WORLD"]' }, out:"" },
+      { line:6, vars:{ words:'["HELLO","DATA WORLD"]', joined:'"HELLO + DATA WORLD"' }, out:"" },
+    ],
+  },
+  {
+    id: 8, title: "리스트 컴프리헨션",
+    desc: "한 줄로 리스트를 생성하는 Pythonic한 방법.",
+    code: `nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+evens  = [n for n in nums if n % 2 == 0]
+squares = [n**2 for n in nums[:5]]
+pairs  = [(x, y) for x in [1,2] for y in [3,4]]
+total  = sum(evens)`,
+    steps: [
+      { line:1, vars:{ nums:"[1,2,3,4,5,6,7,8,9,10]", size:"10" }, out:"" },
+      { line:2, vars:{ "조건":"n%2==0", evens:"[2,4,6,8,10]", size:"5" }, out:"" },
+      { line:3, vars:{ "대상":"nums[:5]=[1,2,3,4,5]", squares:"[1,4,9,16,25]" }, out:"" },
+      { line:4, vars:{ "중첩 루프":"x∈[1,2], y∈[3,4]", pairs:"[(1,3),(1,4),(2,3),(2,4)]" }, out:"" },
+      { line:5, vars:{ evens:"[2,4,6,8,10]", total:"30" }, out:"" },
+    ],
+  },
+  {
+    id: 9, title: "예외 처리 (try / except)",
+    desc: "오류가 발생해도 프로그램이 안전하게 실행되는 구조.",
+    code: `def safe_div(a, b):
+    try:
+        result = a / b
+        return result
+    except ZeroDivisionError:
+        print("0으로 나눌 수 없습니다")
+        return None
+    finally:
+        print("계산 시도 완료")
+
+v1 = safe_div(10, 2)
+v2 = safe_div(5, 0)`,
+    steps: [
+      { line:11, vars:{ a:"10", b:"2" }, out:"" },
+      { line:3,  vars:{ a:"10", b:"2", result:"5.0" }, out:"" },
+      { line:4,  vars:{ result:"5.0" }, out:"" },
+      { line:9,  vars:{ "finally":"항상 실행" }, out:"계산 시도 완료" },
+      { line:11, vars:{ v1:"5.0" }, out:"" },
+      { line:12, vars:{ a:"5", b:"0" }, out:"" },
+      { line:3,  vars:{ a:"5", b:"0", "오류":"ZeroDivisionError 발생!" }, out:"" },
+      { line:5,  vars:{ "except":"ZeroDivisionError 처리" }, out:"" },
+      { line:6,  vars:{ "print":"0으로 나눌 수 없습니다" }, out:"0으로 나눌 수 없습니다" },
+      { line:7,  vars:{ "return":"None" }, out:"" },
+      { line:9,  vars:{ "finally":"항상 실행" }, out:"계산 시도 완료" },
+      { line:12, vars:{ v1:"5.0", v2:"None" }, out:"" },
+    ],
+  },
 ];
 
 const JAVA_LESSONS = [
@@ -289,6 +436,96 @@ WHERE age > (
         result:{ columns:["name","age"], rows:[["Bob",35],["Eve",41]] } },
     ],
   },
+  {
+    id: 5, title: "INSERT · UPDATE · DELETE",
+    desc: "데이터 삽입·수정·삭제 — DML의 핵심",
+    isSql: true,
+    code: `INSERT INTO employees (name, age, dept)
+VALUES ('Frank', 29, '개발팀');
+
+UPDATE employees
+SET age = 30
+WHERE name = 'Frank';
+
+DELETE FROM employees
+WHERE name = 'Dave';`,
+    steps: [
+      { line:1, label:"INSERT 전: 현재 employees 테이블 (5행)",
+        result:{ columns:["id","name","age","dept"], rows:[[1,"Alice",28,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[4,"Dave",25,"디자인"],[5,"Eve",41,"개발팀"]] } },
+      { line:1, label:"INSERT 후: Frank 추가 (6행)",
+        result:{ columns:["id","name","age","dept"], rows:[[1,"Alice",28,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[4,"Dave",25,"디자인"],[5,"Eve",41,"개발팀"],[6,"Frank",29,"개발팀"]] } },
+      { line:4, label:"UPDATE 전: Frank의 age = 29",
+        result:{ columns:["id","name","age","dept"], rows:[[6,"Frank",29,"개발팀"]] } },
+      { line:4, label:"UPDATE 후: Frank의 age = 30으로 변경",
+        result:{ columns:["id","name","age","dept"], rows:[[6,"Frank",30,"개발팀"]] } },
+      { line:8, label:"DELETE: Dave (id=4) 행 제거 → 5행만 남음",
+        result:{ columns:["id","name","age","dept"], rows:[[1,"Alice",28,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[5,"Eve",41,"개발팀"],[6,"Frank",30,"개발팀"]] } },
+    ],
+  },
+  {
+    id: 6, title: "HAVING 절",
+    desc: "GROUP BY 결과에 조건 걸기 — WHERE와의 차이",
+    isSql: true,
+    code: `SELECT dept, COUNT(*) AS cnt,
+       AVG(age) AS avg_age
+FROM employees
+GROUP BY dept
+HAVING COUNT(*) >= 2
+ORDER BY cnt DESC;`,
+    steps: [
+      { line:3, label:"FROM: employees 전체 로드",
+        result:{ columns:["id","name","age","dept"], rows:[[1,"Alice",28,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[4,"Dave",25,"디자인"],[5,"Eve",41,"개발팀"]] } },
+      { line:4, label:"GROUP BY dept: 부서별 그룹화",
+        result:{ columns:["dept","cnt","avg_age"], rows:[["개발팀",3,"32.3"],["마케팅",1,"35.0"],["디자인",1,"25.0"]] } },
+      { line:5, label:"HAVING COUNT(*) >= 2: 2명 이상 부서만 남김",
+        result:{ columns:["dept","cnt","avg_age"], rows:[["개발팀",3,"32.3"]] } },
+      { line:6, label:"ORDER BY cnt DESC: 인원 많은 순 정렬",
+        result:{ columns:["dept","cnt","avg_age"], rows:[["개발팀",3,"32.3"]] } },
+    ],
+  },
+  {
+    id: 7, title: "CASE WHEN",
+    desc: "조건에 따라 다른 값 출력 — SQL의 if-else",
+    isSql: true,
+    code: `SELECT name, age,
+  CASE
+    WHEN age >= 40 THEN '시니어'
+    WHEN age >= 30 THEN '미드레벨'
+    ELSE '주니어'
+  END AS level
+FROM employees;`,
+    steps: [
+      { line:7, label:"FROM: employees 전체 로드",
+        result:{ columns:["name","age"], rows:[["Alice",28],["Bob",35],["Carol",32],["Dave",25],["Eve",41]] } },
+      { line:2, label:"CASE: age >= 40 조건 검사 (Eve만 해당)",
+        result:{ columns:["name","age","level"], rows:[["Alice",28,"—"],["Bob",35,"—"],["Carol",32,"—"],["Dave",25,"—"],["Eve",41,"시니어"]] } },
+      { line:4, label:"age >= 30 조건 검사 (Bob, Carol 해당)",
+        result:{ columns:["name","age","level"], rows:[["Alice",28,"—"],["Bob",35,"미드레벨"],["Carol",32,"미드레벨"],["Dave",25,"—"],["Eve",41,"시니어"]] } },
+      { line:5, label:"ELSE: 나머지 → 주니어 (Alice, Dave)",
+        result:{ columns:["name","age","level"], rows:[["Alice",28,"주니어"],["Bob",35,"미드레벨"],["Carol",32,"미드레벨"],["Dave",25,"주니어"],["Eve",41,"시니어"]] } },
+    ],
+  },
+  {
+    id: 8, title: "윈도우 함수 (ROW_NUMBER)",
+    desc: "부서별 나이 순위 구하기 — 실무 핵심 SQL",
+    isSql: true,
+    code: `SELECT name, age, dept,
+  ROW_NUMBER() OVER (
+    PARTITION BY dept
+    ORDER BY age DESC
+  ) AS rank_in_dept
+FROM employees;`,
+    steps: [
+      { line:6, label:"FROM: employees 전체 로드",
+        result:{ columns:["name","age","dept"], rows:[["Alice",28,"개발팀"],["Bob",35,"마케팅"],["Carol",32,"개발팀"],["Dave",25,"디자인"],["Eve",41,"개발팀"]] } },
+      { line:3, label:"PARTITION BY dept: 부서별로 분리",
+        result:{ columns:["dept","members"], rows:[["개발팀","Alice(28), Carol(32), Eve(41)"],["디자인","Dave(25)"],["마케팅","Bob(35)"]] } },
+      { line:4, label:"ORDER BY age DESC: 각 파티션 내 나이 내림차순",
+        result:{ columns:["dept","name","age"], rows:[["개발팀","Eve",41],["개발팀","Carol",32],["개발팀","Alice",28],["디자인","Dave",25],["마케팅","Bob",35]] } },
+      { line:2, label:"ROW_NUMBER(): 파티션별 순위 부여",
+        result:{ columns:["name","age","dept","rank_in_dept"], rows:[["Eve",41,"개발팀",1],["Carol",32,"개발팀",2],["Alice",28,"개발팀",3],["Dave",25,"디자인",1],["Bob",35,"마케팅",1]] } },
+    ],
+  },
 ];
 
 // AICE 14문항
@@ -308,6 +545,44 @@ const AICE_TEMPLATES = [
   { no:13, type:"딥러닝 학습·시각화",     keywords:["model.fit","history"],                   code:"history = model.fit(X_train, y_train, epochs=30, batch_size=16, validation_data=(X_valid, y_valid))\nplt.plot(history.history['loss'])\nplt.plot(history.history['val_loss'])" },
   { no:14, type:"결과 해석 서술",         keywords:[],                                        code:"# 서술형: 어떤 변수가 SatisfactionScore에 가장 큰 영향을 미쳤는지 분석" },
 ];
+
+// AICE 2회 — 이커머스 주문 데이터
+const AICE_TEMPLATES_R2 = [
+  { no:1,  type:"데이터 불러오기·병합",   keywords:["read_csv","merge"],                      code:"orders = pd.read_csv('orders.csv')\nproducts = pd.read_csv('products.csv')\ndf = pd.merge(orders, products, how='left', on='ProductID')" },
+  { no:2,  type:"결측치 처리",            keywords:["fillna","median","mode"],                code:"df['Price'].fillna(df['Price'].median(), inplace=True)\ndf['Category'].fillna(df['Category'].mode()[0], inplace=True)" },
+  { no:3,  type:"이상치 탐색",            keywords:["quantile","IQR"],                        code:"Q1, Q3 = df['Price'].quantile([0.25, 0.75])\nIQR = Q3 - Q1\ndf = df[(df['Price'] >= Q1-1.5*IQR) & (df['Price'] <= Q3+1.5*IQR)]" },
+  { no:4,  type:"날짜 파생변수",          keywords:["to_datetime","dt.month","dt.weekday"],   code:"df['OrderDate'] = pd.to_datetime(df['OrderDate'])\ndf['Month'] = df['OrderDate'].dt.month\ndf['Weekday'] = df['OrderDate'].dt.weekday" },
+  { no:5,  type:"범주형 인코딩",          keywords:["get_dummies"],                           code:"df = pd.get_dummies(df, columns=['Category', 'PaymentMethod'])" },
+  { no:6,  type:"시각화 (boxplot)",       keywords:["boxplot"],                               code:"sns.boxplot(data=df, x='Category', y='Price')\nplt.title('카테고리별 가격 분포')\nplt.show()" },
+  { no:7,  type:"시각화 (lineplot)",      keywords:["lineplot","groupby"],                    code:"monthly = df.groupby('Month')['Revenue'].sum().reset_index()\nsns.lineplot(data=monthly, x='Month', y='Revenue')\nplt.show()" },
+  { no:8,  type:"상관관계 분석",          keywords:["corr","heatmap"],                        code:"corr = df.select_dtypes('number').corr()\nsns.heatmap(corr, annot=True, fmt='.2f')" },
+  { no:9,  type:"Train/Test 분할",        keywords:["train_test_split","test_size"],          code:"X = df.drop(['Revenue', 'OrderID'], axis=1)\ny = df['Revenue']\nX_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=42)" },
+  { no:10, type:"머신러닝 모델링",        keywords:["fit(","GradientBoosting"],               code:"from sklearn.ensemble import GradientBoostingRegressor\nmodel = GradientBoostingRegressor(n_estimators=100, random_state=42)\nmodel.fit(X_train, y_train)" },
+  { no:11, type:"머신러닝 평가",          keywords:["predict(","mean_squared_error","r2_score"], code:"from sklearn.metrics import mean_squared_error, r2_score\ny_pred = model.predict(X_valid)\nmse = mean_squared_error(y_valid, y_pred)\nr2 = r2_score(y_valid, y_pred)" },
+  { no:12, type:"딥러닝 모델 설계",       keywords:["BatchNormalization","Dense","compile"],  code:"model = Sequential()\nmodel.add(Dense(256, activation='relu'))\nmodel.add(BatchNormalization())\nmodel.add(Dropout(0.3))\nmodel.add(Dense(1))\nmodel.compile(optimizer='adam', loss='mse', metrics=['mae'])" },
+  { no:13, type:"딥러닝 학습·시각화",     keywords:["model.fit","EarlyStopping"],             code:"from tensorflow.keras.callbacks import EarlyStopping\nes = EarlyStopping(patience=5, restore_best_weights=True)\nhistory = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_valid, y_valid), callbacks=[es])" },
+  { no:14, type:"결과 해석 서술",         keywords:[],                                        code:"# 서술형: 이커머스 매출 예측에서 가장 중요한 특성(feature)은 무엇인지,\n# 그리고 모델 성능을 개선하기 위한 방안을 서술하시오." },
+];
+
+// AICE 3회 — 의료·환자 데이터 (재입원 예측)
+const AICE_TEMPLATES_R3 = [
+  { no:1,  type:"데이터 불러오기·병합",   keywords:["read_csv","merge"],                      code:"patients = pd.read_csv('patients.csv')\ndiagnosis = pd.read_csv('diagnosis.csv')\ndf = pd.merge(patients, diagnosis, how='inner', on='PatientID')" },
+  { no:2,  type:"결측치 처리",            keywords:["fillna","median","ffill"],               code:"df['BloodPressure'].fillna(df['BloodPressure'].median(), inplace=True)\ndf['Diagnosis'].fillna(method='ffill', inplace=True)" },
+  { no:3,  type:"이상치 탐색",            keywords:["quantile","IQR"],                        code:"Q1, Q3 = df['BloodSugar'].quantile([0.25, 0.75])\nIQR = Q3 - Q1\ndf = df[(df['BloodSugar'] >= Q1-1.5*IQR) & (df['BloodSugar'] <= Q3+1.5*IQR)]" },
+  { no:4,  type:"파생변수 생성 (BMI·연령대)", keywords:["cut","BMI"],                         code:"df['BMI'] = df['Weight'] / (df['Height']/100)**2\ndf['AgeGroup'] = pd.cut(df['Age'], bins=[0,30,50,70,100], labels=['청년','중년','장년','노년'])" },
+  { no:5,  type:"범주형 인코딩",          keywords:["LabelEncoder","fit_transform"],          code:"from sklearn.preprocessing import LabelEncoder\nle = LabelEncoder()\ndf['Diagnosis_enc'] = le.fit_transform(df['Diagnosis'])\ndf['AgeGroup_enc'] = le.fit_transform(df['AgeGroup'])" },
+  { no:6,  type:"시각화 (violinplot)",    keywords:["violinplot"],                            code:"sns.violinplot(data=df, x='AgeGroup', y='BloodSugar', hue='Readmitted')\nplt.title('연령대별 혈당 분포 (재입원 여부)')\nplt.show()" },
+  { no:7,  type:"시각화 (scatterplot)",   keywords:["scatterplot"],                           code:"sns.scatterplot(data=df, x='BMI', y='BloodSugar', hue='Readmitted', alpha=0.6)\nplt.title('BMI vs 혈당 (재입원 여부)')\nplt.show()" },
+  { no:8,  type:"상관관계 분석",          keywords:["corr","heatmap"],                        code:"corr = df.select_dtypes('number').corr()\nsns.heatmap(corr, annot=True, cmap='coolwarm')" },
+  { no:9,  type:"Train/Test 분할 (분류)", keywords:["train_test_split","stratify"],           code:"X = df.drop(['Readmitted','PatientID'], axis=1).select_dtypes('number')\ny = df['Readmitted']\nX_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)" },
+  { no:10, type:"머신러닝 모델링 (분류)", keywords:["fit(","RandomForestClassifier"],         code:"from sklearn.ensemble import RandomForestClassifier\nmodel = RandomForestClassifier(n_estimators=100, random_state=42)\nmodel.fit(X_train, y_train)" },
+  { no:11, type:"머신러닝 평가",          keywords:["accuracy_score","confusion_matrix"],     code:"from sklearn.metrics import accuracy_score, confusion_matrix, classification_report\ny_pred = model.predict(X_valid)\nprint(accuracy_score(y_valid, y_pred))\nprint(confusion_matrix(y_valid, y_pred))" },
+  { no:12, type:"딥러닝 분류 모델",       keywords:["sigmoid","binary_crossentropy"],         code:"model = Sequential()\nmodel.add(Dense(128, activation='relu', input_shape=(X_train.shape[1],)))\nmodel.add(Dropout(0.3))\nmodel.add(Dense(64, activation='relu'))\nmodel.add(Dense(1, activation='sigmoid'))\nmodel.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])" },
+  { no:13, type:"딥러닝 학습·ROC 분석",  keywords:["model.fit","roc_auc_score"],             code:"history = model.fit(X_train, y_train, epochs=30, batch_size=16, validation_data=(X_valid, y_valid))\nfrom sklearn.metrics import roc_auc_score\ny_prob = model.predict(X_valid).flatten()\nauc = roc_auc_score(y_valid, y_prob)" },
+  { no:14, type:"결과 해석 서술",         keywords:[],                                        code:"# 서술형: 환자 재입원 예측 모델에서 불균형 데이터(재입원 비율이 낮음)를\n# 처리하는 방법과 정확도 외에 AUC를 평가 지표로 사용하는 이유를 서술하시오." },
+];
+
+const AICE_ALL = { 1: AICE_TEMPLATES, 2: AICE_TEMPLATES_R2, 3: AICE_TEMPLATES_R3 };
 
 // ── 공통 레이아웃 ────────────────────────────────
 function useIsMobile() {
@@ -969,8 +1244,12 @@ const LANG_LIST = [
 
 const CHAPTERS = {
   python: [
-    { id: "basics", title: "기초 문법",  icon: "📝", lessons: [PY_LESSONS[0]] },
-    { id: "algo",   title: "알고리즘",   icon: "🔄", lessons: [PY_LESSONS[1]] },
+    { id: "basics",    title: "반복문·순회",       icon: "🔁", lessons: [PY_LESSONS[0]] },
+    { id: "control",   title: "제어문",             icon: "🔀", lessons: [PY_LESSONS[2], PY_LESSONS[3]] },
+    { id: "functions", title: "함수·컴프리헨션",   icon: "🧩", lessons: [PY_LESSONS[4], PY_LESSONS[7]] },
+    { id: "ds",        title: "자료구조",           icon: "📦", lessons: [PY_LESSONS[5], PY_LESSONS[6]] },
+    { id: "exception", title: "예외 처리",          icon: "🛡️", lessons: [PY_LESSONS[8]] },
+    { id: "algo",      title: "알고리즘",           icon: "🔄", lessons: [PY_LESSONS[1]] },
   ],
   java: [
     { id: "basics",      title: "기초 문법",            icon: "📝", lessons: [JAVA_LESSONS[0]] },
@@ -978,9 +1257,11 @@ const CHAPTERS = {
     { id: "stream",      title: "Stream API",           icon: "🌊", lessons: [JAVA_LESSONS[5]] },
   ],
   sql: [
-    { id: "basics", title: "기초 조회",   icon: "📋", lessons: [SQL_LESSONS[0]] },
-    { id: "agg",    title: "집계·그룹화", icon: "📊", lessons: [SQL_LESSONS[1]] },
-    { id: "join",   title: "JOIN·서브쿼리", icon: "🔗", lessons: [SQL_LESSONS[2], SQL_LESSONS[3]] },
+    { id: "basics", title: "기초 조회",      icon: "📋", lessons: [SQL_LESSONS[0]] },
+    { id: "agg",    title: "집계·그룹화",    icon: "📊", lessons: [SQL_LESSONS[1], SQL_LESSONS[5]] },
+    { id: "join",   title: "JOIN·서브쿼리",  icon: "🔗", lessons: [SQL_LESSONS[2], SQL_LESSONS[3]] },
+    { id: "dml",    title: "데이터 조작 DML", icon: "✏️", lessons: [SQL_LESSONS[4]] },
+    { id: "adv",    title: "고급 SQL",        icon: "⚡", lessons: [SQL_LESSONS[6], SQL_LESSONS[7]] },
   ],
 };
 
@@ -1131,9 +1412,9 @@ function CertListScreen({ onSelect }) {
 
 // ── 회차 목록 ────────────────────────────────────
 const AICE_EXAMS = [
-  { round: 1, label: "1회 모의고사", desc: "2024년 상반기 기출 유형", available: true },
-  { round: 2, label: "2회 모의고사", desc: "2024년 하반기 기출 유형", available: false },
-  { round: 3, label: "3회 모의고사", desc: "2025년 상반기 기출 유형", available: false },
+  { round: 1, label: "1회 모의고사", desc: "콜센터 상담 데이터 · 만족도 예측 (회귀)", available: true },
+  { round: 2, label: "2회 모의고사", desc: "이커머스 주문 데이터 · 매출 예측 (회귀)", available: true },
+  { round: 3, label: "3회 모의고사", desc: "의료 환자 데이터 · 재입원 예측 (분류)",   available: true },
 ];
 
 function AiceExamListScreen({ onSelect, onBack }) {
@@ -1233,7 +1514,7 @@ function AiceScreen({ round, onBack }) {
 
       <div style={{ display:"grid", gridTemplateColumns:"220px 1fr", gap:14 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-          {AICE_TEMPLATES.map((q) => {
+          {(AICE_ALL[round] || AICE_TEMPLATES).map((q) => {
             const r = results[q.no];
             return (
               <button key={q.no} onClick={() => { setSelectedQ(q); setDraft(results[q.no]?.code || ""); }} style={{
@@ -1427,6 +1708,105 @@ const DIAGRAMS = {
       {from:"fastapi", to:"browser",  label:"⑥ 채점 결과 응답",    color:C.blue,   detail:'{ "is_correct": true, "missing_keywords": [] }\n→ 화면에 ✅ 정답 표시'},
     ],
   },
+  react: {
+    title:"React 렌더링 원리", subtitle:"state 변화가 화면에 반영되는 과정을 단계별로 확인하세요",
+    viewBox:"0 0 680 240",
+    nodes:{
+      user:      {label:"사용자",        icon:"👤", x:20,  y:100, w:100, h:58},
+      component: {label:"컴포넌트",      icon:"⚛️", x:175, y:100, w:110, h:58, sub:"React"},
+      vdom:      {label:"Virtual DOM",   icon:"🌳", x:355, y:100, w:110, h:58, sub:"메모리"},
+      differ:    {label:"Reconciler",    icon:"🔍", x:355, y:20,  w:110, h:58, sub:"Diffing"},
+      dom:       {label:"실제 DOM",      icon:"🖥️", x:530, y:100, w:110, h:58, sub:"브라우저"},
+    },
+    lines:[
+      {x1:120,y1:129,x2:175,y2:129},
+      {x1:285,y1:129,x2:355,y2:129},
+      {x1:410,y1:100,x2:410,y2:78},
+      {x1:465,y1:49, x2:530,y2:129},
+      {x1:640,y1:129,x2:640,y2:49},
+    ],
+    steps:[
+      {from:"user",      to:"component", label:"① 이벤트 발생 → setState() 호출",           color:C.blue,   detail:"버튼 클릭, 입력 변경 등 이벤트 발생\nsetState({ count: count + 1 })\n→ React가 리렌더링 스케줄에 추가"},
+      {from:"component", to:"vdom",      label:"② 컴포넌트 함수 재실행 → 새 VDOM 생성",    color:C.coral,  detail:"React가 컴포넌트 함수를 다시 호출\nreturn <div>...</div> → 새 Virtual DOM 트리 생성\n(실제 DOM 수정 없음, 메모리에서만 계산)"},
+      {from:"vdom",      to:"differ",    label:"③ 이전 VDOM vs 새 VDOM 비교 (Diffing)",    color:C.yellow, detail:"React Reconciler가 두 트리를 비교\n변경된 노드만 찾아냄 (O(n) 알고리즘)\n변경 없는 자식 노드는 재사용"},
+      {from:"differ",    to:"dom",       label:"④ 변경된 부분만 실제 DOM 업데이트",         color:C.green,  detail:"document.getElementById(...).textContent = '새 값'\n최소한의 DOM 조작만 수행\n→ 불필요한 리플로우/리페인트 방지"},
+      {from:"dom",       to:"user",      label:"⑤ 화면 반영 → 사용자에게 보임",             color:C.purple, detail:"브라우저가 변경된 DOM을 화면에 그림 (Paint)\n사용자에게 업데이트된 UI가 표시됨\nuseEffect() 훅이 있다면 이 시점에 실행"},
+    ],
+  },
+  oauth: {
+    title:"OAuth 2.0 소셜 로그인", subtitle:"구글/카카오 로그인이 내부적으로 작동하는 방식",
+    viewBox:"0 0 710 280",
+    nodes:{
+      user:     {label:"사용자",          icon:"👤", x:20,  y:120, w:100, h:58},
+      client:   {label:"우리 앱",         icon:"💻", x:185, y:120, w:110, h:58, sub:"ddokddok"},
+      authsrv:  {label:"구글 인증서버",   icon:"🔑", x:365, y:40,  w:120, h:58, sub:"accounts.google.com"},
+      resource: {label:"구글 API",        icon:"📡", x:365, y:190, w:120, h:58, sub:"people.googleapis.com"},
+    },
+    lines:[
+      {x1:120,y1:149,x2:185,y2:149},
+      {x1:295,y1:149,x2:425,y2:98},
+      {x1:425,y1:98, x2:295,y2:149},
+      {x1:295,y1:149,x2:365,y2:219},
+    ],
+    steps:[
+      {from:"user",     to:"client",   label:"① '구글로 로그인' 버튼 클릭",              color:C.blue,   detail:"사용자가 소셜 로그인 버튼 클릭\n우리 앱이 OAuth 인증 URL 생성\nresponse_type=code&client_id=...&redirect_uri=...&scope=email profile"},
+      {from:"client",   to:"authsrv",  label:"② 구글 인증 페이지로 리다이렉트",           color:C.yellow, detail:"브라우저가 accounts.google.com/o/oauth2/auth 로 이동\n사용자가 구글 계정으로 직접 로그인\n→ 우리 앱에는 비밀번호가 전달되지 않음 (핵심!)"},
+      {from:"authsrv",  to:"client",   label:"③ Authorization Code 발급 후 리다이렉트",  color:C.yellow, detail:"구글이 redirect_uri?code=4/0AX4XfW... 로 리다이렉트\nAuthorization Code는 단 1회만 사용 가능 (수명 10분)\n→ 우리 서버가 이 코드를 수신"},
+      {from:"client",   to:"authsrv",  label:"④ Code → Access Token 교환 (서버-서버)",   color:C.coral,  detail:"POST https://oauth2.googleapis.com/token\n{ code, client_id, client_secret, redirect_uri }\n→ client_secret은 서버에만 보관, 클라이언트에 노출 금지"},
+      {from:"authsrv",  to:"client",   label:"⑤ Access Token + Refresh Token 발급",      color:C.green,  detail:'{ "access_token": "ya29.a0ARr...", "expires_in": 3599,\n  "refresh_token": "1//06...", "token_type": "Bearer" }\nAccess Token: 1시간 유효 / Refresh Token: 장기 유효'},
+      {from:"client",   to:"resource", label:"⑥ Access Token으로 사용자 정보 요청",       color:C.purple, detail:"GET https://people.googleapis.com/v1/people/me\nAuthorization: Bearer ya29.a0ARr...\n→ 구글 API가 토큰 검증 후 사용자 정보 반환"},
+      {from:"resource", to:"client",   label:"⑦ 이메일·이름 수신 → 자체 JWT 발급",       color:C.blue,   detail:'{ "email": "user@gmail.com", "name": "홍길동" }\n→ 우리 DB에 없으면 자동 회원가입\n→ 자체 JWT 발급 후 로그인 완료'},
+    ],
+  },
+  cicd: {
+    title:"CI/CD 파이프라인", subtitle:"코드 push부터 실제 서비스 배포까지의 자동화 흐름",
+    viewBox:"0 0 710 200",
+    nodes:{
+      dev:     {label:"개발자 PC",      icon:"💻", x:20,  y:80, w:105, h:58},
+      github:  {label:"GitHub",         icon:"🐙", x:183, y:80, w:105, h:58, sub:"원격 저장소"},
+      actions: {label:"GitHub Actions", icon:"⚙️", x:346, y:80, w:115, h:58, sub:"CI 서버"},
+      vercel:  {label:"Vercel",         icon:"▲",  x:523, y:30, w:105, h:58, sub:"프론트 배포"},
+      render:  {label:"Render",         icon:"⚡", x:523, y:130,w:105, h:58, sub:"백엔드 배포"},
+    },
+    lines:[
+      {x1:125,y1:109,x2:183,y2:109},
+      {x1:288,y1:109,x2:346,y2:109},
+      {x1:461,y1:89, x2:523,y2:59},
+      {x1:461,y1:129,x2:523,y2:159},
+    ],
+    steps:[
+      {from:"dev",     to:"github",  label:"① git push origin main",                   color:C.blue,   detail:"git add .\ngit commit -m 'feat: 새 기능 추가'\ngit push origin main\n→ GitHub에 코드 업로드"},
+      {from:"github",  to:"actions", label:"② Push 이벤트 → Actions 워크플로우 트리거", color:C.yellow, detail:".github/workflows/deploy.yml 실행\non: push: branches: [main]\n→ Ubuntu 가상 머신 자동 생성"},
+      {from:"actions", to:"actions", label:"③ 빌드 & 테스트 자동 실행",                color:C.coral,  detail:"steps:\n  - uses: actions/checkout@v3\n  - run: npm install && npm run build\n  - run: npm run test\n→ 테스트 실패 시 배포 중단"},
+      {from:"actions", to:"vercel",  label:"④ 프론트엔드 Vercel 자동 배포",             color:C.green,  detail:"Vercel GitHub 연동 → push 감지 즉시 배포\n빌드 명령: npm run build\n출력 디렉터리: dist/\n→ CDN 전 세계 배포 (보통 30초~2분)"},
+      {from:"actions", to:"render",  label:"⑤ 백엔드 Render 자동 재시작",               color:C.purple, detail:"Render GitHub 연동 → main 브랜치 push 감지\npip install -r requirements.txt\nuvicorn main:app --host 0.0.0.0 --port $PORT\n→ Zero-downtime 배포 완료"},
+    ],
+  },
+  rest: {
+    title:"REST API 요청·응답 사이클", subtitle:"브라우저의 API 요청이 DB까지 도달하는 전체 흐름",
+    viewBox:"0 0 710 200",
+    nodes:{
+      browser: {label:"브라우저",      icon:"🌐", x:20,  y:80, w:105, h:58},
+      cors:    {label:"CORS 미들웨어", icon:"🔓", x:183, y:80, w:110, h:58, sub:"Preflight 처리"},
+      auth:    {label:"JWT 인증",      icon:"🔐", x:353, y:80, w:105, h:58, sub:"토큰 검증"},
+      handler: {label:"라우트 핸들러", icon:"🛤️", x:520, y:30, w:105, h:58, sub:"비즈니스 로직"},
+      db:      {label:"Supabase DB",   icon:"🗄️", x:520, y:130,w:105, h:58, sub:"PostgreSQL"},
+    },
+    lines:[
+      {x1:125,y1:109,x2:183,y2:109},
+      {x1:293,y1:109,x2:353,y2:109},
+      {x1:458,y1:99, x2:520,y2:59},
+      {x1:458,y1:119,x2:520,y2:159},
+    ],
+    steps:[
+      {from:"browser",  to:"cors",    label:"① HTTP 요청 전송 (Preflight OPTIONS)",    color:C.blue,   detail:"GET /api/dashboard/stats HTTP/1.1\nOrigin: https://ddokddok-phi.vercel.app\nAuthorization: Bearer eyJ...\n→ 다른 도메인이므로 브라우저가 먼저 OPTIONS 요청"},
+      {from:"cors",     to:"browser", label:"② CORS 헤더로 허용 응답",                 color:C.yellow, detail:"Access-Control-Allow-Origin: *\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE\nAccess-Control-Allow-Headers: Authorization, Content-Type\n→ 브라우저가 실제 요청 전송 허가"},
+      {from:"browser",  to:"auth",    label:"③ 실제 GET 요청 도착 → JWT 검증",         color:C.blue,   detail:"FastAPI가 HTTPBearer 의존성 실행\njwt.decode(token, SECRET_KEY, algorithms=['HS256'])\n→ payload: { sub: '1', exp: 1720000000 }\n만료됐거나 서명 불일치 시 401 Unauthorized"},
+      {from:"auth",     to:"handler", label:"④ 인증 통과 → 라우트 핸들러 실행",        color:C.green,  detail:"current_user = db.query(User).filter(User.id == 1).first()\n→ 비즈니스 로직 실행\nstreak, weekly_minutes, completed_problems 계산"},
+      {from:"handler",  to:"db",      label:"⑤ SQL 쿼리 실행",                          color:C.purple, detail:"SELECT DISTINCT date FROM study_sessions WHERE user_id=1\nSELECT date, SUM(duration) FROM ... GROUP BY date\n→ SQLAlchemy ORM이 파라미터화된 쿼리로 변환 (SQL Injection 방지)"},
+      {from:"db",       to:"browser", label:"⑥ JSON 응답 반환",                         color:C.coral,  detail:'HTTP/1.1 200 OK\nContent-Type: application/json\n{\n  "streak": 5,\n  "weekly_minutes": 120,\n  "completed_problems": 14\n}'},
+    ],
+  },
   dashboard: {
     title:"대시보드 집계 흐름", subtitle:"연속 학습일·주간 차트가 어떻게 계산되는지",
     viewBox:"0 0 500 200",
@@ -1508,12 +1888,15 @@ function DiagramViewer({ nodes, lines, steps, viewBox="0 0 710 220" }) {
 const ARCH_NODES = {};
 
 const ARCH_DIAGRAMS = [
-  { id:"jwt",       title:"JWT 인증 흐름",      desc:"로그인 → 토큰 발급 → API 호출 흐름",              icon:"🔐", available:true },
-  { id:"infra",     title:"배포 인프라 구조",    desc:"Vercel → Render → Supabase + UptimeRobot",        icon:"🚀", available:true },
-  { id:"signup",    title:"회원가입 흐름",        desc:"비밀번호 해싱(bcrypt) → DB 저장 → JWT 발급",      icon:"👤", available:true },
-  { id:"aice",      title:"AICE 채점 흐름",      desc:"코드 제출 → 키워드 검사 → 결과 저장",             icon:"📝", available:true },
-  { id:"dashboard", title:"대시보드 집계 흐름",  desc:"연속 학습일 · 주간 차트 계산 과정",               icon:"📊", available:true },
-  { id:"react",     title:"React 렌더링 원리",   desc:"상태 변화 → Virtual DOM → 실제 DOM",              icon:"⚛️", available:false },
+  { id:"jwt",       title:"JWT 인증 흐름",        desc:"로그인 → 토큰 발급 → API 호출 흐름",              icon:"🔐", available:true },
+  { id:"infra",     title:"배포 인프라 구조",      desc:"Vercel → Render → Supabase + UptimeRobot",        icon:"🚀", available:true },
+  { id:"signup",    title:"회원가입 흐름",          desc:"비밀번호 해싱(bcrypt) → DB 저장 → JWT 발급",      icon:"👤", available:true },
+  { id:"aice",      title:"AICE 채점 흐름",        desc:"코드 제출 → 키워드 검사 → 결과 저장",             icon:"📝", available:true },
+  { id:"dashboard", title:"대시보드 집계 흐름",    desc:"연속 학습일 · 주간 차트 계산 과정",               icon:"📊", available:true },
+  { id:"react",     title:"React 렌더링 원리",     desc:"setState → Virtual DOM Diffing → 실제 DOM 업데이트", icon:"⚛️", available:true },
+  { id:"oauth",     title:"OAuth 2.0 소셜 로그인", desc:"구글 로그인이 내부에서 작동하는 방식 7단계",      icon:"🔑", available:true },
+  { id:"cicd",      title:"CI/CD 파이프라인",      desc:"git push → GitHub Actions → Vercel/Render 자동 배포", icon:"⚙️", available:true },
+  { id:"rest",      title:"REST API 사이클",       desc:"CORS → JWT 인증 → 라우트 핸들러 → DB → JSON 응답", icon:"🌐", available:true },
 ];
 
 function ArchScreen() {
