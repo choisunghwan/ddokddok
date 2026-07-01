@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from database import get_db
-from models import User
+from models import User, AiceSubmission, StudySession, CourseProgress
 from deps import get_current_user
 import os
 
@@ -63,3 +63,49 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user)):
     return {"id": current_user.id, "email": current_user.email, "nickname": current_user.nickname}
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class NicknameChangeRequest(BaseModel):
+    nickname: str
+
+
+@router.put("/password")
+def change_password(
+    body: PasswordChangeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not pwd_context.verify(body.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="현재 비밀번호가 올바르지 않습니다")
+    current_user.password_hash = pwd_context.hash(body.new_password)
+    db.commit()
+    return {"ok": True}
+
+
+@router.put("/nickname")
+def change_nickname(
+    body: NicknameChangeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.nickname = body.nickname
+    db.commit()
+    return {"ok": True, "nickname": current_user.nickname}
+
+
+@router.delete("/me")
+def delete_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db.query(AiceSubmission).filter(AiceSubmission.user_id == current_user.id).delete()
+    db.query(StudySession).filter(StudySession.user_id == current_user.id).delete()
+    db.query(CourseProgress).filter(CourseProgress.user_id == current_user.id).delete()
+    db.delete(current_user)
+    db.commit()
+    return {"ok": True}

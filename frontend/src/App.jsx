@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network } from "lucide-react";
+import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, ResponsiveContainer } from "recharts";
 
 // ── 디자인 토큰 ──────────────────────────────────
@@ -129,7 +129,7 @@ function useIsMobile() {
   return mobile;
 }
 
-function Nav({ tab, setTab, nickname, onLogout }) {
+function Nav({ tab, setTab, nickname, onLogout, onSettings }) {
   const isMobile = useIsMobile();
   const items = [
     { key:"home",   icon: Home,    label:"홈"        },
@@ -184,6 +184,9 @@ function Nav({ tab, setTab, nickname, onLogout }) {
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nickname}</div>
           </div>
+          <button onClick={onSettings} title="설정" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex", alignItems:"center" }}>
+            <Settings size={14} />
+          </button>
           <button onClick={onLogout} title="로그아웃" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex", alignItems:"center" }}>
             <ArrowRight size={14} />
           </button>
@@ -193,8 +196,122 @@ function Nav({ tab, setTab, nickname, onLogout }) {
   );
 }
 
-// ── 로그인 / 회원가입 ────────────────────────────
+// ── 계정 설정 모달 ───────────────────────────────
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+function SettingsModal({ nickname, onClose, onNicknameChange, onLogout }) {
+  const [tab, setTab] = useState("password");
+  const [pwForm, setPwForm] = useState({ current:"", next:"", confirm:"" });
+  const [nickForm, setNickForm] = useState(nickname || "");
+  const [msg, setMsg] = useState({ text:"", ok:true });
+  const [loading, setLoading] = useState(false);
+
+  const setPw = k => e => setPwForm(f => ({ ...f, [k]: e.target.value }));
+
+  const changePassword = async () => {
+    if (pwForm.next !== pwForm.confirm) { setMsg({ text:"새 비밀번호가 일치하지 않습니다", ok:false }); return; }
+    if (pwForm.next.length < 6) { setMsg({ text:"비밀번호는 6자 이상이어야 합니다", ok:false }); return; }
+    setLoading(true); setMsg({ text:"", ok:true });
+    try {
+      const res = await fetch(`${API}/api/auth/password`, {
+        method:"PUT", headers:{ "Content-Type":"application/json", ...authHeader() },
+        body: JSON.stringify({ current_password: pwForm.current, new_password: pwForm.next }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg({ text: data.detail || "오류가 발생했습니다", ok:false }); return; }
+      setMsg({ text:"비밀번호가 변경되었습니다", ok:true });
+      setPwForm({ current:"", next:"", confirm:"" });
+    } catch { setMsg({ text:"서버에 연결할 수 없습니다", ok:false }); }
+    finally { setLoading(false); }
+  };
+
+  const changeNickname = async () => {
+    if (!nickForm.trim()) { setMsg({ text:"닉네임을 입력하세요", ok:false }); return; }
+    setLoading(true); setMsg({ text:"", ok:true });
+    try {
+      const res = await fetch(`${API}/api/auth/nickname`, {
+        method:"PUT", headers:{ "Content-Type":"application/json", ...authHeader() },
+        body: JSON.stringify({ nickname: nickForm }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg({ text: data.detail || "오류가 발생했습니다", ok:false }); return; }
+      localStorage.setItem("nickname", data.nickname);
+      onNicknameChange(data.nickname);
+      setMsg({ text:"닉네임이 변경되었습니다", ok:true });
+    } catch { setMsg({ text:"서버에 연결할 수 없습니다", ok:false }); }
+    finally { setLoading(false); }
+  };
+
+  const deleteAccount = async () => {
+    if (!window.confirm("정말 탈퇴하시겠습니까?\n모든 학습 데이터가 삭제됩니다.")) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/me`, { method:"DELETE", headers: authHeader() });
+      if (!res.ok) { setMsg({ text:"탈퇴 처리 중 오류가 발생했습니다", ok:false }); return; }
+      localStorage.clear();
+      onLogout();
+    } catch { setMsg({ text:"서버에 연결할 수 없습니다", ok:false }); }
+    finally { setLoading(false); }
+  };
+
+  const inp = (placeholder, val, onChange, type="text") => (
+    <input type={type} placeholder={placeholder} value={val} onChange={onChange} style={{
+      width:"100%", padding:"10px 14px", borderRadius:8, border:`1px solid ${C.line}`,
+      background:C.card2, color:C.text, fontFamily:SANS, fontSize:13, outline:"none",
+      boxSizing:"border-box", marginBottom:10,
+    }}/>
+  );
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center" }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ width:360, background:C.card, borderRadius:16, padding:"28px 28px", border:`1px solid ${C.line}` }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+          <div style={{ fontFamily:SANS, fontSize:16, fontWeight:800, color:C.text }}>계정 설정</div>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer" }}><X size={18}/></button>
+        </div>
+
+        <div style={{ display:"flex", gap:6, marginBottom:20 }}>
+          {[["password","비밀번호 변경"],["nickname","닉네임 변경"],["delete","회원탈퇴"]].map(([k,l]) => (
+            <button key={k} onClick={() => { setTab(k); setMsg({ text:"", ok:true }); }} style={{
+              flex:1, padding:"7px 0", borderRadius:7, border:`1px solid ${tab===k?(k==="delete"?C.coral:C.blue):C.line}`,
+              background: tab===k?(k==="delete"?C.coral+"22":C.blue+"22"):"transparent",
+              color: tab===k?(k==="delete"?C.coral:C.blue):C.muted,
+              fontFamily:SANS, fontSize:11, fontWeight:700, cursor:"pointer",
+            }}>{l}</button>
+          ))}
+        </div>
+
+        {tab === "password" && (<>
+          {inp("현재 비밀번호", pwForm.current, setPw("current"), "password")}
+          {inp("새 비밀번호", pwForm.next, setPw("next"), "password")}
+          {inp("새 비밀번호 확인", pwForm.confirm, setPw("confirm"), "password")}
+          <button onClick={changePassword} disabled={loading} style={{ width:"100%", padding:"11px 0", borderRadius:8, border:"none", background:C.blue, color:C.white, fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer" }}>변경하기</button>
+        </>)}
+
+        {tab === "nickname" && (<>
+          {inp("새 닉네임", nickForm, e => setNickForm(e.target.value))}
+          <button onClick={changeNickname} disabled={loading} style={{ width:"100%", padding:"11px 0", borderRadius:8, border:"none", background:C.blue, color:C.white, fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer" }}>변경하기</button>
+        </>)}
+
+        {tab === "delete" && (
+          <div>
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:16, lineHeight:1.7 }}>
+              탈퇴 시 모든 학습 데이터(채점 이력, 학습 기록, 진행률)가 <span style={{ color:C.coral, fontWeight:700 }}>영구 삭제</span>됩니다.
+            </div>
+            <button onClick={deleteAccount} disabled={loading} style={{ width:"100%", padding:"11px 0", borderRadius:8, border:"none", background:C.coral, color:C.white, fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer" }}>회원탈퇴</button>
+          </div>
+        )}
+
+        {msg.text && (
+          <div style={{ fontFamily:SANS, fontSize:12, color: msg.ok ? C.green : C.coral, marginTop:10 }}>{msg.text}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── 로그인 / 회원가입 ────────────────────────────
 
 function AuthScreen({ onAuth }) {
   const [mode, setMode] = useState("login");
@@ -1180,6 +1297,7 @@ function StudyScreen() {
 export default function App() {
   const [tab, setTab] = useState("home");
   const [nickname, setNickname] = useState(() => localStorage.getItem("nickname"));
+  const [showSettings, setShowSettings] = useState(false);
   const isMobile = useIsMobile();
 
   const handleAuth = (nick) => setNickname(nick);
@@ -1195,7 +1313,8 @@ export default function App() {
     <div style={{ minHeight:"100vh", background:C.bg, display:"flex" }}>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-      <Nav tab={tab} setTab={setTab} nickname={nickname} onLogout={handleLogout} />
+      {showSettings && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
+      <Nav tab={tab} setTab={setTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto" }}>
         {tab === "home"  && <HomeScreen setTab={setTab} nickname={nickname} />}
         {tab === "code"  && <CodeScreen />}
