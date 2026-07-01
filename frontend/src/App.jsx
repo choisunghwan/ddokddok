@@ -859,49 +859,139 @@ function AiceScreen({ round, onBack }) {
 }
 
 // ── 아키텍처 시각화 ───────────────────────────────
-const ARCH_NODES = {
-  browser: { label: "브라우저",     icon: "🌐", x: 30,  y: 90,  w: 110, h: 58 },
-  storage: { label: "localStorage", icon: "💾", x: 30,  y: 230, w: 110, h: 58 },
-  server:  { label: "FastAPI",      icon: "⚡", x: 300, y: 90,  w: 110, h: 58 },
-  db:      { label: "MySQL DB",     icon: "🗄️", x: 570, y: 90,  w: 110, h: 58 },
+// ── 아키텍처 다이어그램 데이터 ────────────────────
+const DIAGRAMS = {
+  jwt: {
+    title:"JWT 인증 흐름", subtitle:"단계별로 토큰이 어디로 이동하는지 확인하세요",
+    viewBox:"0 0 710 320",
+    nodes:{
+      browser: {label:"브라우저",     icon:"🌐", x:30,  y:90,  w:110, h:58},
+      storage: {label:"localStorage", icon:"💾", x:30,  y:230, w:110, h:58},
+      server:  {label:"FastAPI",      icon:"⚡", x:300, y:90,  w:110, h:58},
+      db:      {label:"Supabase DB",  icon:"🗄️", x:570, y:90,  w:110, h:58},
+    },
+    lines:[
+      {x1:140,y1:119,x2:300,y2:119},
+      {x1:410,y1:119,x2:570,y2:119},
+      {x1:85, y1:148,x2:85, y2:230},
+    ],
+    steps:[
+      {from:"browser",to:"server",  label:"① 로그인 요청",            color:C.blue,   detail:'POST /api/auth/login\n{ "email": "user@example.com", "password": "••••" }'},
+      {from:"server", to:"db",      label:"② 사용자 조회",            color:C.green,  detail:"SELECT * FROM users WHERE email = 'user@example.com'"},
+      {from:"db",     to:"server",  label:"③ 사용자 반환",            color:C.green,  detail:"User { id: 1, email: '...', password_hash: '$2b$12$...' }"},
+      {from:"server", to:"browser", label:"④ JWT 토큰 발급",          color:C.purple, detail:'{ "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }'},
+      {from:"browser",to:"storage", label:"⑤ 토큰 저장",              color:C.yellow, detail:"localStorage.setItem('token', 'eyJ...')\n→ 페이지 새로고침해도 유지됨"},
+      {from:"browser",to:"server",  label:"⑥ 인증 포함 API 요청",    color:C.blue,   detail:"GET /api/dashboard/stats\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."},
+      {from:"server", to:"db",      label:"⑦ 사용자 데이터 조회",    color:C.green,  detail:"토큰 서명 검증 → sub(user_id=1) 추출\nSELECT * FROM aice_submissions WHERE user_id = 1"},
+      {from:"db",     to:"server",  label:"⑧ 결과 반환",              color:C.green,  detail:'[{ question_no: 1, is_correct: true }, { question_no: 2, is_correct: false }, ...]'},
+      {from:"server", to:"browser", label:"⑨ 응답 — 홈 화면 업데이트",color:C.blue,  detail:'{ "streak": 3, "weekly_minutes": 45, "completed_problems": 8 }'},
+    ],
+  },
+  infra: {
+    title:"배포 인프라 구조", subtitle:"브라우저부터 DB까지 + UptimeRobot 슬립 방지",
+    viewBox:"0 0 680 270",
+    nodes:{
+      browser:      {label:"브라우저",    icon:"🌐", x:20,  y:170, w:100, h:58},
+      vercel:       {label:"Vercel",      icon:"▲",  x:175, y:170, w:110, h:58, sub:"프론트엔드 CDN"},
+      render:       {label:"Render",      icon:"⚡", x:340, y:170, w:110, h:58, sub:"FastAPI 백엔드"},
+      supabase:     {label:"Supabase",    icon:"🗄️", x:510, y:170, w:110, h:58, sub:"PostgreSQL DB"},
+      uptimerobot:  {label:"UptimeRobot", icon:"🤖", x:340, y:50,  w:110, h:58, sub:"5분마다 핑"},
+    },
+    lines:[
+      {x1:120,y1:199,x2:175,y2:199},
+      {x1:285,y1:199,x2:340,y2:199},
+      {x1:450,y1:199,x2:510,y2:199},
+      {x1:395,y1:108,x2:395,y2:170},
+    ],
+    steps:[
+      {from:"browser",    to:"vercel",   label:"① HTML/JS 요청",          color:C.blue,   detail:"사용자가 ddokddok-phi.vercel.app 접속\nVercel CDN이 React 앱(index.html + JS 번들) 즉시 제공"},
+      {from:"vercel",     to:"browser",  label:"② React 앱 전달",          color:C.green,  detail:"브라우저가 React 앱 다운로드 후 실행\nApp.jsx 마운트 → 로그인 화면 렌더링"},
+      {from:"browser",    to:"render",   label:"③ API 요청",               color:C.blue,   detail:"POST https://ddokddok.onrender.com/api/auth/login\nCORS 헤더 확인 → FastAPI 처리"},
+      {from:"render",     to:"supabase", label:"④ DB 쿼리",                color:C.purple, detail:"Render → Supabase Session Pooler (IPv4)\naws-1-ap-northeast-2.pooler.supabase.com:5432"},
+      {from:"supabase",   to:"render",   label:"⑤ 결과 반환",              color:C.purple, detail:"쿼리 결과 → FastAPI에서 JWT 생성\npasslib bcrypt 비밀번호 검증"},
+      {from:"render",     to:"browser",  label:"⑥ JSON 응답",              color:C.green,  detail:'{ "access_token": "eyJ...", "nickname": "홍길동" }\nlocalStorage 저장 → 대시보드 이동'},
+      {from:"uptimerobot",to:"render",   label:"⑦ 슬립 방지 핑 (5분마다)", color:C.yellow, detail:"GET https://ddokddok.onrender.com/health\n→ { status: ok }\n15분 슬립 타이머 리셋 → 항상 ON 상태 유지"},
+    ],
+  },
+  signup: {
+    title:"회원가입 흐름", subtitle:"비밀번호가 어떻게 안전하게 저장되는지 확인하세요",
+    viewBox:"0 0 680 200",
+    nodes:{
+      browser:  {label:"브라우저", icon:"🌐", x:20,  y:80, w:100, h:58},
+      fastapi:  {label:"FastAPI",  icon:"⚡", x:185, y:80, w:110, h:58, sub:"Render"},
+      bcrypt:   {label:"bcrypt",   icon:"🔒", x:355, y:80, w:100, h:58, sub:"해시 생성"},
+      supabase: {label:"Supabase", icon:"🗄️", x:510, y:80, w:110, h:58, sub:"PostgreSQL"},
+    },
+    lines:[
+      {x1:120,y1:109,x2:185,y2:109},
+      {x1:295,y1:109,x2:355,y2:109},
+      {x1:455,y1:109,x2:510,y2:109},
+    ],
+    steps:[
+      {from:"browser", to:"fastapi",  label:"① 회원가입 요청",   color:C.blue,   detail:'POST /api/auth/signup\n{ "email": "user@example.com", "nickname": "홍길동", "password": "mypassword123" }'},
+      {from:"fastapi", to:"supabase", label:"② 이메일 중복 확인", color:C.yellow, detail:"SELECT * FROM users WHERE email = 'user@example.com'\n→ 없으면 진행 / 있으면 400 에러 반환"},
+      {from:"supabase",to:"fastapi",  label:"③ 없음 확인",        color:C.yellow, detail:"rowcount = 0 → 가입 가능\n→ 비밀번호 해싱 단계로 진행"},
+      {from:"fastapi", to:"bcrypt",   label:"④ 비밀번호 해싱",    color:C.coral,  detail:"passlib.hash.bcrypt.hash('mypassword123')\n→ 해시 라운드 12회 반복 (brute-force 방어)\n원문 비밀번호는 절대 저장하지 않음"},
+      {from:"bcrypt",  to:"fastapi",  label:"⑤ 해시 반환",        color:C.coral,  detail:"'$2b$12$N9qo8uLOickgx2ZMRZoMye...'\n→ DB에 저장할 password_hash 값"},
+      {from:"fastapi", to:"supabase", label:"⑥ 사용자 저장",      color:C.green,  detail:"INSERT INTO users (email, nickname, password_hash)\nVALUES ('user@example.com', '홍길동', '$2b$12$...')"},
+      {from:"fastapi", to:"browser",  label:"⑦ JWT 토큰 발급",    color:C.purple, detail:'{ "access_token": "eyJhbGciOiJIUzI1NiJ9...", "nickname": "홍길동" }\n→ 자동 로그인 처리'},
+    ],
+  },
+  aice: {
+    title:"AICE 채점 흐름", subtitle:"코드 제출부터 대시보드 반영까지",
+    viewBox:"0 0 680 200",
+    nodes:{
+      browser:  {label:"브라우저",   icon:"🌐", x:20,  y:80, w:100, h:58, sub:"코드 작성"},
+      fastapi:  {label:"FastAPI",    icon:"⚡", x:185, y:80, w:110, h:58, sub:"채점 서버"},
+      checker:  {label:"키워드 검사",icon:"🔍", x:355, y:80, w:110, h:58, sub:"Python"},
+      supabase: {label:"Supabase",   icon:"🗄️", x:525, y:80, w:110, h:58, sub:"결과 저장"},
+    },
+    lines:[
+      {x1:120,y1:109,x2:185,y2:109},
+      {x1:295,y1:109,x2:355,y2:109},
+      {x1:465,y1:109,x2:525,y2:109},
+    ],
+    steps:[
+      {from:"browser", to:"fastapi",  label:"① 답안 제출",        color:C.blue,   detail:'POST /api/aice/submit\nAuthorization: Bearer eyJ...\n{ "question_no": 5, "code": "sns.countplot(df[\'gender\'])" }'},
+      {from:"fastapi", to:"checker",  label:"② 키워드 매칭",      color:C.yellow, detail:'AICE_KEYWORDS[5] = ["countplot"]\nmissing = [k for k in keywords if k not in code]\n→ missing = [] (countplot 존재)'},
+      {from:"checker", to:"fastapi",  label:"③ 채점 결과",         color:C.yellow, detail:"is_correct: True\nmissing_keywords: []\n→ 정답 처리"},
+      {from:"fastapi", to:"supabase", label:"④ 결과 + 세션 저장",  color:C.green,  detail:"INSERT aice_submissions (user_id, question_no, is_correct)\nINSERT study_sessions (user_id, date, duration_minutes=5, course_id='aice')\n→ 대시보드 통계 자동 반영"},
+      {from:"supabase",to:"fastapi",  label:"⑤ 저장 완료",         color:C.green,  detail:"AiceSubmission { id: 42, is_correct: true }\nStudySession { id: 15, duration_minutes: 5 }"},
+      {from:"fastapi", to:"browser",  label:"⑥ 채점 결과 응답",    color:C.blue,   detail:'{ "is_correct": true, "missing_keywords": [] }\n→ 화면에 ✅ 정답 표시'},
+    ],
+  },
+  dashboard: {
+    title:"대시보드 집계 흐름", subtitle:"연속 학습일·주간 차트가 어떻게 계산되는지",
+    viewBox:"0 0 500 200",
+    nodes:{
+      browser: {label:"브라우저", icon:"🌐", x:20,  y:80, w:100, h:58},
+      fastapi: {label:"FastAPI",  icon:"⚡", x:190, y:80, w:110, h:58, sub:"통계 집계"},
+      supabase:{label:"Supabase", icon:"🗄️", x:360, y:80, w:110, h:58, sub:"PostgreSQL"},
+    },
+    lines:[
+      {x1:120,y1:109,x2:190,y2:109},
+      {x1:300,y1:109,x2:360,y2:109},
+    ],
+    steps:[
+      {from:"browser", to:"fastapi",  label:"① 대시보드 요청",      color:C.blue,   detail:"GET /api/dashboard/stats\nAuthorization: Bearer eyJ...\nJWT 검증 → user_id = 1 확인"},
+      {from:"fastapi", to:"supabase", label:"② 연속 학습일 쿼리",   color:C.green,  detail:"SELECT DISTINCT DATE(created_at) FROM study_sessions WHERE user_id=1\nSELECT DISTINCT DATE(created_at) FROM aice_submissions WHERE user_id=1"},
+      {from:"supabase",to:"fastapi",  label:"③ 날짜 목록 반환",     color:C.green,  detail:"[2026-07-02, 2026-07-01, 2026-06-30, ...]\n→ streak = 3 (연속 3일 계산)"},
+      {from:"fastapi", to:"supabase", label:"④ 주간 데이터 쿼리",   color:C.purple, detail:"SELECT date, SUM(duration_minutes) FROM study_sessions\nWHERE user_id=1 AND date >= '2026-06-29' (이번 주 월요일)\nGROUP BY date"},
+      {from:"supabase",to:"fastapi",  label:"⑤ 주간 결과 반환",     color:C.purple, detail:"[{date:'2026-07-01', minutes:15}, ...]\n→ 월~일 7개 데이터로 바 차트 생성\n→ weekly_minutes 합산"},
+      {from:"fastapi", to:"browser",  label:"⑥ 통계 응답",           color:C.blue,   detail:'{\n  "streak": 3,\n  "weekly_minutes": 45,\n  "completed_problems": 8,\n  "weekly_chart": [{"day":"월","min":0}, ...]\n}'},
+    ],
+  },
 };
 
-const ARCH_STEPS = [
-  { from:"browser", to:"server",  label:"① 로그인 요청",        color:C.blue,
-    detail:'POST /api/auth/login\n{ "email": "user@example.com", "password": "••••" }' },
-  { from:"server",  to:"db",      label:"② 사용자 조회",        color:C.green,
-    detail:"SELECT * FROM users WHERE email = 'user@example.com'" },
-  { from:"db",      to:"server",  label:"③ 사용자 반환",        color:C.green,
-    detail:"User { id: 1, email: '...', password_hash: '$2b$12$...' }" },
-  { from:"server",  to:"browser", label:"④ JWT 토큰 발급",      color:C.purple,
-    detail:'{ "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIn0.abc..." }' },
-  { from:"browser", to:"storage", label:"⑤ 토큰 저장",          color:C.yellow,
-    detail:"localStorage.setItem('token', 'eyJ...')\n→ 페이지 새로고침해도 유지됨" },
-  { from:"browser", to:"server",  label:"⑥ 인증 포함 API 요청", color:C.blue,
-    detail:"GET /api/dashboard/stats\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
-  { from:"server",  to:"db",      label:"⑦ 사용자 데이터 조회", color:C.green,
-    detail:"토큰 서명 검증 → sub(user_id=1) 추출\nSELECT * FROM aice_submissions WHERE user_id = 1" },
-  { from:"db",      to:"server",  label:"⑧ 결과 반환",          color:C.green,
-    detail:'[{ question_no: 1, is_correct: true }, { question_no: 2, is_correct: false }, ...]' },
-  { from:"server",  to:"browser", label:"⑨ 응답 — 홈 화면 업데이트", color:C.blue,
-    detail:'{ "streak": 3, "weekly_minutes": 45, "completed_problems": 8 }' },
-];
-
-function nc(id) {
-  const n = ARCH_NODES[id];
-  return { x: n.x + n.w / 2, y: n.y + n.h / 2 };
-}
-
-function ArchViewer() {
+function DiagramViewer({ nodes, lines, steps, viewBox="0 0 710 220" }) {
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(1);
   const rafRef = useRef(null);
-
   useEffect(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     setProgress(0);
     let start = null;
-    const tick = (ts) => {
+    const tick = ts => {
       if (!start) start = ts;
       const p = Math.min((ts - start) / 700, 1);
       setProgress(p);
@@ -910,200 +1000,65 @@ function ArchViewer() {
     rafRef.current = requestAnimationFrame(tick);
     return () => rafRef.current && cancelAnimationFrame(rafRef.current);
   }, [step]);
-
-  const cur = ARCH_STEPS[step];
-  const from = nc(cur.from);
-  const to   = nc(cur.to);
-  const px   = from.x + (to.x - from.x) * progress;
-  const py   = from.y + (to.y - from.y) * progress;
-
+  const cur = steps[step];
+  const fn = nodes[cur.from], tn = nodes[cur.to];
+  const fx=fn.x+fn.w/2, fy=fn.y+fn.h/2, tx=tn.x+tn.w/2, ty=tn.y+tn.h/2;
+  const px=fx+(tx-fx)*progress, py=fy+(ty-fy)*progress;
   return (
-    <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:20 }}>
-      <svg width="100%" viewBox="0 0 710 320" style={{ display:"block" }}>
-        {/* 연결선 */}
-        <line x1={ARCH_NODES.browser.x+110} y1={119} x2={ARCH_NODES.server.x} y2={119} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
-        <line x1={ARCH_NODES.server.x+110}  y1={119} x2={ARCH_NODES.db.x}     y2={119} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
-        <line x1={85} y1={ARCH_NODES.browser.y+58} x2={85} y2={ARCH_NODES.storage.y} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
-
-        {/* 노드 */}
-        {Object.entries(ARCH_NODES).map(([id, n]) => {
-          const active = cur.from === id || cur.to === id;
+    <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:14,padding:20}}>
+      <svg width="100%" viewBox={viewBox} style={{display:"block"}}>
+        {lines.map((l,i)=><line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>)}
+        {Object.entries(nodes).map(([id,n])=>{
+          const active=cur.from===id||cur.to===id;
           return (
             <g key={id}>
-              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx={10}
-                fill={active ? cur.color+"22" : C.card2}
-                stroke={active ? cur.color : C.line} strokeWidth={active ? 2 : 1}/>
-              <text x={n.x+n.w/2} y={n.y+24} textAnchor="middle" fontSize={18}>{n.icon}</text>
-              <text x={n.x+n.w/2} y={n.y+46} textAnchor="middle" fontSize={10.5} fill={active ? cur.color : C.muted} fontFamily={SANS} fontWeight={active?"700":"500"}>{n.label}</text>
-            </g>
-          );
-        })}
-
-        {/* 패킷 */}
-        <circle cx={px} cy={py} r={14} fill={cur.color} opacity={0.15}/>
-        <circle cx={px} cy={py} r={7}  fill={cur.color}/>
-      </svg>
-
-      <div style={{ background:C.card2, borderRadius:10, padding:"12px 16px", marginTop:12 }}>
-        <div style={{ fontFamily:MONO, fontSize:11, color:cur.color, fontWeight:700, marginBottom:6 }}>{cur.label}</div>
-        <div style={{ fontFamily:MONO, fontSize:11, color:C.text, lineHeight:1.8, whiteSpace:"pre-wrap" }}>{cur.detail}</div>
-      </div>
-
-      <div style={{ display:"flex", gap:8, marginTop:14, alignItems:"center" }}>
-        <button onClick={() => setStep(s => Math.max(0,s-1))} disabled={step===0} style={{
-          padding:"8px 14px", borderRadius:8, border:`1px solid ${C.line}`,
-          background:"transparent", color:step===0?C.muted:C.text,
-          fontFamily:SANS, fontSize:12, cursor:step===0?"not-allowed":"pointer",
-        }}>← 이전</button>
-        <div style={{ flex:1, display:"flex", gap:4 }}>
-          {ARCH_STEPS.map((_,i) => (
-            <div key={i} onClick={() => setStep(i)} style={{
-              flex:1, height:3, borderRadius:2, cursor:"pointer",
-              background: i===step ? cur.color : i<step ? cur.color+"55" : C.line,
-            }}/>
-          ))}
-        </div>
-        <button onClick={() => setStep(s => Math.min(ARCH_STEPS.length-1,s+1))} disabled={step===ARCH_STEPS.length-1} style={{
-          padding:"8px 14px", borderRadius:8, border:"none",
-          background:step===ARCH_STEPS.length-1?C.line:C.blue, color:C.white,
-          fontFamily:SANS, fontSize:12, cursor:step===ARCH_STEPS.length-1?"not-allowed":"pointer",
-        }}>다음 →</button>
-      </div>
-    </div>
-  );
-}
-
-const INFRA_NODES = {
-  browser:  { label:"브라우저",  icon:"🌐", x:20,  y:80, w:100, h:58 },
-  vercel:   { label:"Vercel",    icon:"▲",  x:185, y:80, w:110, h:58, sub:"프론트엔드 CDN" },
-  render:   { label:"Render",    icon:"⚡", x:365, y:80, w:110, h:58, sub:"FastAPI 백엔드" },
-  supabase: { label:"Supabase",  icon:"🗄️", x:545, y:80, w:110, h:58, sub:"PostgreSQL DB" },
-};
-
-const INFRA_STEPS = [
-  { from:"browser",  to:"vercel",   label:"① HTML/JS 요청",     color:C.blue,
-    detail:"사용자가 ddokddok-phi.vercel.app 접속\nVercel CDN이 React 앱(index.html + JS 번들) 제공" },
-  { from:"vercel",   to:"browser",  label:"② React 앱 전달",     color:C.green,
-    detail:"브라우저가 React 앱 다운로드 후 실행\nApp.jsx 마운트 → 로그인 화면 렌더링" },
-  { from:"browser",  to:"render",   label:"③ 로그인 API 요청",   color:C.blue,
-    detail:"POST https://ddokddok.onrender.com/api/auth/login\n{ \"email\": \"...\", \"password\": \"...\" }" },
-  { from:"render",   to:"supabase", label:"④ DB 쿼리",            color:C.purple,
-    detail:"Render → Supabase Session Pooler (IPv4)\nSELECT * FROM users WHERE email = '...'\naws-1-ap-northeast-2.pooler.supabase.com:5432" },
-  { from:"supabase", to:"render",   label:"⑤ 쿼리 결과 반환",    color:C.purple,
-    detail:"User { id: 1, password_hash: '$2b$12$...' }\npasslib bcrypt로 비밀번호 검증 후 JWT 생성" },
-  { from:"render",   to:"browser",  label:"⑥ JWT 토큰 응답",     color:C.green,
-    detail:"{ \"access_token\": \"eyJhbGci...\", \"nickname\": \"홍길동\" }\nlocalStorage에 토큰 저장 → 대시보드 이동" },
-];
-
-function ncInfra(id) {
-  const n = INFRA_NODES[id];
-  return { x: n.x + n.w / 2, y: n.y + n.h / 2 };
-}
-
-function InfraViewer() {
-  const [step, setStep] = useState(0);
-  const [progress, setProgress] = useState(1);
-  const rafRef = useRef(null);
-
-  useEffect(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    setProgress(0);
-    let start = null;
-    const tick = (ts) => {
-      if (!start) start = ts;
-      const p = Math.min((ts - start) / 700, 1);
-      setProgress(p);
-      if (p < 1) rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => rafRef.current && cancelAnimationFrame(rafRef.current);
-  }, [step]);
-
-  const cur = INFRA_STEPS[step];
-  const from = ncInfra(cur.from);
-  const to   = ncInfra(cur.to);
-  const px   = from.x + (to.x - from.x) * progress;
-  const py   = from.y + (to.y - from.y) * progress;
-
-  return (
-    <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:20 }}>
-      <svg width="100%" viewBox="0 0 710 200" style={{ display:"block" }}>
-        <line x1={120} y1={109} x2={185} y2={109} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
-        <line x1={295} y1={109} x2={365} y2={109} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
-        <line x1={475} y1={109} x2={545} y2={109} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
-
-        {Object.entries(INFRA_NODES).map(([id, n]) => {
-          const active = cur.from === id || cur.to === id;
-          return (
-            <g key={id}>
-              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx={10}
-                fill={active ? cur.color+"22" : C.card2}
-                stroke={active ? cur.color : C.line} strokeWidth={active ? 2 : 1}/>
+              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx={10} fill={active?cur.color+"22":C.card2} stroke={active?cur.color:C.line} strokeWidth={active?2:1}/>
               <text x={n.x+n.w/2} y={n.y+22} textAnchor="middle" fontSize={16}>{n.icon}</text>
-              <text x={n.x+n.w/2} y={n.y+40} textAnchor="middle" fontSize={10.5} fill={active ? cur.color : C.text} fontFamily={SANS} fontWeight={active?"700":"500"}>{n.label}</text>
-              {n.sub && <text x={n.x+n.w/2} y={n.y+54} textAnchor="middle" fontSize={9} fill={C.muted} fontFamily={SANS}>{n.sub}</text>}
+              <text x={n.x+n.w/2} y={n.y+40} textAnchor="middle" fontSize={10.5} fill={active?cur.color:C.text} fontFamily={SANS} fontWeight={active?"700":"500"}>{n.label}</text>
+              {n.sub&&<text x={n.x+n.w/2} y={n.y+54} textAnchor="middle" fontSize={9} fill={C.muted} fontFamily={SANS}>{n.sub}</text>}
             </g>
           );
         })}
-
         <circle cx={px} cy={py} r={14} fill={cur.color} opacity={0.15}/>
-        <circle cx={px} cy={py} r={7}  fill={cur.color}/>
+        <circle cx={px} cy={py} r={7} fill={cur.color}/>
       </svg>
-
-      <div style={{ background:C.card2, borderRadius:10, padding:"12px 16px", marginTop:12 }}>
-        <div style={{ fontFamily:MONO, fontSize:11, color:cur.color, fontWeight:700, marginBottom:6 }}>{cur.label}</div>
-        <div style={{ fontFamily:MONO, fontSize:11, color:C.text, lineHeight:1.8, whiteSpace:"pre-wrap" }}>{cur.detail}</div>
+      <div style={{background:C.card2,borderRadius:10,padding:"12px 16px",marginTop:12}}>
+        <div style={{fontFamily:MONO,fontSize:11,color:cur.color,fontWeight:700,marginBottom:6}}>{cur.label}</div>
+        <div style={{fontFamily:MONO,fontSize:11,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{cur.detail}</div>
       </div>
-
-      <div style={{ display:"flex", gap:8, marginTop:14, alignItems:"center" }}>
-        <button onClick={() => setStep(s => Math.max(0,s-1))} disabled={step===0} style={{
-          padding:"8px 14px", borderRadius:8, border:`1px solid ${C.line}`,
-          background:"transparent", color:step===0?C.muted:C.text,
-          fontFamily:SANS, fontSize:12, cursor:step===0?"not-allowed":"pointer",
-        }}>← 이전</button>
-        <div style={{ flex:1, display:"flex", gap:4 }}>
-          {INFRA_STEPS.map((_,i) => (
-            <div key={i} onClick={() => setStep(i)} style={{
-              flex:1, height:3, borderRadius:2, cursor:"pointer",
-              background: i===step ? cur.color : i<step ? cur.color+"55" : C.line,
-            }}/>
-          ))}
+      <div style={{display:"flex",gap:8,marginTop:14,alignItems:"center"}}>
+        <button onClick={()=>setStep(s=>Math.max(0,s-1))} disabled={step===0} style={{padding:"8px 14px",borderRadius:8,border:`1px solid ${C.line}`,background:"transparent",color:step===0?C.muted:C.text,fontFamily:SANS,fontSize:12,cursor:step===0?"not-allowed":"pointer"}}>← 이전</button>
+        <div style={{flex:1,display:"flex",gap:4}}>
+          {steps.map((_,i)=><div key={i} onClick={()=>setStep(i)} style={{flex:1,height:3,borderRadius:2,cursor:"pointer",background:i===step?cur.color:i<step?cur.color+"55":C.line}}/>)}
         </div>
-        <button onClick={() => setStep(s => Math.min(INFRA_STEPS.length-1,s+1))} disabled={step===INFRA_STEPS.length-1} style={{
-          padding:"8px 14px", borderRadius:8, border:"none",
-          background:step===INFRA_STEPS.length-1?C.line:C.blue, color:C.white,
-          fontFamily:SANS, fontSize:12, cursor:step===INFRA_STEPS.length-1?"not-allowed":"pointer",
-        }}>다음 →</button>
+        <button onClick={()=>setStep(s=>Math.min(steps.length-1,s+1))} disabled={step===steps.length-1} style={{padding:"8px 14px",borderRadius:8,border:"none",background:step===steps.length-1?C.line:C.blue,color:C.white,fontFamily:SANS,fontSize:12,cursor:step===steps.length-1?"not-allowed":"pointer"}}>다음 →</button>
       </div>
     </div>
   );
 }
+
+// ── 더미 선언 (이전 코드 호환용, 실제 사용 안 함) ──
+const ARCH_NODES = {};
 
 const ARCH_DIAGRAMS = [
-  { id:"jwt",   title:"JWT 인증 흐름",      desc:"로그인 → 토큰 발급 → API 호출 흐름",          icon:"🔐", available:true  },
-  { id:"infra", title:"배포 인프라 구조",    desc:"Vercel → Render → Supabase 요청 흐름",        icon:"🚀", available:true  },
-  { id:"react", title:"React 렌더링 원리",  desc:"상태 변화 → Virtual DOM → 실제 DOM",          icon:"⚛️", available:false },
-  { id:"db",    title:"DB 쿼리 최적화",     desc:"인덱스 유무에 따른 조회 흐름 비교",            icon:"🗄️", available:false },
+  { id:"jwt",       title:"JWT 인증 흐름",      desc:"로그인 → 토큰 발급 → API 호출 흐름",              icon:"🔐", available:true },
+  { id:"infra",     title:"배포 인프라 구조",    desc:"Vercel → Render → Supabase + UptimeRobot",        icon:"🚀", available:true },
+  { id:"signup",    title:"회원가입 흐름",        desc:"비밀번호 해싱(bcrypt) → DB 저장 → JWT 발급",      icon:"👤", available:true },
+  { id:"aice",      title:"AICE 채점 흐름",      desc:"코드 제출 → 키워드 검사 → 결과 저장",             icon:"📝", available:true },
+  { id:"dashboard", title:"대시보드 집계 흐름",  desc:"연속 학습일 · 주간 차트 계산 과정",               icon:"📊", available:true },
+  { id:"react",     title:"React 렌더링 원리",   desc:"상태 변화 → Virtual DOM → 실제 DOM",              icon:"⚛️", available:false },
 ];
 
 function ArchScreen() {
   const [selected, setSelected] = useState(null);
+  const d = selected && DIAGRAMS[selected];
 
-  if (selected === "jwt") return (
+  if (d) return (
     <div style={{ padding:"32px 32px 60px" }}>
       <button onClick={() => setSelected(null)} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 아키텍처 목록</button>
-      <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>JWT 인증 흐름</div>
-      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:20 }}>단계별로 토큰이 어디로 이동하는지 확인하세요</div>
-      <ArchViewer />
-    </div>
-  );
-
-  if (selected === "infra") return (
-    <div style={{ padding:"32px 32px 60px" }}>
-      <button onClick={() => setSelected(null)} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 아키텍처 목록</button>
-      <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>배포 인프라 구조</div>
-      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:20 }}>브라우저부터 DB까지 요청이 어떻게 흐르는지 확인하세요</div>
-      <InfraViewer />
+      <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>{d.title}</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:20 }}>{d.subtitle}</div>
+      <DiagramViewer nodes={d.nodes} lines={d.lines} steps={d.steps} viewBox={d.viewBox}/>
     </div>
   );
 
