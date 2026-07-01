@@ -98,6 +98,197 @@ System.out.println(sum);`,
       { line: 6, vars: { "nums[]": "[4,8,2,6]", sum: "20", n: "6" }, out: "20" },
     ],
   },
+  {
+    id: 2, title: "ArrayList 기초",
+    desc: "add · get · remove · size",
+    code: `List<String> list = new ArrayList<>();
+list.add("사과");
+list.add("바나나");
+list.add("체리");
+String first = list.get(0);
+list.remove(1);
+int size = list.size();`,
+    steps: [
+      { line:1, vars:{ list:"[]", size:"0" }, out:"" },
+      { line:2, vars:{ list:"[사과]", size:"1" }, out:"" },
+      { line:3, vars:{ list:"[사과, 바나나]", size:"2" }, out:"" },
+      { line:4, vars:{ list:"[사과, 바나나, 체리]", size:"3" }, out:"" },
+      { line:5, vars:{ list:"[사과, 바나나, 체리]", first:"사과" }, out:"" },
+      { line:6, vars:{ list:"[사과, 체리]", "remove(1)":"바나나 삭제됨", size:"2" }, out:"" },
+      { line:7, vars:{ list:"[사과, 체리]", size:"2" }, out:"" },
+    ],
+  },
+  {
+    id: 3, title: "HashMap 기초",
+    desc: "put · get · containsKey · 값 수정",
+    code: `Map<String, Integer> scores = new HashMap<>();
+scores.put("Alice", 90);
+scores.put("Bob", 85);
+scores.put("Carol", 92);
+int a = scores.get("Alice");
+scores.put("Bob", 88);
+boolean has = scores.containsKey("Dave");`,
+    steps: [
+      { line:1, vars:{ scores:"{}", size:"0" }, out:"" },
+      { line:2, vars:{ scores:"{Alice=90}", size:"1" }, out:"" },
+      { line:3, vars:{ scores:"{Alice=90, Bob=85}", size:"2" }, out:"" },
+      { line:4, vars:{ scores:"{Alice=90, Bob=85, Carol=92}", size:"3" }, out:"" },
+      { line:5, vars:{ scores:"{Alice=90, Bob=85, Carol=92}", a:"90" }, out:"" },
+      { line:6, vars:{ scores:"{Alice=90, Bob=88, Carol=92}", "Bob":"85 → 88 (수정)" }, out:"" },
+      { line:7, vars:{ scores:"{Alice=90, Bob=88, Carol=92}", has:"false" }, out:"" },
+    ],
+  },
+  {
+    id: 4, title: "Map<String, List> 패턴",
+    desc: "부서별 직원 목록 — 실무 핵심 구조",
+    code: `Map<String, List<String>> dept = new HashMap<>();
+dept.put("개발팀", new ArrayList<>());
+dept.get("개발팀").add("Alice");
+dept.get("개발팀").add("Bob");
+dept.put("마케팅", new ArrayList<>());
+dept.get("마케팅").add("Carol");
+List<String> dev = dept.get("개발팀");`,
+    steps: [
+      { line:1, vars:{ dept:"{}" }, out:"" },
+      { line:2, vars:{ dept:"{개발팀=[]}" }, out:"" },
+      { line:3, vars:{ dept:"{개발팀=[Alice]}" }, out:"" },
+      { line:4, vars:{ dept:"{개발팀=[Alice, Bob]}" }, out:"" },
+      { line:5, vars:{ dept:"{개발팀=[Alice, Bob], 마케팅=[]}" }, out:"" },
+      { line:6, vars:{ dept:"{개발팀=[Alice, Bob], 마케팅=[Carol]}" }, out:"" },
+      { line:7, vars:{ dept:"{개발팀=[Alice, Bob], 마케팅=[Carol]}", dev:"[Alice, Bob]" }, out:"" },
+    ],
+  },
+  {
+    id: 5, title: "List<Map> 패턴",
+    desc: "상품·직원 목록 — DB 결과셋과 동일한 구조",
+    code: `List<Map<String, Object>> items = new ArrayList<>();
+Map<String, Object> p1 = new HashMap<>();
+p1.put("name", "노트북");
+p1.put("price", 1200000);
+items.add(p1);
+Map<String, Object> p2 = new HashMap<>();
+p2.put("name", "마우스");
+p2.put("price", 50000);
+items.add(p2);
+int cnt = items.size();`,
+    steps: [
+      { line:1,  vars:{ items:"[]" }, out:"" },
+      { line:2,  vars:{ items:"[]", p1:"{}" }, out:"" },
+      { line:3,  vars:{ items:"[]", p1:"{name=노트북}" }, out:"" },
+      { line:4,  vars:{ items:"[]", p1:"{name=노트북, price=1200000}" }, out:"" },
+      { line:5,  vars:{ items:"[{name=노트북, price=1200000}]" }, out:"" },
+      { line:6,  vars:{ items:"[{..}]", p2:"{}" }, out:"" },
+      { line:7,  vars:{ items:"[{..}]", p2:"{name=마우스}" }, out:"" },
+      { line:8,  vars:{ items:"[{..}]", p2:"{name=마우스, price=50000}" }, out:"" },
+      { line:9,  vars:{ items:"[{name=노트북,..}, {name=마우스,..}]" }, out:"" },
+      { line:10, vars:{ items:"[{..}, {..}]", cnt:"2" }, out:"" },
+    ],
+  },
+  {
+    id: 6, title: "Stream API",
+    desc: "filter · map · collect — 컬렉션 처리의 핵심",
+    code: `List<Integer> nums = List.of(1,2,3,4,5,6,7,8,9,10);
+List<Integer> evens = nums.stream()
+    .filter(n -> n % 2 == 0)
+    .collect(Collectors.toList());
+int total = nums.stream()
+    .mapToInt(Integer::intValue)
+    .sum();`,
+    steps: [
+      { line:1, vars:{ nums:"[1,2,3,4,5,6,7,8,9,10]", size:"10" }, out:"" },
+      { line:2, vars:{ "stream()":"스트림 파이프라인 시작", elements:"[1..10]" }, out:"" },
+      { line:3, vars:{ "filter()":"n%2==0 조건 통과", "통과한 값":"[2,4,6,8,10]" }, out:"" },
+      { line:4, vars:{ evens:"[2, 4, 6, 8, 10]", size:"5" }, out:"" },
+      { line:5, vars:{ "stream()":"새 스트림 생성", elements:"[1..10]" }, out:"" },
+      { line:6, vars:{ "mapToInt()":"IntStream으로 변환", "합산 중":"1+2+…+10" }, out:"" },
+      { line:7, vars:{ total:"55" }, out:"" },
+    ],
+  },
+];
+
+const SQL_LESSONS = [
+  {
+    id: 1, title: "SELECT · WHERE · ORDER BY",
+    desc: "기본 조회와 필터링·정렬",
+    isSql: true,
+    code: `SELECT name, age
+FROM employees
+WHERE age > 30
+ORDER BY age DESC;`,
+    steps: [
+      { line:2, label:"FROM: employees 테이블 전체 5행 로드",
+        result:{ columns:["id","name","age","dept"], rows:[[1,"Alice",28,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[4,"Dave",25,"디자인"],[5,"Eve",41,"개발팀"]] } },
+      { line:3, label:"WHERE age > 30: 조건 불만족 행 제거 (3행 남음)",
+        result:{ columns:["id","name","age","dept"], rows:[[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[5,"Eve",41,"개발팀"]] } },
+      { line:4, label:"ORDER BY age DESC: 나이 내림차순 정렬",
+        result:{ columns:["id","name","age","dept"], rows:[[5,"Eve",41,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"]] } },
+      { line:1, label:"SELECT name, age: 지정한 2개 컬럼만 최종 출력",
+        result:{ columns:["name","age"], rows:[["Eve",41],["Bob",35],["Carol",32]] } },
+    ],
+  },
+  {
+    id: 2, title: "GROUP BY · 집계 함수",
+    desc: "COUNT · AVG · SUM 그룹별 집계",
+    isSql: true,
+    code: `SELECT dept,
+       COUNT(*) AS cnt,
+       AVG(age)  AS avg_age
+FROM employees
+GROUP BY dept;`,
+    steps: [
+      { line:4, label:"FROM: employees 테이블 전체 로드",
+        result:{ columns:["id","name","age","dept"], rows:[[1,"Alice",28,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[4,"Dave",25,"디자인"],[5,"Eve",41,"개발팀"]] } },
+      { line:5, label:"GROUP BY dept: 부서별로 행을 묶음",
+        result:{ columns:["dept","포함된 행"], rows:[["개발팀","Alice(28), Carol(32), Eve(41)"],["마케팅","Bob(35)"],["디자인","Dave(25)"]] } },
+      { line:2, label:"COUNT(*): 각 그룹의 행 수",
+        result:{ columns:["dept","cnt"], rows:[["개발팀",3],["마케팅",1],["디자인",1]] } },
+      { line:3, label:"AVG(age): 각 그룹의 평균 나이",
+        result:{ columns:["dept","cnt","avg_age"], rows:[["개발팀",3,"33.7"],["마케팅",1,"35.0"],["디자인",1,"25.0"]] } },
+    ],
+  },
+  {
+    id: 3, title: "INNER JOIN",
+    desc: "두 테이블을 키로 결합하기",
+    isSql: true,
+    code: `SELECT e.name, e.age, d.city
+FROM employees e
+INNER JOIN departments d
+  ON e.dept = d.name
+WHERE d.city = '서울';`,
+    steps: [
+      { line:2, label:"FROM employees: 왼쪽 테이블 (5행)",
+        result:{ columns:["id","name","age","dept"], rows:[[1,"Alice",28,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[4,"Dave",25,"디자인"],[5,"Eve",41,"개발팀"]] } },
+      { line:3, label:"INNER JOIN departments: 오른쪽 테이블 (3행)",
+        result:{ columns:["name","city"], rows:[["개발팀","서울"],["마케팅","부산"],["디자인","서울"]] } },
+      { line:4, label:"ON e.dept = d.name: 부서명 기준으로 행 매칭",
+        result:{ columns:["e.name","e.dept","d.city"], rows:[["Alice","개발팀","서울"],["Bob","마케팅","부산"],["Carol","개발팀","서울"],["Dave","디자인","서울"],["Eve","개발팀","서울"]] } },
+      { line:5, label:"WHERE d.city='서울': 서울 부서만 필터 (4행)",
+        result:{ columns:["e.name","e.dept","d.city"], rows:[["Alice","개발팀","서울"],["Carol","개발팀","서울"],["Dave","디자인","서울"],["Eve","개발팀","서울"]] } },
+      { line:1, label:"SELECT e.name, e.age, d.city: 최종 컬럼 선택",
+        result:{ columns:["name","age","city"], rows:[["Alice",28,"서울"],["Carol",32,"서울"],["Dave",25,"서울"],["Eve",41,"서울"]] } },
+    ],
+  },
+  {
+    id: 4, title: "서브쿼리",
+    desc: "쿼리 안에 쿼리 — 평균 이상 직원 찾기",
+    isSql: true,
+    code: `SELECT name, age
+FROM employees
+WHERE age > (
+    SELECT AVG(age)
+    FROM employees
+);`,
+    steps: [
+      { line:4, label:"내부 쿼리 실행: 전체 직원 평균 나이 계산",
+        result:{ columns:["AVG(age)"], rows:[["32.2"]] } },
+      { line:2, label:"외부 쿼리 FROM: employees 전체 로드",
+        result:{ columns:["id","name","age","dept"], rows:[[1,"Alice",28,"개발팀"],[2,"Bob",35,"마케팅"],[3,"Carol",32,"개발팀"],[4,"Dave",25,"디자인"],[5,"Eve",41,"개발팀"]] } },
+      { line:3, label:"WHERE age > 32.2: 평균 초과 직원만 필터",
+        result:{ columns:["id","name","age","dept"], rows:[[2,"Bob",35,"마케팅"],[5,"Eve",41,"개발팀"]] } },
+      { line:1, label:"SELECT name, age: 최종 결과 출력",
+        result:{ columns:["name","age"], rows:[["Bob",35],["Eve",41]] } },
+    ],
+  },
 ];
 
 // AICE 14문항
@@ -686,11 +877,94 @@ function BubbleSortVisualizer({ data }) {
   );
 }
 
+function SqlVisualizer({ lesson }) {
+  const [step, setStep] = useState(0);
+  const isMobile = useIsMobile();
+  const steps = lesson.steps || [];
+  const cur = steps[step];
+  const codeLines = lesson.code.split("\n");
+  const total = steps.length - 1;
+
+  return (
+    <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:14 }}>
+      {/* SQL 코드 패널 */}
+      <div style={{ background:"#0D1117", borderRadius:10, padding:16, border:`1px solid ${C.line}`, overflowX:"auto" }}>
+        <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginBottom:10 }}>SQL</div>
+        {codeLines.map((line, i) => (
+          <div key={i} style={{
+            fontFamily:MONO, fontSize:isMobile?11:12, lineHeight:"1.8", padding:"0 8px", borderRadius:4,
+            background: cur.line === i+1 ? C.green+"22" : "transparent",
+            color: cur.line === i+1 ? C.green : C.text,
+            borderLeft: cur.line === i+1 ? `2px solid ${C.green}` : "2px solid transparent",
+            whiteSpace:"pre",
+          }}>
+            <span style={{ color:C.muted, marginRight:12, userSelect:"none" }}>{i+1}</span>{line}
+          </div>
+        ))}
+      </div>
+
+      {/* 결과 테이블 패널 */}
+      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        <div style={{ background:C.card2, borderRadius:10, padding:16, border:`1px solid ${C.line}`, flex:1, overflowX:"auto" }}>
+          <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginBottom:8 }}>결과 · Step {step+1}/{steps.length}</div>
+          {cur.label && (
+            <div style={{ fontFamily:SANS, fontSize:11, color:C.green, marginBottom:12, padding:"6px 10px", background:C.green+"11", borderRadius:6 }}>
+              {cur.label}
+            </div>
+          )}
+          {cur.result && (
+            <>
+              <div style={{ overflowX:"auto" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:MONO, fontSize:isMobile?10:11 }}>
+                  <thead>
+                    <tr>
+                      {cur.result.columns.map(col => (
+                        <th key={col} style={{ padding:"5px 10px", borderBottom:`1px solid ${C.line}`, color:C.muted, textAlign:"left", fontWeight:700, whiteSpace:"nowrap" }}>{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cur.result.rows.map((row, ri) => (
+                      <tr key={ri}>
+                        {row.map((cell, ci) => (
+                          <td key={ci} style={{ padding:"5px 10px", borderBottom:`1px solid ${C.line}44`, color:C.text, whiteSpace:"nowrap" }}>{String(cell)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginTop:8 }}>{cur.result.rows.length}행 반환</div>
+            </>
+          )}
+        </div>
+
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={() => setStep(0)} style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${C.line}`, background:"transparent", color:C.muted, cursor:"pointer" }}>
+            <RotateCcw size={14} />
+          </button>
+          <button disabled={step === 0} onClick={() => setStep(s => s-1)} style={{
+            flex:1, padding:"9px 0", borderRadius:8, border:`1px solid ${C.line}`,
+            background:"transparent", color: step===0 ? C.muted : C.text, cursor: step===0 ? "not-allowed" : "pointer",
+            fontFamily:SANS, fontSize:12, fontWeight:600,
+          }}>← 이전</button>
+          <button disabled={step === total} onClick={() => setStep(s => s+1)} style={{
+            flex:1, padding:"9px 0", borderRadius:8, border:"none",
+            background: step===total ? C.line : C.green, color:C.white,
+            cursor: step===total ? "not-allowed" : "pointer",
+            fontFamily:SANS, fontSize:12, fontWeight:700,
+          }}>다음 →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 코딩 학습 데이터 ─────────────────────────────
 const LANG_LIST = [
-  { id: "python", name: "Python", icon: "🐍", color: C.blue,  available: true  },
-  { id: "java",   name: "Java",   icon: "☕", color: C.coral, available: true  },
-  { id: "sql",    name: "SQL",    icon: "🗃️", color: C.green, available: false },
+  { id: "python", name: "Python", icon: "🐍", color: C.blue,  available: true },
+  { id: "java",   name: "Java",   icon: "☕", color: C.coral, available: true },
+  { id: "sql",    name: "SQL",    icon: "🗃️", color: C.green, available: true },
 ];
 
 const CHAPTERS = {
@@ -699,7 +973,14 @@ const CHAPTERS = {
     { id: "algo",   title: "알고리즘",   icon: "🔄", lessons: [PY_LESSONS[1]] },
   ],
   java: [
-    { id: "basics", title: "기초 문법",  icon: "📝", lessons: [JAVA_LESSONS[0]] },
+    { id: "basics",      title: "기초 문법",            icon: "📝", lessons: [JAVA_LESSONS[0]] },
+    { id: "collections", title: "컬렉션 프레임워크",    icon: "📦", lessons: [JAVA_LESSONS[1], JAVA_LESSONS[2], JAVA_LESSONS[3], JAVA_LESSONS[4]] },
+    { id: "stream",      title: "Stream API",           icon: "🌊", lessons: [JAVA_LESSONS[5]] },
+  ],
+  sql: [
+    { id: "basics", title: "기초 조회",   icon: "📋", lessons: [SQL_LESSONS[0]] },
+    { id: "agg",    title: "집계·그룹화", icon: "📊", lessons: [SQL_LESSONS[1]] },
+    { id: "join",   title: "JOIN·서브쿼리", icon: "🔗", lessons: [SQL_LESSONS[2], SQL_LESSONS[3]] },
   ],
 };
 
@@ -791,9 +1072,11 @@ function LessonViewScreen({ lesson, onBack }) {
       <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:20 }}>
         <div style={{ fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>{lesson.title}</div>
         <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:16 }}>{lesson.desc || ""}</div>
-        {lesson.isBubble
-          ? <BubbleSortVisualizer data={lesson.sortData} />
-          : <StepVisualizer lesson={lesson} />
+        {lesson.isSql
+          ? <SqlVisualizer lesson={lesson} />
+          : lesson.isBubble
+            ? <BubbleSortVisualizer data={lesson.sortData} />
+            : <StepVisualizer lesson={lesson} />
         }
       </div>
     </div>
