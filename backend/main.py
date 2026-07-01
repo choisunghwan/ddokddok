@@ -27,5 +27,6 @@ app.include_router(dashboard.router)
 
 
 @app.get("/health")
+@app.head("/health")
 def health():
     return {"status": "ok"}
