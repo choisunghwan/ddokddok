@@ -119,14 +119,44 @@ const AICE_TEMPLATES = [
 ];
 
 // ── 공통 레이아웃 ────────────────────────────────
+function useIsMobile() {
+  const [mobile, setMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setMobile(window.innerWidth < 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return mobile;
+}
+
 function Nav({ tab, setTab, nickname, onLogout }) {
+  const isMobile = useIsMobile();
   const items = [
-    { key:"home",   icon: Home,    label:"홈"          },
-    { key:"code",   icon: Code2,   label:"코딩 학습"  },
-    { key:"cert",   icon: BookOpen,label:"자격증"     },
-    { key:"arch",   icon: Network, label:"아키텍처"   },
-    { key:"study",  icon: Users,   label:"스터디"     },
+    { key:"home",   icon: Home,    label:"홈"        },
+    { key:"code",   icon: Code2,   label:"코딩 학습" },
+    { key:"cert",   icon: BookOpen,label:"자격증"    },
+    { key:"arch",   icon: Network, label:"아키텍처"  },
+    { key:"study",  icon: Users,   label:"스터디"    },
   ];
+
+  if (isMobile) return (
+    <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.card, borderTop:`1px solid ${C.line}`, display:"flex", zIndex:10 }}>
+      {items.map(({ key, icon: Icon, label }) => {
+        const active = tab === key;
+        return (
+          <button key={key} onClick={() => setTab(key)} style={{
+            flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+            padding:"10px 0 8px", border:"none", background:"transparent",
+            color: active ? C.blue : C.muted, cursor:"pointer",
+          }}>
+            <Icon size={20} />
+            <span style={{ fontFamily:SANS, fontSize:9, fontWeight:active?700:400 }}>{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div style={{ position:"fixed", left:0, top:0, bottom:0, width:200, background:C.card, borderRight:`1px solid ${C.line}`, display:"flex", flexDirection:"column", padding:"24px 12px", zIndex:10 }}>
       <div onClick={() => setTab("home")} style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:20, color:C.text, marginBottom:36, paddingLeft:8, cursor:"pointer" }}>
@@ -168,7 +198,8 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function AuthScreen({ onAuth }) {
   const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ email:"", password:"", nickname:"" });
+  const [form, setForm] = useState({ email: localStorage.getItem("savedEmail") || "", password:"", nickname:"" });
+  const [remember, setRemember] = useState(!!localStorage.getItem("savedEmail"));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -189,6 +220,8 @@ function AuthScreen({ onAuth }) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.detail || "오류가 발생했습니다"); return; }
+      if (remember) localStorage.setItem("savedEmail", form.email);
+      else localStorage.removeItem("savedEmail");
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("nickname", data.nickname);
       onAuth(data.nickname);
@@ -236,6 +269,14 @@ function AuthScreen({ onAuth }) {
         {mode === "signup" && input("닉네임", "nickname")}
         {input("이메일", "email", "email")}
         {input("비밀번호", "password", "password")}
+
+        {mode === "login" && (
+          <label style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, cursor:"pointer" }}>
+            <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+              style={{ width:15, height:15, accentColor:C.blue, cursor:"pointer" }}/>
+            <span style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>아이디 저장</span>
+          </label>
+        )}
 
         {error && (
           <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10 }}>{error}</div>
@@ -1139,6 +1180,7 @@ function StudyScreen() {
 export default function App() {
   const [tab, setTab] = useState("home");
   const [nickname, setNickname] = useState(() => localStorage.getItem("nickname"));
+  const isMobile = useIsMobile();
 
   const handleAuth = (nick) => setNickname(nick);
   const handleLogout = () => {
@@ -1154,7 +1196,7 @@ export default function App() {
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
       <Nav tab={tab} setTab={setTab} nickname={nickname} onLogout={handleLogout} />
-      <div style={{ marginLeft:200, flex:1, overflowY:"auto" }}>
+      <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto" }}>
         {tab === "home"  && <HomeScreen setTab={setTab} nickname={nickname} />}
         {tab === "code"  && <CodeScreen />}
         {tab === "cert"  && <CertScreen />}
