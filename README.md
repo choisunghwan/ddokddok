@@ -4,6 +4,16 @@
 
 ---
 
+## 배포 인프라
+
+| 역할 | 서비스 | URL |
+|------|--------|-----|
+| 프론트엔드 | Vercel (무료) | https://ddokddok-96y2rwmcr-ddokddok.vercel.app |
+| 백엔드 API | Render (무료) | https://ddokddok.onrender.com |
+| 데이터베이스 | Supabase PostgreSQL (무료) | ap-northeast-2 (서울) |
+
+---
+
 ## 주요 기능
 
 | 탭 | 기능 |
