@@ -164,7 +164,7 @@ function Nav({ tab, setTab, nickname, onLogout }) {
 }
 
 // ── 로그인 / 회원가입 ────────────────────────────
-const API = "http://localhost:8000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function AuthScreen({ onAuth }) {
   const [mode, setMode] = useState("login");
