@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings } from "lucide-react";
+import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, ResponsiveContainer } from "recharts";
 
 // ── 디자인 토큰 ──────────────────────────────────
@@ -421,7 +421,7 @@ function authHeader() {
   return { "Authorization": `Bearer ${localStorage.getItem("token")}` };
 }
 
-function HomeScreen({ setTab, nickname, onSettings }) {
+function HomeScreen({ setTab, nickname, onSettings, onLogout }) {
   const [stats, setStats] = useState(null);
   const isMobile = useIsMobile();
 
@@ -455,16 +455,29 @@ function HomeScreen({ setTab, nickname, onSettings }) {
     <div style={{ padding:"32px 32px 60px" }}>
       {isMobile && (
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-          <div style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:20, color:C.text }}>
-            <span style={{ color:C.blue }}>똑</span>똑
+          <div>
+            <div style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:18, color:C.text }}>
+              <span style={{ color:C.blue }}>똑</span>똑
+            </div>
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.text, fontWeight:700, marginTop:2 }}>
+              {nickname}님, {greet()}
+            </div>
           </div>
-          <button onClick={onSettings} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:6, display:"flex", alignItems:"center" }}>
-            <Settings size={20} />
-          </button>
+          <div style={{ display:"flex", gap:2 }}>
+            <button onClick={onSettings} title="설정" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:6, display:"flex", alignItems:"center" }}>
+              <Settings size={20} />
+            </button>
+            <button onClick={onLogout} title="로그아웃" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:6, display:"flex", alignItems:"center" }}>
+              <LogOut size={20} />
+            </button>
+          </div>
         </div>
       )}
-      <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 }}>{greet()}</div>
-      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>오늘도 30분만 투자해볼까요?</div>
+      {!isMobile && <>
+        <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 }}>{nickname}님, {greet()}</div>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>오늘도 30분만 투자해볼까요?</div>
+      </>}
+      {isMobile && <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>오늘도 30분만 투자해볼까요?</div>}
 
       {/* 스탯 */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:28 }}>
@@ -1260,13 +1273,64 @@ function ArchScreen() {
 
 // ── 스터디 그룹 ─────────────────────────────────
 function StudyScreen() {
+  const [groups, setGroups] = useState(STUDY_GROUPS);
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ name: "", topic: "" });
+  const [err, setErr] = useState("");
+
+  const createGroup = () => {
+    if (!form.name.trim()) { setErr("그룹 이름을 입력하세요"); return; }
+    setGroups(prev => [...prev, {
+      name: form.name.trim(),
+      members: 1,
+      today: [true],
+      topic: form.topic.trim() || "오늘의 주제를 정해보세요",
+      streak: 1,
+    }]);
+    setForm({ name: "", topic: "" });
+    setErr("");
+    setShowCreate(false);
+  };
+
+  const inp = (placeholder, key) => (
+    <input
+      placeholder={placeholder}
+      value={form[key]}
+      onChange={e => { setForm(f => ({ ...f, [key]: e.target.value })); setErr(""); }}
+      style={{
+        width:"100%", padding:"10px 14px", borderRadius:8, border:`1px solid ${C.line}`,
+        background:C.card2, color:C.text, fontFamily:SANS, fontSize:13, outline:"none",
+        boxSizing:"border-box", marginBottom:10,
+      }}
+    />
+  );
+
   return (
     <div style={{ padding:"32px 32px 60px" }}>
+      {showCreate && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center" }}
+          onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
+          <div style={{ width:340, background:C.card, borderRadius:16, padding:"28px 28px", border:`1px solid ${C.line}` }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ fontFamily:SANS, fontSize:16, fontWeight:800, color:C.text }}>새 스터디 그룹</div>
+              <button onClick={() => setShowCreate(false)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer" }}><X size={18}/></button>
+            </div>
+            {inp("그룹 이름 (예: AICE 합격 스터디)", "name")}
+            {inp("오늘의 주제 (선택)", "topic")}
+            {err && <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10 }}>{err}</div>}
+            <button onClick={createGroup} style={{
+              width:"100%", padding:"11px 0", borderRadius:8, border:"none",
+              background:C.blue, color:C.white, fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer",
+            }}>그룹 만들기</button>
+          </div>
+        </div>
+      )}
+
       <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>스터디 그룹</div>
       <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>팀원의 오늘 학습 여부를 확인하고 서로 자극받아요</div>
 
       <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-        {STUDY_GROUPS.map((g, gi) => (
+        {groups.map((g, gi) => (
           <div key={gi} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:20 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
               <div>
@@ -1277,7 +1341,7 @@ function StudyScreen() {
                 🔥 {g.streak}일 연속
               </div>
             </div>
-            <div style={{ display:"flex", gap:8 }}>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {g.today.map((done, i) => (
                 <div key={i} style={{
                   width:40, height:40, borderRadius:10,
@@ -1297,7 +1361,7 @@ function StudyScreen() {
           </div>
         ))}
 
-        <button style={{
+        <button onClick={() => setShowCreate(true)} style={{
           padding:"16px", borderRadius:14, border:`1.5px dashed ${C.line}`,
           background:"transparent", color:C.muted, fontFamily:SANS, fontSize:13, fontWeight:600, cursor:"pointer",
         }}>+ 새 스터디 그룹 만들기</button>
@@ -1329,7 +1393,7 @@ export default function App() {
       {showSettings && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
       <Nav tab={tab} setTab={setTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto" }}>
-        {tab === "home"  && <HomeScreen setTab={setTab} nickname={nickname} onSettings={() => setShowSettings(true)} />}
+        {tab === "home"  && <HomeScreen setTab={setTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} />}
         {tab === "code"  && <CodeScreen />}
         {tab === "cert"  && <CertScreen />}
         {tab === "arch"  && <ArchScreen />}
