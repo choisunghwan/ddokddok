@@ -1273,30 +1273,60 @@ function ArchScreen() {
 
 // ── 스터디 그룹 ─────────────────────────────────
 function StudyScreen() {
-  const [groups, setGroups] = useState(STUDY_GROUPS);
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: "", topic: "" });
-  const [err, setErr] = useState("");
+  const [formErr, setFormErr] = useState("");
+  const [creating, setCreating] = useState(false);
 
-  const createGroup = () => {
-    if (!form.name.trim()) { setErr("그룹 이름을 입력하세요"); return; }
-    setGroups(prev => [...prev, {
-      name: form.name.trim(),
-      members: 1,
-      today: [true],
-      topic: form.topic.trim() || "오늘의 주제를 정해보세요",
-      streak: 1,
-    }]);
-    setForm({ name: "", topic: "" });
-    setErr("");
-    setShowCreate(false);
+  const load = () => {
+    setLoading(true);
+    fetch(`${API}/api/study/groups`, { headers: authHeader() })
+      .then(r => r.json())
+      .then(data => { setGroups(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const createGroup = async () => {
+    if (!form.name.trim()) { setFormErr("그룹 이름을 입력하세요"); return; }
+    setCreating(true);
+    try {
+      const res = await fetch(`${API}/api/study/groups`, {
+        method: "POST", headers: { "Content-Type":"application/json", ...authHeader() },
+        body: JSON.stringify({ name: form.name, topic: form.topic }),
+      });
+      if (!res.ok) { const d = await res.json(); setFormErr(d.detail || "오류가 발생했습니다"); return; }
+      setForm({ name: "", topic: "" });
+      setFormErr("");
+      setShowCreate(false);
+      load();
+    } catch { setFormErr("서버에 연결할 수 없습니다"); }
+    finally { setCreating(false); }
+  };
+
+  const joinGroup = async (id) => {
+    await fetch(`${API}/api/study/groups/${id}/join`, { method:"POST", headers: authHeader() });
+    load();
+  };
+
+  const checkin = async (id) => {
+    await fetch(`${API}/api/study/groups/${id}/checkin`, { method:"POST", headers: authHeader() });
+    load();
+  };
+
+  const leaveGroup = async (id) => {
+    if (!window.confirm("그룹에서 탈퇴하시겠습니까?")) return;
+    await fetch(`${API}/api/study/groups/${id}/leave`, { method:"DELETE", headers: authHeader() });
+    load();
   };
 
   const inp = (placeholder, key) => (
     <input
-      placeholder={placeholder}
-      value={form[key]}
-      onChange={e => { setForm(f => ({ ...f, [key]: e.target.value })); setErr(""); }}
+      placeholder={placeholder} value={form[key]}
+      onChange={e => { setForm(f => ({ ...f, [key]: e.target.value })); setFormErr(""); }}
       style={{
         width:"100%", padding:"10px 14px", borderRadius:8, border:`1px solid ${C.line}`,
         background:C.card2, color:C.text, fontFamily:SANS, fontSize:13, outline:"none",
@@ -1317,11 +1347,11 @@ function StudyScreen() {
             </div>
             {inp("그룹 이름 (예: AICE 합격 스터디)", "name")}
             {inp("오늘의 주제 (선택)", "topic")}
-            {err && <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10 }}>{err}</div>}
-            <button onClick={createGroup} style={{
+            {formErr && <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10 }}>{formErr}</div>}
+            <button onClick={createGroup} disabled={creating} style={{
               width:"100%", padding:"11px 0", borderRadius:8, border:"none",
               background:C.blue, color:C.white, fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer",
-            }}>그룹 만들기</button>
+            }}>{creating ? "만드는 중…" : "그룹 만들기"}</button>
           </div>
         </div>
       )}
@@ -1329,43 +1359,86 @@ function StudyScreen() {
       <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>스터디 그룹</div>
       <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>팀원의 오늘 학습 여부를 확인하고 서로 자극받아요</div>
 
-      <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-        {groups.map((g, gi) => (
-          <div key={gi} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:20 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
-              <div>
-                <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text }}>{g.name}</div>
-                <div style={{ fontFamily:MONO, fontSize:11, color:C.muted, marginTop:3 }}>오늘의 주제: {g.topic}</div>
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:5, fontFamily:MONO, fontSize:12, color:C.yellow }}>
-                🔥 {g.streak}일 연속
-              </div>
+      {loading ? (
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, textAlign:"center", paddingTop:40 }}>불러오는 중…</div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {groups.length === 0 && (
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, textAlign:"center", padding:"40px 0" }}>
+              아직 스터디 그룹이 없어요. 먼저 만들어보세요!
             </div>
-            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-              {g.today.map((done, i) => (
-                <div key={i} style={{
-                  width:40, height:40, borderRadius:10,
-                  background: done ? C.green+"33" : C.card2,
-                  border: `1.5px solid ${done ? C.green : C.line}`,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontFamily:MONO, fontSize:11,
-                  color: done ? C.green : C.muted,
-                }}>
-                  {done ? "✓" : `M${i+1}`}
+          )}
+          {groups.map((g) => (
+            <div key={g.id} style={{ background:C.card, border:`1px solid ${g.is_member ? C.blue+"44" : C.line}`, borderRadius:14, padding:20 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+                <div style={{ flex:1, minWidth:0, marginRight:10 }}>
+                  <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text }}>{g.name}</div>
+                  {g.topic && <div style={{ fontFamily:MONO, fontSize:11, color:C.muted, marginTop:3 }}>📌 {g.topic}</div>}
                 </div>
-              ))}
-            </div>
-            <div style={{ marginTop:14, fontFamily:MONO, fontSize:10.5, color:C.muted }}>
-              {g.today.filter(Boolean).length}/{g.members}명 오늘 학습 완료
-            </div>
-          </div>
-        ))}
+                <div style={{ display:"flex", alignItems:"center", gap:5, fontFamily:MONO, fontSize:12, color:C.yellow, flexShrink:0 }}>
+                  🔥 {g.streak}일
+                </div>
+              </div>
 
-        <button onClick={() => setShowCreate(true)} style={{
-          padding:"16px", borderRadius:14, border:`1.5px dashed ${C.line}`,
-          background:"transparent", color:C.muted, fontFamily:SANS, fontSize:13, fontWeight:600, cursor:"pointer",
-        }}>+ 새 스터디 그룹 만들기</button>
-      </div>
+              {/* 멤버 체크인 현황 */}
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:12 }}>
+                {g.members.map((m, i) => (
+                  <div key={i} title={m.nickname} style={{
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+                  }}>
+                    <div style={{
+                      width:38, height:38, borderRadius:10,
+                      background: m.checked_in_today ? C.green+"33" : C.card2,
+                      border: `1.5px solid ${m.checked_in_today ? C.green : C.line}`,
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      fontFamily:MONO, fontSize:13, fontWeight:700,
+                      color: m.checked_in_today ? C.green : C.muted,
+                    }}>
+                      {m.checked_in_today ? "✓" : m.nickname[0]?.toUpperCase()}
+                    </div>
+                    <div style={{ fontFamily:SANS, fontSize:9, color:C.muted, maxWidth:38, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.nickname}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontFamily:MONO, fontSize:10.5, color:C.muted, marginBottom:14 }}>
+                {g.members.filter(m => m.checked_in_today).length}/{g.member_count}명 오늘 학습 완료
+              </div>
+
+              {/* 액션 버튼 */}
+              <div style={{ display:"flex", gap:8 }}>
+                {!g.is_member ? (
+                  <button onClick={() => joinGroup(g.id)} style={{
+                    flex:1, padding:"9px 0", borderRadius:8, border:"none",
+                    background:C.blue, color:C.white, fontFamily:SANS, fontSize:12, fontWeight:700, cursor:"pointer",
+                  }}>참가하기</button>
+                ) : (
+                  <>
+                    <button onClick={() => checkin(g.id)} disabled={g.checked_in_today} style={{
+                      flex:1, padding:"9px 0", borderRadius:8, border:"none",
+                      background: g.checked_in_today ? C.green+"44" : C.green,
+                      color: g.checked_in_today ? C.green : C.white,
+                      fontFamily:SANS, fontSize:12, fontWeight:700,
+                      cursor: g.checked_in_today ? "default" : "pointer",
+                    }}>
+                      {g.checked_in_today ? "✓ 오늘 완료" : "오늘 학습 완료"}
+                    </button>
+                    <button onClick={() => leaveGroup(g.id)} style={{
+                      padding:"9px 14px", borderRadius:8, border:`1px solid ${C.line}`,
+                      background:"transparent", color:C.muted, fontFamily:SANS, fontSize:12, cursor:"pointer",
+                    }}>탈퇴</button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+
+          <button onClick={() => setShowCreate(true)} style={{
+            padding:"16px", borderRadius:14, border:`1.5px dashed ${C.line}`,
+            background:"transparent", color:C.muted, fontFamily:SANS, fontSize:13, fontWeight:600, cursor:"pointer",
+          }}>+ 새 스터디 그룹 만들기</button>
+        </div>
+      )}
     </div>
   );
 }

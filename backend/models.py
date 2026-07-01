@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
 from database import Base
 
@@ -45,3 +45,35 @@ class CourseProgress(Base):
     course_id = Column(String(20), nullable=False)
     completed_lessons = Column(Integer, default=0)
     updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class StudyGroup(Base):
+    __tablename__ = "study_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    topic = Column(String(200), default="")
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class StudyMember(Base):
+    __tablename__ = "study_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("study_groups.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("group_id", "user_id"),)
+
+
+class StudyCheckin(Base):
+    __tablename__ = "study_checkins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("study_groups.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    date = Column(Date, nullable=False)
+
+    __table_args__ = (UniqueConstraint("group_id", "user_id", "date"),)

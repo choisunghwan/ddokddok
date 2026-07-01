@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from database import get_db
-from models import User, AiceSubmission, StudySession, CourseProgress
+from models import User, AiceSubmission, StudySession, CourseProgress, StudyMember, StudyCheckin
 from deps import get_current_user
 import os
 
@@ -106,6 +106,8 @@ def delete_account(
     db.query(AiceSubmission).filter(AiceSubmission.user_id == current_user.id).delete()
     db.query(StudySession).filter(StudySession.user_id == current_user.id).delete()
     db.query(CourseProgress).filter(CourseProgress.user_id == current_user.id).delete()
+    db.query(StudyMember).filter(StudyMember.user_id == current_user.id).delete()
+    db.query(StudyCheckin).filter(StudyCheckin.user_id == current_user.id).delete()
     db.delete(current_user)
     db.commit()
     return {"ok": True}
