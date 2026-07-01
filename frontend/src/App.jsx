@@ -973,10 +973,117 @@ function ArchViewer() {
   );
 }
 
+const INFRA_NODES = {
+  browser:  { label:"브라우저",  icon:"🌐", x:20,  y:80, w:100, h:58 },
+  vercel:   { label:"Vercel",    icon:"▲",  x:185, y:80, w:110, h:58, sub:"프론트엔드 CDN" },
+  render:   { label:"Render",    icon:"⚡", x:365, y:80, w:110, h:58, sub:"FastAPI 백엔드" },
+  supabase: { label:"Supabase",  icon:"🗄️", x:545, y:80, w:110, h:58, sub:"PostgreSQL DB" },
+};
+
+const INFRA_STEPS = [
+  { from:"browser",  to:"vercel",   label:"① HTML/JS 요청",     color:C.blue,
+    detail:"사용자가 ddokddok-phi.vercel.app 접속\nVercel CDN이 React 앱(index.html + JS 번들) 제공" },
+  { from:"vercel",   to:"browser",  label:"② React 앱 전달",     color:C.green,
+    detail:"브라우저가 React 앱 다운로드 후 실행\nApp.jsx 마운트 → 로그인 화면 렌더링" },
+  { from:"browser",  to:"render",   label:"③ 로그인 API 요청",   color:C.blue,
+    detail:"POST https://ddokddok.onrender.com/api/auth/login\n{ \"email\": \"...\", \"password\": \"...\" }" },
+  { from:"render",   to:"supabase", label:"④ DB 쿼리",            color:C.purple,
+    detail:"Render → Supabase Session Pooler (IPv4)\nSELECT * FROM users WHERE email = '...'\naws-1-ap-northeast-2.pooler.supabase.com:5432" },
+  { from:"supabase", to:"render",   label:"⑤ 쿼리 결과 반환",    color:C.purple,
+    detail:"User { id: 1, password_hash: '$2b$12$...' }\npasslib bcrypt로 비밀번호 검증 후 JWT 생성" },
+  { from:"render",   to:"browser",  label:"⑥ JWT 토큰 응답",     color:C.green,
+    detail:"{ \"access_token\": \"eyJhbGci...\", \"nickname\": \"홍길동\" }\nlocalStorage에 토큰 저장 → 대시보드 이동" },
+];
+
+function ncInfra(id) {
+  const n = INFRA_NODES[id];
+  return { x: n.x + n.w / 2, y: n.y + n.h / 2 };
+}
+
+function InfraViewer() {
+  const [step, setStep] = useState(0);
+  const [progress, setProgress] = useState(1);
+  const rafRef = useRef(null);
+
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    setProgress(0);
+    let start = null;
+    const tick = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / 700, 1);
+      setProgress(p);
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => rafRef.current && cancelAnimationFrame(rafRef.current);
+  }, [step]);
+
+  const cur = INFRA_STEPS[step];
+  const from = ncInfra(cur.from);
+  const to   = ncInfra(cur.to);
+  const px   = from.x + (to.x - from.x) * progress;
+  const py   = from.y + (to.y - from.y) * progress;
+
+  return (
+    <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:20 }}>
+      <svg width="100%" viewBox="0 0 710 200" style={{ display:"block" }}>
+        <line x1={120} y1={109} x2={185} y2={109} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
+        <line x1={295} y1={109} x2={365} y2={109} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
+        <line x1={475} y1={109} x2={545} y2={109} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>
+
+        {Object.entries(INFRA_NODES).map(([id, n]) => {
+          const active = cur.from === id || cur.to === id;
+          return (
+            <g key={id}>
+              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx={10}
+                fill={active ? cur.color+"22" : C.card2}
+                stroke={active ? cur.color : C.line} strokeWidth={active ? 2 : 1}/>
+              <text x={n.x+n.w/2} y={n.y+22} textAnchor="middle" fontSize={16}>{n.icon}</text>
+              <text x={n.x+n.w/2} y={n.y+40} textAnchor="middle" fontSize={10.5} fill={active ? cur.color : C.text} fontFamily={SANS} fontWeight={active?"700":"500"}>{n.label}</text>
+              {n.sub && <text x={n.x+n.w/2} y={n.y+54} textAnchor="middle" fontSize={9} fill={C.muted} fontFamily={SANS}>{n.sub}</text>}
+            </g>
+          );
+        })}
+
+        <circle cx={px} cy={py} r={14} fill={cur.color} opacity={0.15}/>
+        <circle cx={px} cy={py} r={7}  fill={cur.color}/>
+      </svg>
+
+      <div style={{ background:C.card2, borderRadius:10, padding:"12px 16px", marginTop:12 }}>
+        <div style={{ fontFamily:MONO, fontSize:11, color:cur.color, fontWeight:700, marginBottom:6 }}>{cur.label}</div>
+        <div style={{ fontFamily:MONO, fontSize:11, color:C.text, lineHeight:1.8, whiteSpace:"pre-wrap" }}>{cur.detail}</div>
+      </div>
+
+      <div style={{ display:"flex", gap:8, marginTop:14, alignItems:"center" }}>
+        <button onClick={() => setStep(s => Math.max(0,s-1))} disabled={step===0} style={{
+          padding:"8px 14px", borderRadius:8, border:`1px solid ${C.line}`,
+          background:"transparent", color:step===0?C.muted:C.text,
+          fontFamily:SANS, fontSize:12, cursor:step===0?"not-allowed":"pointer",
+        }}>← 이전</button>
+        <div style={{ flex:1, display:"flex", gap:4 }}>
+          {INFRA_STEPS.map((_,i) => (
+            <div key={i} onClick={() => setStep(i)} style={{
+              flex:1, height:3, borderRadius:2, cursor:"pointer",
+              background: i===step ? cur.color : i<step ? cur.color+"55" : C.line,
+            }}/>
+          ))}
+        </div>
+        <button onClick={() => setStep(s => Math.min(INFRA_STEPS.length-1,s+1))} disabled={step===INFRA_STEPS.length-1} style={{
+          padding:"8px 14px", borderRadius:8, border:"none",
+          background:step===INFRA_STEPS.length-1?C.line:C.blue, color:C.white,
+          fontFamily:SANS, fontSize:12, cursor:step===INFRA_STEPS.length-1?"not-allowed":"pointer",
+        }}>다음 →</button>
+      </div>
+    </div>
+  );
+}
+
 const ARCH_DIAGRAMS = [
-  { id:"jwt",  title:"JWT 인증 흐름",      desc:"로그인 → 토큰 발급 → API 호출 흐름",   icon:"🔐", available:true  },
-  { id:"react",title:"React 렌더링 원리",  desc:"상태 변화 → Virtual DOM → 실제 DOM", icon:"⚛️", available:false },
-  { id:"db",   title:"DB 쿼리 최적화",     desc:"인덱스 유무에 따른 조회 흐름 비교",    icon:"🗄️", available:false },
+  { id:"jwt",   title:"JWT 인증 흐름",      desc:"로그인 → 토큰 발급 → API 호출 흐름",          icon:"🔐", available:true  },
+  { id:"infra", title:"배포 인프라 구조",    desc:"Vercel → Render → Supabase 요청 흐름",        icon:"🚀", available:true  },
+  { id:"react", title:"React 렌더링 원리",  desc:"상태 변화 → Virtual DOM → 실제 DOM",          icon:"⚛️", available:false },
+  { id:"db",    title:"DB 쿼리 최적화",     desc:"인덱스 유무에 따른 조회 흐름 비교",            icon:"🗄️", available:false },
 ];
 
 function ArchScreen() {
@@ -988,6 +1095,15 @@ function ArchScreen() {
       <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>JWT 인증 흐름</div>
       <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:20 }}>단계별로 토큰이 어디로 이동하는지 확인하세요</div>
       <ArchViewer />
+    </div>
+  );
+
+  if (selected === "infra") return (
+    <div style={{ padding:"32px 32px 60px" }}>
+      <button onClick={() => setSelected(null)} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 아키텍처 목록</button>
+      <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>배포 인프라 구조</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:20 }}>브라우저부터 DB까지 요청이 어떻게 흐르는지 확인하세요</div>
+      <InfraViewer />
     </div>
   );
 
