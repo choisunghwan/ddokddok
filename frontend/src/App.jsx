@@ -421,8 +421,9 @@ function authHeader() {
   return { "Authorization": `Bearer ${localStorage.getItem("token")}` };
 }
 
-function HomeScreen({ setTab, nickname }) {
+function HomeScreen({ setTab, nickname, onSettings }) {
   const [stats, setStats] = useState(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetch(`${API}/api/dashboard/stats`, { headers: authHeader() })
@@ -452,6 +453,16 @@ function HomeScreen({ setTab, nickname }) {
 
   return (
     <div style={{ padding:"32px 32px 60px" }}>
+      {isMobile && (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+          <div style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:20, color:C.text }}>
+            <span style={{ color:C.blue }}>똑</span>똑
+          </div>
+          <button onClick={onSettings} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:6, display:"flex", alignItems:"center" }}>
+            <Settings size={20} />
+          </button>
+        </div>
+      )}
       <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 }}>{greet()}</div>
       <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>오늘도 30분만 투자해볼까요?</div>
 
@@ -511,22 +522,24 @@ function HomeScreen({ setTab, nickname }) {
 // ── 코딩 학습 ────────────────────────────────────
 function StepVisualizer({ lesson }) {
   const [step, setStep] = useState(0);
+  const isMobile = useIsMobile();
   const steps = lesson.steps || [];
   const cur = steps[step] || steps[0];
   const codeLines = lesson.code.split("\n");
   const total = steps.length - 1;
 
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+    <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:14 }}>
       {/* 코드 패널 */}
-      <div style={{ background:"#0D1117", borderRadius:10, padding:16, border:`1px solid ${C.line}` }}>
+      <div style={{ background:"#0D1117", borderRadius:10, padding:16, border:`1px solid ${C.line}`, overflowX:"auto" }}>
         <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginBottom:10 }}>코드</div>
         {codeLines.map((line, i) => (
           <div key={i} style={{
-            fontFamily:MONO, fontSize:12, lineHeight:"1.8", padding:"0 8px", borderRadius:4,
+            fontFamily:MONO, fontSize: isMobile ? 11 : 12, lineHeight:"1.8", padding:"0 8px", borderRadius:4,
             background: cur.line === i+1 ? C.blue+"33" : "transparent",
             color: cur.line === i+1 ? C.blue : C.text,
             borderLeft: cur.line === i+1 ? `2px solid ${C.blue}` : "2px solid transparent",
+            whiteSpace: "pre",
           }}>
             <span style={{ color:C.muted, marginRight:12, userSelect:"none" }}>{i+1}</span>{line}
           </div>
@@ -1316,7 +1329,7 @@ export default function App() {
       {showSettings && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
       <Nav tab={tab} setTab={setTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto" }}>
-        {tab === "home"  && <HomeScreen setTab={setTab} nickname={nickname} />}
+        {tab === "home"  && <HomeScreen setTab={setTab} nickname={nickname} onSettings={() => setShowSettings(true)} />}
         {tab === "code"  && <CodeScreen />}
         {tab === "cert"  && <CertScreen />}
         {tab === "arch"  && <ArchScreen />}
