@@ -1751,6 +1751,130 @@ function AiceExamListScreen({ onSelect, onBack }) {
 }
 
 // ── ADsP 기출 모의고사 ────────────────────────────
+// ── ADsP 회차별 기출 데이터 ────────────────────────
+const _Q = (no,sub,q,opts,ans,ex) => ({no,sub,q,opts,ans,ex});
+const ADSP_ROUNDS = {
+  44: [
+    _Q(1,1,"빅데이터 특성 3V에서 데이터의 생성·수집·처리 속도를 나타내는 것은?",["Volume","Velocity","Variety","Value"],1,"3V: Volume(규모), Velocity(속도), Variety(다양성). Velocity는 실시간 데이터 처리 속도를 의미합니다."),
+    _Q(2,1,"관계형 DBMS(RDBMS)에 대한 설명으로 옳지 않은 것은?",["테이블(행·열) 구조로 데이터 저장","SQL로 데이터 조회·조작 가능","ACID 트랜잭션 지원","NoSQL보다 수평 확장(Scale-out)이 용이"],3,"RDBMS는 수직 확장에 강하며 수평 확장(Scale-out)은 NoSQL이 훨씬 용이합니다."),
+    _Q(3,1,"개인정보 비식별화 기법 중 특정 항목의 값을 집계값(평균·합계)으로 대체하는 기법은?",["가명처리","총계처리","데이터 범주화","데이터 마스킹"],1,"총계처리는 개별 값을 평균·합계 등 집계값으로 대체하여 개인 식별을 방지합니다."),
+    _Q(4,1,"메타데이터(Metadata)에 대한 설명으로 옳은 것은?",["실제 비즈니스 거래 데이터","데이터에 대한 데이터로 데이터를 설명하는 정보","비정형 데이터의 한 유형","실시간으로 생성되는 스트리밍 데이터"],1,"메타데이터는 '데이터에 대한 데이터'로 데이터의 구조·형식·출처·생성일시 등을 설명합니다."),
+    _Q(5,1,"웹 페이지를 자동으로 탐색하여 데이터를 수집하는 기술은?",["데이터베이스 쿼리","크롤링(Crawling)","데이터 시각화","데이터 암호화"],1,"크롤링은 웹 페이지를 자동으로 탐색해 데이터를 수집합니다. 수집된 HTML을 파싱(Parsing)하여 필요한 정보를 추출합니다."),
+    _Q(6,2,"SAS Institute에서 개발한 데이터 중심의 분석 방법론은?",["CRISP-DM","KDD","SEMMA","빅데이터 분석 방법론"],2,"SEMMA(Sample·Explore·Modify·Model·Assess)는 SAS Institute에서 개발한 데이터 마이닝 방법론입니다."),
+    _Q(7,2,"분석 기획의 '문제 탐색' 단계에서 수행하는 주요 활동은?",["데이터 수집 및 정제","알고리즘 선택 및 모델 학습","비즈니스 현황 파악 및 분석 기회 발굴","모델 성능 평가 및 배포"],2,"문제 탐색 단계에서는 현황 분석, 이해관계자 인터뷰 등을 통해 비즈니스 분석 기회를 발굴합니다."),
+    _Q(8,2,"각 현업 부서 내에 분석 인력을 배치하는 분석 조직 구조는?",["집중형","분산형(기능 중심형)","CoE 중심형","매트릭스형"],1,"분산형은 각 현업 부서에 분석 인력이 배치되어 부서별 수요에 직접 대응합니다. 집중형은 별도 전담 조직 운영입니다."),
+    _Q(9,2,"분석 마스터 플랜 수립의 올바른 순서는?",["분석 과제 발굴→우선순위 결정→로드맵 수립→거버넌스 설계","거버넌스 설계→과제 발굴→우선순위 결정→로드맵 수립","우선순위 결정→과제 발굴→로드맵 수립→거버넌스 설계","로드맵 수립→과제 발굴→우선순위 결정→거버넌스 설계"],0,"마스터 플랜: 과제 발굴 → 우선순위 결정 → 로드맵 수립 → 거버넌스 체계 설계 순으로 진행합니다."),
+    _Q(10,2,"데이터 분석가의 역량 중 '소프트 스킬(Soft Skill)'에 해당하는 것은?",["통계 및 수학적 지식","프로그래밍 언어 능력","머신러닝 알고리즘 이해","커뮤니케이션 및 스토리텔링"],3,"커뮤니케이션·스토리텔링·비즈니스 이해력은 소프트 스킬입니다. 통계·프로그래밍·알고리즘은 하드 스킬(Hard Skill)입니다."),
+    _Q(11,3,"표준편차에 대한 설명으로 옳은 것은?",["분산의 제곱으로 계산","분산의 제곱근으로 원데이터와 같은 단위","데이터 중심 경향을 나타내는 지표","값이 클수록 데이터가 집중됨"],1,"표준편차 = √분산. 분산은 단위가 제곱이라 해석이 어렵지만, 표준편차는 원데이터와 동일 단위로 직관적 해석이 가능합니다."),
+    _Q(12,3,"단순 선형 회귀에서 결정계수(R²)가 1에 가까울수록 의미하는 것은?",["과소적합 상태","독립변수가 종속변수 변동을 잘 설명함","잔차(Residual)가 크다","독립변수 수가 많다"],1,"R²은 0~1 사이로 1에 가까울수록 독립변수가 종속변수 분산의 더 많은 부분을 설명합니다."),
+    _Q(13,3,"의사결정나무 C4.5 알고리즘의 분리 기준은?",["지니 지수(Gini Index)","정보이득비율(Gain Ratio)","카이제곱 통계량","F-통계량"],1,"C4.5는 ID3의 정보이득(Information Gain) 대신 정보이득비율(Gain Ratio)을 사용해 다중값 속성 편향을 보정합니다."),
+    _Q(14,3,"군집 간 거리로 두 군집에서 가장 가까운 두 점 사이 거리를 사용하는 방법은?",["완전연결법(Complete Linkage)","단일연결법(Single Linkage)","평균연결법(Average Linkage)","와드연결법(Ward's Method)"],1,"단일연결법(Single Linkage)은 두 군집에서 가장 가까운 점 사이의 거리를 군집 간 거리로 사용합니다."),
+    _Q(15,3,"분류 모델의 정밀도(Precision)를 구하는 공식은?",["TP / (TP + FP)","TP / (TP + FN)","TN / (TN + FP)","(TP + TN) / 전체"],0,"Precision = TP/(TP+FP): 양성으로 예측한 것 중 실제 양성 비율. Recall = TP/(TP+FN): 실제 양성 중 양성으로 예측한 비율."),
+    _Q(16,3,"연관규칙 향상도(Lift)가 1보다 클 때의 의미는?",["A와 B는 음의 연관관계","A와 B는 독립 관계","A와 B는 양의 연관관계(우연보다 더 자주 함께 발생)","A와 B는 완전 상관관계"],2,"Lift = P(A∩B)/(P(A)×P(B)). Lift>1: 양의 연관, Lift=1: 독립, Lift<1: 음의 연관입니다."),
+    _Q(17,3,"과적합(Overfitting)을 방지하는 방법이 아닌 것은?",["훈련 데이터 양 증가","L1/L2 정규화 적용","더 복잡한 모델(파라미터 증가) 사용","조기 종료(Early Stopping)"],2,"복잡한 모델(파라미터 증가)은 오히려 과적합을 심화시킵니다. 데이터 증가·정규화·드롭아웃·조기 종료가 방지책입니다."),
+    _Q(18,3,"로지스틱 회귀에서 사용하는 시그모이드(Sigmoid) 함수의 출력 범위는?",["(-∞, +∞)","(0, 1)","[-1, 1)","[0, +∞)"],1,"시그모이드 σ(x) = 1/(1+e^(-x))의 출력은 (0,1) 범위로 이진 분류의 확률 표현에 적합합니다."),
+    _Q(19,3,"시계열 분석에서 계절성(Seasonality)을 제거하는 일반적인 방법은?",["차분(Differencing)","로그 변환","계절 분해(Seasonal Decomposition)","Min-Max 정규화"],2,"계절성은 STL 등 계절 분해로 제거합니다. 추세 제거는 차분, 분산 불안정은 로그 변환으로 처리합니다."),
+    _Q(20,3,"텍스트 마이닝에서 TF-IDF 값이 높은 단어의 의미는?",["문서 전체에서 자주 등장하는 일반적 단어","해당 문서에서 중요하고 다른 문서에서는 드문 단어","문서 길이가 짧다","단어 감성이 긍정적"],1,"TF-IDF = TF(문서 내 빈도) × IDF(역문서 빈도). 해당 문서에서 자주 등장하지만 전체 문서에서 드문 단어일수록 높습니다."),
+  ],
+  45: [
+    _Q(1,1,"빅데이터의 가치(Value) 창출 방법으로 가장 거리가 먼 것은?",["재사용·재조합을 통한 서비스 개발","데이터 기반 비즈니스 모델 혁신","개인정보 무단 수집 및 판매","이종 데이터 결합으로 인사이트 발굴"],2,"개인정보 무단 수집·판매는 법적으로 금지되며 데이터 윤리에 반합니다."),
+    _Q(2,1,"하둡(Hadoop) 에코시스템 중 분산 파일 시스템은?",["MapReduce","HDFS","HBase","Hive"],1,"HDFS(Hadoop Distributed File System)는 대용량 데이터를 여러 노드에 분산 저장하는 파일 시스템입니다."),
+    _Q(3,1,"구조적(정형) 데이터로만 구성된 것은?",["이메일·블로그 포스트","관계형 DB 테이블·엑셀 파일","SNS 이미지·동영상","IoT 센서 로그·XML 파일"],1,"관계형 DB와 엑셀은 행·열 구조의 정형 데이터입니다. XML은 반정형, 이미지·동영상은 비정형입니다."),
+    _Q(4,1,"정보주체가 개인정보에 대해 갖는 권리가 아닌 것은?",["개인정보 열람 요구권","개인정보 정정·삭제 요구권","처리 정지 요구권","타인 개인정보 무제한 열람권"],3,"정보주체는 자신의 개인정보에 대해 열람·정정·삭제·처리정지·손해배상 청구권을 가집니다."),
+    _Q(5,1,"데이터 거버넌스의 주요 목적으로 옳은 것은?",["분석 속도 극대화","데이터 품질·보안·일관성 확보 및 체계적 관리","데이터베이스 성능 튜닝","분석 결과 자동 배포"],1,"데이터 거버넌스는 데이터의 품질, 보안, 프라이버시, 일관성을 체계적으로 관리하는 프레임워크입니다."),
+    _Q(6,2,"분석 방법론의 '모델링' 단계에서 수행하는 활동은?",["비즈니스 목표 이해","데이터 수집 및 탐색","알고리즘 선택 및 모델 학습·튜닝","분석 결과 현업 배포"],2,"모델링 단계에서는 적합한 알고리즘 선택, 모델 학습, 하이퍼파라미터 튜닝을 수행합니다."),
+    _Q(7,2,"데이터 확보 가능성 측면에서 고려할 사항으로 적절하지 않은 것은?",["내부 데이터 보유 현황 파악","외부 데이터 구매·수집 가능 여부","개인정보 처리 적법성 검토","분석 담당자의 학력 수준"],3,"데이터 확보 가능성: 내부 현황, 외부 수집 가능성, 법적 허용 범위를 고려해야 합니다. 담당자 학력은 무관합니다."),
+    _Q(8,2,"데이터 분석 성과 측정에서 재무적 관점의 성과 지표는?",["모델 정확도","분석 프로세스 수행 시간","분석 투자 대비 수익(ROI)","데이터 품질 수준"],2,"ROI(투자수익률)는 분석 투자 비용 대비 실현된 비즈니스 가치를 측정하는 재무적 성과 지표입니다."),
+    _Q(9,2,"비즈니스 문제가 명확히 정의된 경우 적합한 분석 접근법은?",["상향식(Bottom-up) 접근법","하향식(Top-down) 접근법","탐색적 데이터 분석","데이터 드리블링"],1,"하향식(Top-down)은 비즈니스 목표가 명확한 '문제 해결형'에 적합합니다. 상향식은 데이터에서 인사이트를 발굴합니다."),
+    _Q(10,2,"분석 조직 CoE(Center of Excellence)의 특징으로 옳은 것은?",["각 부서별로 독립 분석팀 운영","전사 분석 전략·방법론·표준을 제공하는 핵심 조직","IT 인프라만 관리","경영진이 직접 분석 수행"],1,"CoE는 전사 분석 방향성, 방법론, 베스트 프랙티스, 표준을 정립하고 현업을 지원하는 중심 조직입니다."),
+    _Q(11,3,"이상치(Outlier) 탐지에 사용하지 않는 방법은?",["Z-점수(Z-score) 방법","IQR 기반 방법","박스플롯(Box Plot)","오버샘플링(Oversampling)"],3,"오버샘플링은 불균형 데이터 처리 기법입니다. 이상치 탐지는 Z-score, IQR, 박스플롯, DBSCAN 등을 사용합니다."),
+    _Q(12,3,"나이브 베이즈(Naive Bayes) 분류기의 핵심 가정은?",["모든 특성(변수)이 서로 독립","특성 간 강한 상관관계 존재","데이터가 정규분포를 따름","이진 분류에만 적용 가능"],0,"나이브 베이즈는 주어진 클래스에서 모든 특성이 서로 독립이라는 '나이브한' 가정 하에 베이즈 정리를 적용합니다."),
+    _Q(13,3,"CNN(Convolutional Neural Network)의 주요 활용 분야는?",["시계열 예측","자연어 처리(NLP)","이미지 인식·분류","군집분석"],2,"CNN은 합성곱 레이어로 이미지의 공간적 특징을 추출하여 이미지 인식·분류·객체 탐지에 특화됩니다."),
+    _Q(14,3,"배깅(Bagging)에서 각 모델의 훈련 데이터를 만드는 방식은?",["전체 데이터를 k등분 후 순서대로 사용","중복 허용 부트스트랩(Bootstrap) 샘플링","데이터를 무작위 정렬","전체 데이터를 동일하게 사용"],1,"배깅은 원본 데이터에서 복원 추출(Bootstrap)로 샘플을 만들어 각 모델을 독립적으로 학습합니다."),
+    _Q(15,3,"선형 회귀 잔차 분석에서 등분산성 가정을 위반하면 발생하는 문제는?",["다중공선성","이분산성(Heteroscedasticity)","자기상관","잔차 정규성 위반"],1,"이분산성은 잔차의 분산이 일정하지 않은 경우로 OLS 추정량의 효율성을 저하시킵니다. WLS 또는 변환으로 해결합니다."),
+    _Q(16,3,"로지스틱 회귀의 오즈비(Odds Ratio)에 대한 설명으로 옳은 것은?",["사건 발생 확률과 미발생 확률의 비율","사건 발생 확률의 절댓값","두 집단의 평균 차이","회귀계수의 표준오차"],0,"오즈(Odds) = P/(1-P), 오즈비(Odds Ratio)는 두 집단의 오즈 비율로 위험 요인의 효과 크기를 나타냅니다."),
+    _Q(17,3,"DBSCAN 군집 알고리즘의 특징으로 옳은 것은?",["군집 수(k)를 사전 지정","원형 군집만 탐지 가능","이상치를 노이즈로 자동 분류 가능","계층적 군집화 방법"],2,"DBSCAN은 밀도 기반 알고리즘으로 군집 수 지정 불필요, 다양한 형태 군집 탐지, 이상치 자동 분류가 특징입니다."),
+    _Q(18,3,"예측값과 실제값 차이의 절댓값 평균인 회귀 평가 지표는?",["MSE(Mean Squared Error)","MAE(Mean Absolute Error)","RMSE","MAPE"],1,"MAE = (1/n)Σ|y_i - ŷ_i|. 이상치 영향이 MSE보다 적고 원데이터와 같은 단위로 해석이 용이합니다."),
+    _Q(19,3,"자연어 처리에서 형태소 분석의 목적은?",["문장의 감정 분석","단어를 의미 있는 최소 단위(형태소)로 분해","문서 간 유사도 계산","개체명(인명·지명) 인식"],1,"형태소 분석은 '나는 학교에 간다' → '나/는/학교/에/가/ㄴ다'처럼 최소 의미 단위로 분해합니다."),
+    _Q(20,3,"L2 정규화(Ridge)의 특징으로 옳은 것은?",["일부 계수를 정확히 0으로 만들어 변수 선택","모든 계수를 0 방향으로 줄이되 0이 되지는 않음","계수 제약이 없음","트리 모델에서만 사용 가능"],1,"L2(Ridge)는 계수 제곱합을 패널티로 부여해 0 방향으로 축소하지만 0이 되지는 않습니다. L1(Lasso)은 변수 선택 효과가 있습니다."),
+  ],
+  46: [
+    _Q(1,1,"빅데이터 플랫폼의 구성 요소가 아닌 것은?",["데이터 수집 레이어","데이터 저장 레이어","데이터 처리·분석 레이어","데이터 자동 삭제 레이어"],3,"빅데이터 플랫폼은 수집→저장→처리·분석→서비스(시각화·배포) 레이어로 구성됩니다."),
+    _Q(2,1,"Redis, Memcached 등이 대표적인 NoSQL 유형은?",["문서형(Document)","칼럼형(Column-family)","키-값형(Key-Value)","그래프형(Graph)"],2,"키-값(Key-Value) 방식은 단순하고 빠른 조회에 특화됩니다. Redis·Memcached가 대표적이며 캐싱, 세션 관리에 활용됩니다."),
+    _Q(3,1,"데이터 품질 관리 지표가 아닌 것은?",["완전성(Completeness)","정확성(Accuracy)","일관성(Consistency)","복잡성(Complexity)"],3,"데이터 품질 지표: 완전성·정확성·일관성·유효성·유일성·적시성. 복잡성은 품질 관리 지표가 아닙니다."),
+    _Q(4,1,"수집되었지만 분석·활용되지 않는 방치된 데이터를 무엇이라 하는가?",["다크 데이터(Dark Data)","스몰 데이터","클린 데이터","마스터 데이터"],0,"다크 데이터는 수집·저장은 되었으나 분석에 활용되지 않는 데이터입니다. 조직 데이터의 80% 이상이 다크 데이터라는 연구도 있습니다."),
+    _Q(5,1,"두 변수 간 관계를 점으로 표현하는 시각화 그래프는?",["히스토그램","파이차트","산점도(Scatter Plot)","막대차트"],2,"산점도는 두 연속형 변수의 관계(상관·분포)를 x-y 좌표에 점으로 표현합니다."),
+    _Q(6,2,"분석 가설 설정 시 고려 사항으로 옳지 않은 것은?",["검증 가능해야 한다","구체적이어야 한다","기존 이론과 모순되면 무조건 기각","측정 가능한 변수로 구성"],2,"기존 이론과 모순되는 가설도 데이터로 검증하면 새로운 발견이 될 수 있습니다. 가설은 검증 가능·구체적·측정 가능해야 합니다."),
+    _Q(7,2,"ROI 산정 시 무형의 효과(Intangible Benefits)에 해당하는 것은?",["비용 절감액","매출 증가액","브랜드 이미지 향상","인건비 감소액"],2,"브랜드 이미지, 고객 만족도, 직원 사기는 측정이 어려운 무형 효과입니다. 비용 절감·매출 증가는 정량적 유형 효과입니다."),
+    _Q(8,2,"데이터 표준화가 포함되는 거버넌스 영역은?",["분석 인력 관리","데이터 관리 체계","분석 프로세스 관리","인프라 관리"],1,"데이터 표준화(용어·형식·코드 표준)는 데이터 관리 체계 영역에 포함되며 데이터 일관성 확보에 필수입니다."),
+    _Q(9,2,"분석 과제 정의서에 포함되지 않아도 되는 내용은?",["분석 목적 및 목표","데이터 소스 및 가용 데이터","분석 방법론 및 도구","분석가의 개인 취미 및 경력"],3,"분석 과제 정의서: 목적·목표, 데이터 소스, 방법, 기대 효과, 일정·비용, 담당자. 개인 취미는 포함되지 않습니다."),
+    _Q(10,2,"애자일(Agile) 분석 방법론의 특징으로 옳은 것은?",["사전에 모든 요구사항을 완벽히 정의","단계별 순차 진행으로 변경 불가","반복적 개선과 빠른 피드백 반영","대규모 팀에서만 효과적"],2,"애자일은 짧은 스프린트(Sprint) 주기로 반복 개선하고 빠른 피드백을 반영하며 변화에 유연하게 대응합니다."),
+    _Q(11,3,"판별분석(Discriminant Analysis)의 목적으로 옳은 것은?",["연속형 종속변수 예측","그룹을 가장 잘 구분하는 선형 함수 도출","변수 간 상관관계 탐색","군집 수 결정"],1,"판별분석은 두 개 이상의 집단을 가장 잘 분류하는 판별 함수(선형 결합)를 구하는 지도 학습 기법입니다."),
+    _Q(12,3,"AUC(Area Under the Curve) 값이 0.5일 때의 의미는?",["완벽한 분류 성능","무작위 분류와 동일한 성능","최악의 분류 성능","과적합 상태"],1,"AUC=1: 완벽, AUC=0.5: 무작위 분류(동전 던지기)와 동등, AUC<0.5: 무작위보다 나쁜 분류입니다."),
+    _Q(13,3,"RNN(Recurrent Neural Network)의 특징으로 옳은 것은?",["이미지 데이터에 특화","순서 있는 시계열·텍스트 데이터에 적합","피드백 연결이 없는 순방향 신경망","군집 분석에 주로 사용"],1,"RNN은 이전 단계의 출력을 다음 단계의 입력으로 사용하는 순환 구조로 시계열·자연어에 적합합니다."),
+    _Q(14,3,"의사결정나무에서 가지치기(Pruning)를 수행하는 이유는?",["학습 속도 향상","훈련 정확도를 무조건 높이기 위해","과적합 방지 및 일반화 성능 향상","훈련 데이터 수 증가"],2,"가지치기는 트리의 불필요한 가지를 제거하여 과적합을 방지하고 새 데이터에 대한 일반화 성능을 높입니다."),
+    _Q(15,3,"비모수적 통계 검정에 해당하는 것은?",["독립표본 t-검정","대응표본 t-검정","일원분산분석(ANOVA)","맨-휘트니 U 검정"],3,"맨-휘트니 U 검정은 정규분포 가정이 불필요한 비모수 검정으로 두 독립 집단의 중앙값을 비교합니다."),
+    _Q(16,3,"다중 선형 회귀에서 VIF 값이 10 이상이면?",["정규성 위반","심각한 다중공선성 가능성","등분산성 위반","자기상관 문제"],1,"VIF는 다중공선성 진단 지표. 일반적으로 VIF>10이면 심각한 다중공선성으로 간주합니다."),
+    _Q(17,3,"텍스트에서 긍정·부정·중립 감정을 자동 분류하는 기법은?",["시계열 추세 분석","이미지 객체 탐지","감성 분석(Sentiment Analysis)","군집분석"],2,"감성 분석은 리뷰·SNS 텍스트 등에서 작성자의 감정(긍정/부정/중립)을 자동으로 분류하는 NLP 기법입니다."),
+    _Q(18,3,"분류 문제의 손실 함수로 사용되는 교차 엔트로피(Cross-Entropy)에 대한 설명으로 옳은 것은?",["회귀 문제에 주로 사용","예측 확률 분포와 실제 분포의 차이를 측정","군집 수를 결정하는 기준","이상치 탐지에 특화"],1,"크로스 엔트로피는 분류 문제에서 예측 확률 분포와 실제 분포의 차이를 측정하는 손실 함수입니다."),
+    _Q(19,3,"scikit-learn에서 모델을 학습시키는 메서드는?",["predict()","fit()","transform()","evaluate()"],1,"scikit-learn에서 fit()은 모델 학습, predict()는 예측, transform()은 데이터 변환, score()는 성능 평가입니다."),
+    _Q(20,3,"빅데이터 배치 이동 도구로 HDFS와 관계형 DB 간 데이터를 전송하는 것은?",["Apache Kafka","Apache Flink","Apache Spark Streaming","Apache Sqoop"],3,"Apache Sqoop은 HDFS와 RDBMS 간 데이터를 배치로 이동합니다. Kafka·Flink·Spark Streaming은 실시간 스트리밍 처리 프레임워크입니다."),
+  ],
+  47: [
+    _Q(1,1,"정형·반정형·비정형 데이터를 원본 형태로 저장하는 저장소는?",["데이터 마트(Data Mart)","데이터 레이크(Data Lake)","데이터 웨어하우스(DW)","운영 DB(OLTP)"],1,"데이터 레이크는 원본 형태 그대로 다양한 유형의 데이터를 저장합니다. ELT 방식을 사용하며 분석 유연성이 높습니다."),
+    _Q(2,1,"IoT 데이터의 특성으로 가장 거리가 먼 것은?",["대용량 연속 생성","실시간성","고정된 정형 데이터 구조","다양한 기기에서 이기종 데이터 발생"],2,"IoT 데이터는 다양한 센서에서 비정형·반정형 형태로 발생합니다. 고정된 정형 데이터라기보다 이기종·연속적 특성이 있습니다."),
+    _Q(3,1,"전사 아키텍처에서 데이터 아키텍처의 역할로 옳은 것은?",["네트워크 인프라 설계","조직 전체의 데이터 자산을 체계적으로 관리·설계","애플리케이션 개발 방법론 정의","보안 정책 수립"],1,"데이터 아키텍처는 데이터 모델·흐름·저장·관리 체계를 설계하여 전사적 데이터 자산을 체계화합니다."),
+    _Q(4,1,"개인정보 비식별 조치 후 재식별 위험을 점검하는 기준이 아닌 것은?",["K-익명성 충족 여부","L-다양성 충족 여부","T-근접성 충족 여부","데이터 암호화 후 원문 삭제"],3,"재식별 위험 점검: K-익명성, L-다양성, T-근접성 기준으로 평가합니다. 암호화 후 원문 삭제는 비식별화가 아닌 삭제 처리입니다."),
+    _Q(5,1,"데이터 3계층 구조에서 운영 시스템과 데이터 웨어하우스 사이에 위치하는 계층은?",["데이터 마트","데이터 레이크","ODS(Operational Data Store)","데이터 카탈로그"],2,"계층: 운영 시스템(OLTP) → ODS(원본 정제·통합) → 데이터 웨어하우스 → 데이터 마트 순입니다."),
+    _Q(6,2,"반복 점진적(Iterative & Incremental) 개발 방법의 특징으로 옳은 것은?",["요구사항을 완전히 정의 후 순차 진행","잦은 피드백을 반영하며 점진적으로 개선","변경 비용이 항상 최소화됨","대규모 폭포수 모델과 동일"],1,"반복 점진적 방법은 짧은 사이클로 기능을 개발·검증하고 피드백을 반영해 점진적으로 완성합니다. Scrum·Agile이 대표적입니다."),
+    _Q(7,2,"분석 과제 우선순위 매트릭스에서 'Quick Win' 영역의 특징은?",["비즈니스 가치 낮고 실행 어려움","비즈니스 가치 높고 실행 어려움","비즈니스 가치 높고 실행 쉬움","비즈니스 가치 낮고 실행 쉬움"],2,"Quick Win은 비즈니스 가치(전략적 중요도)와 실행 용이성이 모두 높은 영역으로 우선 추진합니다."),
+    _Q(8,2,"외부 데이터 획득 방법이 아닌 것은?",["공공 데이터 포털 활용","오픈 API를 통한 데이터 수집","내부 ERP 시스템에서 데이터 추출","웹 크롤링으로 데이터 수집"],2,"ERP·CRM·POS 등 사내 시스템은 내부 데이터 소스입니다. 공공 포털·API·크롤링은 외부 데이터 수집 방법입니다."),
+    _Q(9,2,"모델 배포(Deployment) 단계에서 가장 중요한 고려 사항은?",["모델 학습 알고리즘 선택","데이터 수집 방법론","운영 환경 성능 모니터링 및 재학습 주기","탐색적 데이터 분석 방법"],2,"배포 단계에서는 실제 운영에서 모델 성능 저하(Model Drift) 여부 모니터링과 주기적 재학습(Retraining) 계획이 필요합니다."),
+    _Q(10,2,"데이터 품질 관리·메타데이터 관리·데이터 표준 준수를 담당하는 역할은?",["데이터 사이언티스트","비즈니스 애널리스트","데이터 스튜어드(Data Steward)","IT 아키텍트"],2,"데이터 스튜어드는 데이터 품질, 메타데이터, 표준, 정의 등 데이터 거버넌스 실무를 담당합니다."),
+    _Q(11,3,"분산(Variance)-편향(Bias) 트레이드오프에서 복잡한 모델의 특성은?",["분산 낮고 편향 낮다","분산 낮고 편향 높다","분산 높고 편향 낮다","분산 높고 편향 높다"],2,"복잡 모델: 높은 분산(Overfitting) + 낮은 편향. 단순 모델: 낮은 분산 + 높은 편향(Underfitting)입니다."),
+    _Q(12,3,"병렬 처리와 L1/L2 정규화를 지원하는 그래디언트 부스팅 알고리즘은?",["AdaBoost","XGBoost","GBM(Gradient Boosting Machine)","LightGBM"],1,"XGBoost는 그래디언트 부스팅에 병렬 처리, L1/L2 정규화, 결측값 처리, 조기 종료 등을 추가한 고성능 알고리즘입니다."),
+    _Q(13,3,"소수 클래스의 데이터를 합성하여 불균형을 해소하는 기법은?",["언더샘플링(Undersampling)","SMOTE","클래스 가중치 조정","임계값(Threshold) 조정"],1,"SMOTE(Synthetic Minority Oversampling Technique)는 소수 클래스 기존 샘플을 기반으로 합성 샘플을 생성하는 오버샘플링 기법입니다."),
+    _Q(14,3,"단어를 의미적 유사성이 반영된 고차원 벡터로 표현하는 기법은?",["이미지 임베딩","Word2Vec","감성 분석","TF-IDF"],1,"Word2Vec은 단어를 밀집 벡터(Dense Vector)로 표현하여 의미적으로 유사한 단어가 벡터 공간에서 가까이 위치하도록 학습합니다."),
+    _Q(15,3,"F1-Score를 구하는 공식으로 옳은 것은?",["(TP+TN)/(TP+FP+FN+TN)","2×(Precision×Recall)/(Precision+Recall)","TP/(TP+FN)","TP/(TP+FP)"],1,"F1 = 2PR/(P+R). 정밀도(Precision)와 재현율(Recall)의 조화 평균으로 불균형 데이터에서 유용합니다."),
+    _Q(16,3,"PCA에서 주성분 수를 선택하는 일반적인 기준은?",["고유값이 1 이하인 성분 선택","설명 분산 누적 비율이 70~90%가 되는 수","주성분 수=원래 변수 수","고유벡터 부호가 양수인 성분만"],1,"PCA 주성분 수: 설명 분산 누적 비율(80~90%), 스크리 도표(Scree Plot) 꺾임점, 고유값>1 기준을 활용합니다."),
+    _Q(17,3,"출력층에서 회귀 문제에 사용하는 활성화 함수는?",["ReLU","Sigmoid","Softmax","선형(Identity) 함수"],3,"선형(Identity) f(x)=x는 회귀 출력층에 사용됩니다. Sigmoid는 이진 분류, Softmax는 다중 분류, ReLU는 은닉층에 사용됩니다."),
+    _Q(18,3,"군집 내 응집도와 군집 간 분리도를 동시에 측정하는 군집 타당성 지표는?",["엘보우 방법(Elbow Method)","실루엣 계수(Silhouette Coefficient)","덴드로그램(Dendrogram)","갭 통계량(Gap Statistic)"],1,"실루엣 계수 = (b-a)/max(a,b). a=군집 내 평균 거리, b=가장 가까운 다른 군집 평균 거리. -1~1 사이로 1에 가까울수록 좋습니다."),
+    _Q(19,3,"이항분포 B(n, p)의 평균(기댓값)은?",["p","np","np(1-p)","√(np(1-p))"],1,"이항분포 B(n, p)의 평균 = np, 분산 = np(1-p), 표준편차 = √(np(1-p))입니다."),
+    _Q(20,3,"모델 설명 가능성(Explainability)이 가장 높은 알고리즘은?",["Random Forest","Deep Neural Network","로지스틱 회귀(Logistic Regression)","Gradient Boosting"],2,"로지스틱 회귀는 계수(coefficient)의 의미를 직접 해석할 수 있어 설명 가능성이 높습니다. 앙상블·딥러닝은 블랙박스 모델입니다."),
+  ],
+  48: [
+    _Q(1,1,"학습 데이터의 패턴을 학습해 새로운 텍스트·이미지 등을 생성하는 AI는?",["판별형 AI","생성형 AI(Generative AI)","규칙 기반 AI","강화 학습 AI"],1,"생성형 AI는 GPT·Stable Diffusion처럼 학습 데이터 패턴으로 새로운 콘텐츠를 생성합니다."),
+    _Q(2,1,"GPT, BERT 등 대규모 언어 모델(LLM)의 기반이 되는 딥러닝 구조는?",["CNN(합성곱 신경망)","RNN(순환 신경망)","트랜스포머(Transformer)","GAN(생성적 적대 신경망)"],2,"트랜스포머는 셀프 어텐션 메커니즘 기반으로 GPT·BERT·T5 등 LLM의 기반 구조입니다."),
+    _Q(3,1,"데이터를 읽고 해석하며 비판적으로 분석하고 활용하는 능력은?",["데이터 엔지니어링","데이터 리터러시(Data Literacy)","데이터 스튜어드십","데이터 아키텍처"],1,"데이터 리터러시는 데이터를 올바르게 읽고·해석하고·활용하고·비판적으로 평가하는 현대 사회의 핵심 역량입니다."),
+    _Q(4,1,"분석 플랫폼·미들웨어를 서비스로 제공하는 클라우드 모델은?",["IaaS(Infrastructure as a Service)","PaaS(Platform as a Service)","SaaS(Software as a Service)","DaaS(Data as a Service)"],1,"PaaS는 운영체제·미들웨어·개발 플랫폼을 서비스로 제공합니다. IaaS는 인프라, SaaS는 완성된 소프트웨어를 제공합니다."),
+    _Q(5,1,"원본 데이터를 중앙으로 보내지 않고 각 기기에서 로컬 학습 후 모델 파라미터만 공유하는 기법은?",["전이 학습(Transfer Learning)","연합 학습(Federated Learning)","능동 학습(Active Learning)","메타 학습(Meta Learning)"],1,"연합 학습은 디바이스에서 로컬 학습 후 파라미터(모델 업데이트)만 공유하여 개인정보를 보호합니다."),
+    _Q(6,2,"데이터 메시(Data Mesh)의 핵심 원칙이 아닌 것은?",["도메인 중심 데이터 소유권","셀프서비스 데이터 플랫폼","중앙화된 단일 데이터 팀","데이터 제품(Data Product) 개념"],2,"데이터 메시는 탈중앙화, 셀프서비스, 연합 거버넌스가 핵심입니다. 중앙화된 단일 팀은 데이터 메시의 반대 개념입니다."),
+    _Q(7,2,"전체 투자 전에 아이디어의 실현 가능성을 소규모로 검증하는 단계는?",["완성 제품 출시","PoC(Proof of Concept)","데이터 수집 비용 절감","알고리즘 최종 확정"],1,"PoC는 소규모로 기술적·비즈니스적 실현 가능성을 빠르게 검증하여 위험을 줄이고 의사결정을 지원합니다."),
+    _Q(8,2,"MLOps의 주요 구성 요소가 아닌 것은?",["모델 버전 관리","자동화된 ML 파이프라인(CI/CD)","모델 성능 모니터링","데이터 수집 하드웨어 제작"],3,"MLOps: 데이터/모델 버전 관리, CI/CD 파이프라인, 모델 모니터링·재학습·배포 자동화가 핵심입니다."),
+    _Q(9,2,"조직 내 데이터 자산을 목록화하고 메타데이터를 관리하여 검색·발견을 지원하는 도구는?",["데이터 파이프라인","데이터 카탈로그(Data Catalog)","데이터 레이크하우스","ETL 도구"],1,"데이터 카탈로그는 데이터 자산을 목록화하고 메타데이터를 관리하여 사용자가 필요한 데이터를 빠르게 찾을 수 있도록 합니다."),
+    _Q(10,2,"기존 서버의 CPU·메모리 등 하드웨어 사양을 업그레이드하는 확장 방식은?",["수평 확장(Scale-Out)","수직 확장(Scale-Up)","분산 확장","클라우드 확장"],1,"수직 확장(Scale-Up)은 단일 서버의 사양을 강화합니다. 수평 확장(Scale-Out)은 서버 대수를 추가합니다."),
+    _Q(11,3,"이상 탐지(Anomaly Detection)에 사용되지 않는 알고리즘은?",["Isolation Forest","One-Class SVM","Autoencoder","LDA(Linear Discriminant Analysis)"],3,"LDA는 지도 학습 기반 판별분석입니다. Isolation Forest, One-Class SVM, Autoencoder, LOF 등이 이상 탐지에 활용됩니다."),
+    _Q(12,3,"트랜스포머의 어텐션 메커니즘의 주요 역할은?",["이미지 공간적 특징 추출","입력 시퀀스에서 중요한 부분에 가중치를 부여","데이터 차원 축소","군집 간 거리 계산"],1,"어텐션은 입력 시퀀스 내 각 위치 간 관계를 계산하여 현재 출력에 가장 관련 있는 입력에 높은 가중치를 부여합니다."),
+    _Q(13,3,"소량의 레이블 데이터와 대량의 비레이블 데이터를 함께 사용하는 학습 방법은?",["지도 학습","비지도 학습","준지도 학습(Semi-supervised Learning)","강화 학습"],2,"준지도 학습은 레이블 확보 비용을 줄이면서 비레이블 데이터의 구조적 정보를 활용하여 성능을 향상시킵니다."),
+    _Q(14,3,"각 배치의 출력을 정규화하여 학습을 안정화하는 딥러닝 기법은?",["드롭아웃(Dropout)","배치 정규화(Batch Normalization)","L2 정규화","조기 종료(Early Stopping)"],1,"배치 정규화는 각 배치의 출력을 정규화하여 내부 공변량 이동(Internal Covariate Shift)을 줄이고 학습 속도를 향상시킵니다."),
+    _Q(15,3,"고차원 데이터를 2~3차원으로 시각화하는 차원 축소 기법은?",["PCA","t-SNE","LDA","UMAP"],1,"t-SNE는 고차원 데이터의 유사성을 보존하면서 2D·3D로 투영해 시각화하는 데 사용됩니다. (UMAP도 유사 목적)"),
+    _Q(16,3,"강화 학습(Reinforcement Learning)의 구성 요소가 아닌 것은?",["에이전트(Agent)","환경(Environment)","보상(Reward)","레이블(Label)"],3,"강화 학습: 에이전트·환경·상태·행동·보상·정책으로 구성됩니다. 레이블은 지도 학습의 개념입니다."),
+    _Q(17,3,"암 진단·금융 사기 탐지처럼 FN(실제 양성을 음성으로 분류) 비용이 높을 때 중요한 지표는?",["정밀도(Precision)","재현율(Recall)","특이도(Specificity)","정확도(Accuracy)"],1,"FN이 치명적인 경우(암 미진단, 사기 미탐지) 재현율(Recall = TP/(TP+FN))을 최대화해야 합니다."),
+    _Q(18,3,"AutoML이 자동화하지 못하는 단계는?",["특성 공학(Feature Engineering)","모델 선택(Model Selection)","하이퍼파라미터 튜닝","비즈니스 목표 수립"],3,"AutoML은 특성 공학, 모델 선택, 하이퍼파라미터 최적화, 앙상블 구성을 자동화합니다. 비즈니스 목표는 사람이 수립해야 합니다."),
+    _Q(19,3,"소셜 네트워크 관계 분석·추천 시스템에 활용되는 신경망 구조는?",["CNN(합성곱 신경망)","RNN(순환 신경망)","GNN(그래프 신경망)","Autoencoder"],2,"GNN은 노드·엣지로 구성된 그래프 데이터를 처리합니다. 소셜 네트워크, 지식 그래프, 분자 구조 분석에 활용됩니다."),
+    _Q(20,3,"미리 정의된 모든 하이퍼파라미터 조합을 전수 탐색하는 최적화 방법은?",["랜덤 서치(Random Search)","베이지안 최적화","그리드 서치(Grid Search)","조기 종료(Early Stopping)"],2,"그리드 서치는 모든 조합을 전수 탐색합니다. 랜덤 서치는 무작위 샘플링, 베이지안 최적화는 이전 결과를 활용한 효율적 탐색입니다."),
+  ],
+};
+
+const ADSP_EXAMS = [
+  { round:44, label:"44회 기출", date:"2023.03", desc:"데이터 이해 기초 · 분석 방법론 · 회귀·군집 분석 중심" },
+  { round:45, label:"45회 기출", date:"2023.07", desc:"빅데이터 가치 · 딥러닝 기초 · 나이브 베이즈 · 앙상블 중심" },
+  { round:46, label:"46회 기출", date:"2023.11", desc:"빅데이터 플랫폼 · 텍스트 마이닝 · AUC·판별분석 중심" },
+  { round:47, label:"47회 기출", date:"2024.03", desc:"데이터 레이크 · MLOps 기초 · XGBoost · 실루엣 계수 중심" },
+  { round:48, label:"48회 기출", date:"2024.07", desc:"생성형 AI · 트랜스포머 · 연합학습 · 이상 탐지 중심" },
+];
+
+// 기존 호환 (AdspScreen에서 참조)
 const ADSP_QUESTIONS = [
   // ── 과목 1: 데이터 이해 (10문항) ───────────────
   { no:1,  sub:1, q:"빅데이터의 3V 특성으로 올바르게 짝지어진 것은?",
@@ -1879,28 +2003,61 @@ const ADSP_QUESTIONS = [
     ans:3, ex:"정상 시계열: 평균·분산·자기공분산이 시간에 무관해야 합니다. 추세나 계절성이 있으면 비정상이며 차분·변환으로 정상화합니다." },
 ];
 
-function AdspScreen({ onBack }) {
+function AdspExamListScreen({ onSelect, onBack }) {
+  const isMobile = useIsMobile();
+  return (
+    <div style={{ padding: isMobile?"16px 14px 60px":"32px 32px 60px" }}>
+      <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>
+        ← 자격증 목록
+      </button>
+      <div style={{ fontFamily:SANS, fontSize:isMobile?17:20, fontWeight:800, color:C.text, marginBottom:4 }}>ADsP 데이터 분석 준전문가</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>응시할 회차를 선택하세요 · 회차별 20문항</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {ADSP_EXAMS.map(exam => (
+          <button key={exam.round} onClick={() => onSelect(exam.round)} style={{
+            display:"flex", alignItems:"center", gap:16, padding:isMobile?"14px 16px":"18px 20px",
+            borderRadius:12, border:`1px solid ${C.blue+"44"}`,
+            background:C.blue+"0D", cursor:"pointer", textAlign:"left",
+          }}>
+            <div style={{ width:36, height:36, borderRadius:9, background:C.blue+"33", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:12, fontWeight:700, color:C.blue, flexShrink:0 }}>
+              {exam.round}회
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:SANS, fontSize:isMobile?13:14, fontWeight:700, color:C.text }}>{exam.label} <span style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginLeft:6 }}>{exam.date}</span></div>
+              <div style={{ fontFamily:SANS, fontSize:isMobile?11:12, color:C.muted, marginTop:2 }}>{exam.desc}</div>
+            </div>
+            <span style={{ fontFamily:MONO, fontSize:10, color:C.blue }}>→</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdspScreen({ round, onBack }) {
   const [subFilter, setSubFilter] = useState(0);
   const [answers, setAnswers] = useState({});
   const isMobile = useIsMobile();
 
-  const SUB_NAMES = ["전체 (40문항)", "과목1 · 데이터 이해", "과목2 · 분석 기획", "과목3 · 데이터 분석"];
-  const SUB_COLORS = [C.blue, C.purple, C.yellow, C.green];
-  const SUB_PASS = [null, 4, 4, 8];
+  const questions = ADSP_ROUNDS[round] || [];
+  const examInfo = ADSP_EXAMS.find(e => e.round === round) || { label:`${round}회 기출`, date:"" };
 
-  const filtered = subFilter === 0 ? ADSP_QUESTIONS : ADSP_QUESTIONS.filter(q => q.sub === subFilter);
+  const SUB_NAMES = ["전체 (20문항)", "과목1 · 데이터 이해", "과목2 · 분석 기획", "과목3 · 데이터 분석"];
+  const SUB_COLORS = [C.blue, C.purple, C.yellow, C.green];
+
+  const filtered = subFilter === 0 ? questions : questions.filter(q => q.sub === subFilter);
   const subScore = (s) => {
-    const qs = ADSP_QUESTIONS.filter(q => q.sub === s);
+    const qs = questions.filter(q => q.sub === s);
     const c = qs.filter(q => answers[q.no]?.confirmed && answers[q.no]?.sel === q.ans).length;
     const d = qs.filter(q => answers[q.no]?.confirmed).length;
     return { correct: c, done: d, total: qs.length };
   };
   const allDone = Object.values(answers).filter(a => a?.confirmed).length;
-  const allCorrect = ADSP_QUESTIONS.filter(q => answers[q.no]?.confirmed && answers[q.no]?.sel === q.ans).length;
-  const pass1 = subScore(1).correct >= 4;
-  const pass2 = subScore(2).correct >= 4;
-  const pass3 = subScore(3).correct >= 8;
-  const totalPass = allCorrect >= 24 && pass1 && pass2 && pass3;
+  const allCorrect = questions.filter(q => answers[q.no]?.confirmed && answers[q.no]?.sel === q.ans).length;
+  const pass1 = subScore(1).correct >= subScore(1).total * 0.4;
+  const pass2 = subScore(2).correct >= subScore(2).total * 0.4;
+  const pass3 = subScore(3).correct >= subScore(3).total * 0.4;
+  const totalPass = questions.length > 0 && allCorrect >= questions.length * 0.6 && pass1 && pass2 && pass3;
 
   const select = (no, idx) => {
     setAnswers(a => ({...a, [no]: { sel: idx, confirmed: true }}));
@@ -1908,15 +2065,15 @@ function AdspScreen({ onBack }) {
 
   return (
     <div style={{ padding: isMobile?"16px 14px 60px":"32px 32px 60px" }}>
-      <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 자격증 목록</button>
-      <div style={{ fontFamily:SANS, fontSize:isMobile?16:20, fontWeight:800, color:C.text, marginBottom:2 }}>ADsP 데이터 분석 준전문가</div>
-      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:20 }}>40문항 · 과목별 40% 이상 & 총점 60점 이상 합격</div>
+      <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 회차 선택</button>
+      <div style={{ fontFamily:SANS, fontSize:isMobile?16:20, fontWeight:800, color:C.text, marginBottom:2 }}>ADsP {examInfo.label}</div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:20 }}>20문항 · {examInfo.date} · 과목별 40% 이상 & 총점 60점 이상 합격</div>
 
       {/* 점수판 */}
       {allDone > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:8, marginBottom:20 }}>
           {[
-            { label:"전체", ...{correct:allCorrect,done:allDone,total:40}, pass: allCorrect>=24, color:C.blue },
+            { label:"전체", correct:allCorrect, done:allDone, total:questions.length, pass:totalPass, color:C.blue },
             { label:"과목1", ...subScore(1), pass:pass1, color:C.purple },
             { label:"과목2", ...subScore(2), pass:pass2, color:C.yellow },
             { label:"과목3", ...subScore(3), pass:pass3, color:C.green },
@@ -1929,7 +2086,7 @@ function AdspScreen({ onBack }) {
           ))}
         </div>
       )}
-      {allDone >= 40 && (
+      {allDone >= questions.length && questions.length > 0 && (
         <div style={{ marginBottom:20, padding:"14px 18px", borderRadius:10, border:`1px solid ${totalPass?C.green:C.coral}`, background:totalPass?C.green+"11":C.coral+"11", fontFamily:SANS, fontSize:14, fontWeight:700, color:totalPass?C.green:C.coral }}>
           {totalPass?"🎉 합격! 총점 60점 이상 & 과목별 과락 없음":"❌ 불합격 — 총점 60점 이상 또는 과목별 40% 미달"}
         </div>
@@ -1999,13 +2156,19 @@ function AdspScreen({ onBack }) {
   );
 }
 
-// ── AICE 모의고사 ─────────────────────────────────
+// ── 자격증 모의고사 ───────────────────────────────
 function CertScreen() {
   const [activeCert, setActiveCert] = useState(null);
   const [activeRound, setActiveRound] = useState(null);
+  const [adspRound, setAdspRound] = useState(null);
 
-  if (!activeCert) return <CertListScreen onSelect={setActiveCert} />;
-  if (activeCert === "adsp") return <AdspScreen onBack={() => setActiveCert(null)} />;
+  if (!activeCert) return <CertListScreen onSelect={c => { setActiveCert(c); setActiveRound(null); setAdspRound(null); }} />;
+
+  if (activeCert === "adsp") {
+    if (!adspRound) return <AdspExamListScreen onSelect={setAdspRound} onBack={() => setActiveCert(null)} />;
+    return <AdspScreen round={adspRound} onBack={() => setAdspRound(null)} />;
+  }
+
   if (!activeRound) return <AiceExamListScreen onSelect={setActiveRound} onBack={() => setActiveCert(null)} />;
   return <AiceScreen round={activeRound} onBack={() => setActiveRound(null)} />;
 }
