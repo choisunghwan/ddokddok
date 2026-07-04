@@ -1236,10 +1236,309 @@ function SqlVisualizer({ lesson }) {
 }
 
 // ── 코딩 학습 데이터 ─────────────────────────────
+// ── AI 개념 시각화 ────────────────────────────────
+const WORD_VECS = {
+  "man":      { x:0.80, y:0.12, color:C.blue,   group:"성별" },
+  "woman":    { x:0.75, y:0.65, color:C.pink,   group:"성별" },
+  "king":     { x:0.20, y:0.15, color:C.yellow, group:"왕족" },
+  "queen":    { x:0.15, y:0.72, color:C.coral,  group:"왕족" },
+  "son":      { x:0.55, y:0.20, color:C.blue,   group:"가족" },
+  "daughter": { x:0.50, y:0.70, color:C.pink,   group:"가족" },
+  "cat":      { x:0.30, y:0.45, color:C.green,  group:"동물" },
+  "dog":      { x:0.42, y:0.42, color:C.green,  group:"동물" },
+};
+const ANALOGIES_W2V = [
+  { label:"king - man + woman = ?", from:"king", minus:"man", plus:"woman", result:"queen",    color:C.yellow },
+  { label:"son - man + woman = ?",  from:"son",  minus:"man", plus:"woman", result:"daughter", color:C.blue   },
+];
+
+function Word2VecViz() {
+  const [hovered, setHovered] = useState(null);
+  const [activeAnalogy, setActiveAnalogy] = useState(null);
+  const isMobile = useIsMobile();
+  const W = isMobile ? 300 : 420, H = isMobile ? 220 : 300;
+  const px = wx => wx * W, py = wy => wy * H;
+
+  return (
+    <div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:10 }}>단어를 2D 공간의 점으로 표현 — 의미가 비슷할수록 가까이 위치해요</div>
+      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+        {ANALOGIES_W2V.map((a,i) => (
+          <button key={i} onClick={() => setActiveAnalogy(activeAnalogy?.label === a.label ? null : a)} style={{
+            padding:"6px 12px", borderRadius:20, border:`1px solid ${activeAnalogy?.label===a.label ? a.color : C.line}`,
+            background: activeAnalogy?.label===a.label ? a.color+"22" : "transparent",
+            color: activeAnalogy?.label===a.label ? a.color : C.muted,
+            fontFamily:MONO, fontSize:10, cursor:"pointer", fontWeight:600,
+          }}>{a.label}</button>
+        ))}
+      </div>
+      <div style={{ position:"relative", width:W, height:H, background:"#0D1117", borderRadius:12, overflow:"hidden", maxWidth:"100%" }}>
+        <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%" }}>
+          {[0.25,0.5,0.75].map(v => (
+            <g key={v}>
+              <line x1={px(v)} y1={0} x2={px(v)} y2={H} stroke={C.line} strokeWidth="0.5"/>
+              <line x1={0} y1={py(v)} x2={W} y2={py(v)} stroke={C.line} strokeWidth="0.5"/>
+            </g>
+          ))}
+          {activeAnalogy && (() => {
+            const from=WORD_VECS[activeAnalogy.from], res=WORD_VECS[activeAnalogy.result];
+            const x1=px(from.x),y1=py(from.y),x2=px(res.x),y2=py(res.y);
+            const angle=Math.atan2(y2-y1,x2-x1), al=10;
+            return (
+              <g>
+                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={activeAnalogy.color} strokeWidth="1.5" strokeDasharray="5,3"/>
+                <polygon points={`${x2},${y2} ${x2-al*Math.cos(angle-0.4)},${y2-al*Math.sin(angle-0.4)} ${x2-al*Math.cos(angle+0.4)},${y2-al*Math.sin(angle+0.4)}`} fill={activeAnalogy.color}/>
+              </g>
+            );
+          })()}
+        </svg>
+        {Object.entries(WORD_VECS).map(([word,v]) => {
+          const isActive = activeAnalogy && [activeAnalogy.from,activeAnalogy.minus,activeAnalogy.plus,activeAnalogy.result].includes(word);
+          return (
+            <div key={word} onMouseEnter={()=>setHovered(word)} onMouseLeave={()=>setHovered(null)}
+              style={{ position:"absolute", left:px(v.x), top:py(v.y), transform:"translate(-50%,-50%)", cursor:"pointer" }}>
+              <div style={{ width:hovered===word||isActive?14:10, height:hovered===word||isActive?14:10, borderRadius:"50%", background:v.color, boxShadow:isActive?`0 0 12px ${v.color}`:"none", transition:"all 0.15s" }}/>
+              <div style={{ position:"absolute", top:-18, left:"50%", transform:"translateX(-50%)", fontFamily:MONO, fontSize:isMobile?8.5:9.5, color:v.color, whiteSpace:"nowrap", fontWeight:hovered===word||isActive?700:400 }}>{word}</div>
+            </div>
+          );
+        })}
+      </div>
+      {activeAnalogy && (
+        <div style={{ marginTop:12, padding:"10px 14px", background:C.card2, borderRadius:8, fontFamily:MONO, fontSize:isMobile?10:11.5, color:C.text }}>
+          <span style={{ color:C.yellow }}>{activeAnalogy.from}</span>{" − "}
+          <span style={{ color:C.coral }}>{activeAnalogy.minus}</span>{" + "}
+          <span style={{ color:C.pink }}>{activeAnalogy.plus}</span>{" ≈ "}
+          <span style={{ color:C.green, fontWeight:700 }}>{activeAnalogy.result} ✓</span>
+          <div style={{ color:C.muted, fontSize:10, marginTop:4 }}>벡터 연산으로 단어 관계를 수학적으로 계산한 결과예요</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const TOKEN_COLORS_AI = [C.blue,C.purple,C.green,C.coral,C.yellow,C.pink,C.blue,C.green,C.purple];
+const TOKENIZE_EXAMPLES = [
+  { text:'I love machine learning',    tokens:["I","love","machine","learn","##ing"] },
+  { text:'ChatGPT는 인공지능입니다',   tokens:["Chat","##G","##PT","는","인공","##지능","##입니다"] },
+  { text:'Hello, World! 2024',          tokens:["Hello",",","World","!","2024"] },
+];
+
+function TokenizerViz() {
+  const [exIdx, setExIdx] = useState(0);
+  const [step, setStep] = useState(0);
+  const ex = TOKENIZE_EXAMPLES[exIdx];
+
+  useEffect(() => { setStep(0); }, [exIdx]);
+  useEffect(() => {
+    if (step < ex.tokens.length) {
+      const t = setTimeout(() => setStep(s => s+1), 300);
+      return () => clearTimeout(t);
+    }
+  }, [step, ex]);
+
+  return (
+    <div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:10 }}>문장을 AI가 이해할 수 있는 토큰 단위로 쪼개는 과정이에요 (BERT 방식)</div>
+      <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap" }}>
+        {TOKENIZE_EXAMPLES.map((e,i) => (
+          <button key={i} onClick={() => setExIdx(i)} style={{
+            padding:"5px 10px", borderRadius:6, border:`1px solid ${exIdx===i?C.blue:C.line}`,
+            background: exIdx===i?C.blue+"22":"transparent",
+            color: exIdx===i?C.blue:C.muted, fontFamily:MONO, fontSize:10, cursor:"pointer",
+          }}>예시 {i+1}</button>
+        ))}
+        <button onClick={() => setStep(0)} style={{ marginLeft:"auto", padding:"5px 10px", borderRadius:6, border:`1px solid ${C.line}`, background:"transparent", color:C.muted, fontFamily:MONO, fontSize:10, cursor:"pointer" }}>↺ 다시</button>
+      </div>
+      <div style={{ padding:"12px 14px", background:"#0D1117", borderRadius:8, fontFamily:MONO, fontSize:13, color:C.text, marginBottom:16 }}>"{ex.text}"</div>
+      <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginBottom:8 }}>토큰화 결과</div>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:6, minHeight:44 }}>
+        {ex.tokens.map((tok,i) => (
+          <div key={i} style={{
+            padding:"6px 10px", borderRadius:6,
+            background: i<step ? TOKEN_COLORS_AI[i%TOKEN_COLORS_AI.length]+"33" : C.card2,
+            border:`1px solid ${i<step?TOKEN_COLORS_AI[i%TOKEN_COLORS_AI.length]:C.line}`,
+            color: i<step?TOKEN_COLORS_AI[i%TOKEN_COLORS_AI.length]:C.muted,
+            fontFamily:MONO, fontSize:12, fontWeight:700, transition:"all 0.2s",
+            transform: i<step?"scale(1)":"scale(0.85)", opacity: i<step?1:0.3,
+          }}>
+            {tok}<span style={{ fontSize:8, opacity:0.6, marginLeft:4 }}>[{i}]</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop:14, display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+        {[
+          { label:"원본 단어 수", value:ex.text.split(" ").length+"개" },
+          { label:"토큰 수",      value:ex.tokens.length+"개" },
+          { label:"분리된 토큰", value:ex.tokens.filter(t=>t.startsWith("##")).length+"개" },
+        ].map(s => (
+          <div key={s.label} style={{ background:C.card2, borderRadius:8, padding:"10px 12px", textAlign:"center" }}>
+            <div style={{ fontFamily:SANS, fontSize:16, fontWeight:800, color:C.blue }}>{s.value}</div>
+            <div style={{ fontFamily:SANS, fontSize:10, color:C.muted, marginTop:2 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const ATTN_SENTENCE = ["The","cat","sat","on","the","mat"];
+const ATTN_WEIGHTS = [
+  [0.6,0.2,0.05,0.05,0.05,0.05],
+  [0.1,0.5,0.2, 0.05,0.05,0.1 ],
+  [0.05,0.3,0.4,0.1, 0.05,0.1 ],
+  [0.05,0.05,0.1,0.5,0.2, 0.1 ],
+  [0.05,0.05,0.05,0.1,0.6,0.15],
+  [0.05,0.1,0.15,0.1,0.1,0.5 ],
+];
+
+function AttentionViz() {
+  const [focused, setFocused] = useState(1);
+  const isMobile = useIsMobile();
+  const weights = ATTN_WEIGHTS[focused];
+  const alphaToHex = a => Math.round(a*220).toString(16).padStart(2,"0");
+
+  return (
+    <div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:10 }}>각 단어가 다른 단어를 얼마나 "주목"하는지 — 진할수록 어텐션이 강해요</div>
+      <div style={{ display:"flex", gap:isMobile?4:8, marginBottom:6, alignItems:"center", flexWrap:"wrap" }}>
+        <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, width:60 }}>Query →</div>
+        <div style={{ display:"flex", gap:isMobile?4:6, flexWrap:"wrap" }}>
+          {ATTN_SENTENCE.map((w,i) => (
+            <button key={i} onClick={() => setFocused(i)} style={{
+              width:isMobile?38:48, padding:"7px 0", borderRadius:7, border:`1px solid ${focused===i?C.blue:C.line}`,
+              background: focused===i?C.blue+"33":C.card2,
+              color: focused===i?C.blue:C.muted, fontFamily:MONO, fontSize:isMobile?9:11, fontWeight:700, cursor:"pointer",
+            }}>{w}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display:"flex", gap:isMobile?4:8, marginBottom:16, alignItems:"center" }}>
+        <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, width:60 }}>Key ↓</div>
+        <div style={{ display:"flex", gap:isMobile?4:6, flexWrap:"wrap" }}>
+          {ATTN_SENTENCE.map((w,i) => (
+            <div key={i} style={{
+              width:isMobile?38:48, padding:"10px 0", borderRadius:7,
+              background: C.blue+alphaToHex(weights[i]),
+              border:`1px solid ${C.blue}${alphaToHex(weights[i]*0.5)}`,
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+            }}>
+              <span style={{ fontFamily:MONO, fontSize:isMobile?9:11, color:C.text, fontWeight:700 }}>{w}</span>
+              <span style={{ fontFamily:MONO, fontSize:8, color:C.muted }}>{(weights[i]*100).toFixed(0)}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ padding:"10px 14px", background:C.card2, borderRadius:8, fontFamily:SANS, fontSize:12, color:C.muted, lineHeight:1.6 }}>
+        <span style={{ color:C.blue, fontWeight:700 }}>"{ATTN_SENTENCE[focused]}"</span>을 처리할 때
+        가장 주목하는 단어: <span style={{ color:C.green, fontWeight:700 }}>"{ATTN_SENTENCE[weights.indexOf(Math.max(...weights))]}" ({(Math.max(...weights)*100).toFixed(0)}%)</span>
+        <br/>이렇게 문맥을 파악해서 번역·요약·질답을 수행해요.
+      </div>
+    </div>
+  );
+}
+
+const NN_LAYERS = [
+  { name:"입력층",   nodes:4, color:C.blue   },
+  { name:"은닉층 1", nodes:6, color:C.purple },
+  { name:"은닉층 2", nodes:6, color:C.purple },
+  { name:"출력층",   nodes:2, color:C.green  },
+];
+
+function NeuralNetViz() {
+  const [activeNode, setActiveNode] = useState(null);
+  const isMobile = useIsMobile();
+  const W = isMobile ? 300 : 400, H = 240;
+  const layerX = i => 50 + (i/(NN_LAYERS.length-1))*(W-100);
+  const nodeY = (li, ni) => {
+    const n = NN_LAYERS[li].nodes;
+    const spacing = Math.min(36, (H-40)/n);
+    const total = (n-1)*spacing;
+    return H/2 - total/2 + ni*spacing;
+  };
+
+  return (
+    <div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:10 }}>노드를 클릭하면 연결된 뉴런이 활성화돼요</div>
+      <svg width={W} height={H} style={{ background:"#0D1117", borderRadius:12, maxWidth:"100%" }}>
+        {NN_LAYERS.slice(0,-1).map((layer,li) =>
+          Array.from({ length:layer.nodes },(_,ni) =>
+            Array.from({ length:NN_LAYERS[li+1].nodes },(_,nj) => {
+              const x1=layerX(li),y1=nodeY(li,ni),x2=layerX(li+1),y2=nodeY(li+1,nj);
+              const isActive = activeNode && activeNode[0]===li && activeNode[1]===ni;
+              return <line key={`${li}-${ni}-${nj}`} x1={x1} y1={y1} x2={x2} y2={y2}
+                stroke={isActive?NN_LAYERS[li].color:C.line} strokeWidth={isActive?1.2:0.4} opacity={isActive?0.8:0.3}/>;
+            })
+          )
+        )}
+        {NN_LAYERS.map((layer,li) =>
+          Array.from({ length:layer.nodes },(_,ni) => {
+            const x=layerX(li),y=nodeY(li,ni);
+            const isActive = activeNode && activeNode[0]===li && activeNode[1]===ni;
+            return (
+              <g key={`${li}-${ni}`} onClick={() => setActiveNode(isActive?null:[li,ni])} style={{ cursor:"pointer" }}>
+                <circle cx={x} cy={y} r={isActive?9:7} fill={isActive?layer.color:C.card2} stroke={layer.color} strokeWidth={1.5}/>
+                {isActive && <circle cx={x} cy={y} r={14} fill="none" stroke={layer.color} strokeWidth={0.8} opacity={0.4}/>}
+              </g>
+            );
+          })
+        )}
+        {NN_LAYERS.map((layer,li) => (
+          <text key={li} x={layerX(li)} y={H-6} textAnchor="middle" fill={layer.color} fontFamily={MONO} fontSize={isMobile?8:9} fontWeight={700}>{layer.name}</text>
+        ))}
+      </svg>
+      <div style={{ marginTop:12, display:"flex", gap:12, fontFamily:MONO, fontSize:10.5, color:C.muted, flexWrap:"wrap" }}>
+        <span><span style={{ color:C.blue }}>●</span> 입력층 — 데이터 수신</span>
+        <span><span style={{ color:C.purple }}>●</span> 은닉층 — 패턴 학습</span>
+        <span><span style={{ color:C.green }}>●</span> 출력층 — 결과 반환</span>
+      </div>
+    </div>
+  );
+}
+
+const AI_CONCEPTS = [
+  { id:"word2vec",  title:"Word2Vec",          emoji:"🔤", desc:"단어를 벡터로 — 의미가 비슷하면 가까이",   Comp:Word2VecViz  },
+  { id:"tokenizer", title:"토큰화 (Tokenizer)", emoji:"✂️", desc:"문장을 AI가 이해하는 조각으로 분해",      Comp:TokenizerViz },
+  { id:"attention", title:"어텐션 메커니즘",    emoji:"👁️", desc:"트랜스포머가 단어 간 관계를 파악하는 법", Comp:AttentionViz },
+  { id:"neuralnet", title:"신경망 구조",         emoji:"🧠", desc:"입력→은닉→출력 레이어의 연결 구조",      Comp:NeuralNetViz },
+];
+
+function AiConceptsScreen({ onBack }) {
+  const [active, setActive] = useState("word2vec");
+  const isMobile = useIsMobile();
+  const concept = AI_CONCEPTS.find(c => c.id === active);
+  const Comp = concept.Comp;
+
+  return (
+    <div style={{ padding: isMobile ? "20px 16px 60px" : "32px 32px 60px" }}>
+      <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 코딩 학습</button>
+      <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>AI 개념 시각화</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>복잡한 AI/ML 개념을 인터랙티브하게 이해해요</div>
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:10, marginBottom:24 }}>
+        {AI_CONCEPTS.map(c => (
+          <button key={c.id} onClick={() => setActive(c.id)} style={{
+            padding:isMobile?"12px 10px":"14px 12px", borderRadius:12,
+            border:`1px solid ${active===c.id?C.blue:C.line}`,
+            background: active===c.id?C.blue+"18":C.card, cursor:"pointer", textAlign:"left",
+          }}>
+            <div style={{ fontSize:isMobile?18:22, marginBottom:6 }}>{c.emoji}</div>
+            <div style={{ fontFamily:SANS, fontSize:isMobile?11:12.5, fontWeight:700, color:active===c.id?C.blue:C.text, marginBottom:4 }}>{c.title}</div>
+            {!isMobile && <div style={{ fontFamily:SANS, fontSize:10.5, color:C.muted, lineHeight:1.4 }}>{c.desc}</div>}
+          </button>
+        ))}
+      </div>
+      <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:isMobile?16:24 }}>
+        <div style={{ fontFamily:SANS, fontSize:15, fontWeight:800, color:C.text, marginBottom:16 }}>{concept.emoji} {concept.title}</div>
+        <Comp />
+      </div>
+    </div>
+  );
+}
+
 const LANG_LIST = [
-  { id: "python", name: "Python", icon: "🐍", color: C.blue,  available: true },
-  { id: "java",   name: "Java",   icon: "☕", color: C.coral, available: true },
-  { id: "sql",    name: "SQL",    icon: "🗃️", color: C.green, available: true },
+  { id: "python", name: "Python",       icon: "🐍", color: C.blue,   available: true },
+  { id: "java",   name: "Java",         icon: "☕", color: C.coral,  available: true },
+  { id: "sql",    name: "SQL",          icon: "🗃️", color: C.green,  available: true },
+  { id: "aivis",  name: "AI 개념 시각화", icon: "🤖", color: C.purple, available: true, isAI: true },
 ];
 
 const CHAPTERS = {
@@ -1369,9 +1668,10 @@ function CodeScreen() {
   const [chapter, setChapter] = useState(null);
   const [lesson, setLesson]   = useState(null);
 
-  if (!lang)    return <LangListScreen onSelect={setLang} />;
-  if (!chapter) return <ChapterListScreen langId={lang} onSelect={setChapter} onBack={() => setLang(null)} />;
-  if (!lesson)  return <LessonListScreen langId={lang} chapterId={chapter} onSelect={setLesson} onBack={() => setChapter(null)} />;
+  if (!lang)           return <LangListScreen onSelect={setLang} />;
+  if (lang === "aivis") return <AiConceptsScreen onBack={() => setLang(null)} />;
+  if (!chapter)        return <ChapterListScreen langId={lang} onSelect={setChapter} onBack={() => setLang(null)} />;
+  if (!lesson)         return <LessonListScreen langId={lang} chapterId={chapter} onSelect={setLesson} onBack={() => setChapter(null)} />;
   return <LessonViewScreen lesson={lesson} onBack={() => setLesson(null)} />;
 }
 
@@ -1466,6 +1766,7 @@ function AiceScreen({ round, onBack }) {
   const [results, setResults] = useState({});
   const [grading, setGrading] = useState(false);
   const [gradeError, setGradeError] = useState("");
+  const isMobile = useIsMobile();
 
   const grade = async () => {
     if (!selectedQ || !draft.trim()) return;
@@ -1494,114 +1795,134 @@ function AiceScreen({ round, onBack }) {
   const correct = Object.values(results).filter(r => r.correct).length;
   const done = Object.keys(results).length;
 
+  const AICE_QUESTIONS = {
+    1: ["call_log.json과 agent_stat.csv를 AgentID 기준 inner merge하여 df에 저장하세요.","Duration 컬럼은 평균값으로, Channel 컬럼은 최빈값으로 결측치를 대체하세요.","Duration 컬럼에서 IQR 기준 이상치 행을 탐지하고 제거하세요.","Channel 컬럼을 원-핫 인코딩하여 df에 반영하세요.","Seaborn을 사용해 Channel별 건수 분포를 countplot으로 시각화하세요.","Duration과 SatisfactionScore의 관계를 jointplot으로 시각화하세요.","수치형 변수 간 상관관계를 계산하고 heatmap으로 시각화하세요.","CallDate에서 Weekday(요일)와 Hour(시간대) 컬럼을 파생변수로 추출하세요.","SatisfactionScore를 target으로 하여 8:2 비율로 Train/Test를 분할하세요.","RandomForestRegressor로 SatisfactionScore 예측 모델을 학습하세요.","학습한 모델의 예측값을 구하고 MAE로 성능을 평가하세요.","Hidden layer 2개 이상, Dropout 0.2, 손실함수 MSE로 딥러닝 모델을 설계하세요.","epochs 30, batch_size 16으로 모델을 학습하고 loss/val_loss 그래프를 비교하세요.","분석 결과를 바탕으로 SatisfactionScore에 가장 큰 영향을 미친 변수를 1~2문장으로 서술하세요."],
+    2: ["orders.csv와 customers.csv를 CustomerID 기준 inner merge하여 df에 저장하세요.","Revenue 컬럼은 중앙값으로, Category 컬럼은 최빈값으로 결측치를 대체하세요.","Revenue 컬럼에서 IQR 기준 이상치 행을 탐지하고 제거하세요.","Category 컬럼을 원-핫 인코딩하여 df에 반영하세요.","Seaborn을 사용해 Category별 주문 건수를 countplot으로 시각화하세요.","Revenue와 Quantity의 관계를 jointplot으로 시각화하세요.","수치형 변수 간 상관관계를 계산하고 heatmap으로 시각화하세요.","OrderDate에서 Month(월)와 DayOfWeek(요일) 컬럼을 파생변수로 추출하세요.","Revenue를 target으로 하여 8:2 비율로 Train/Test를 분할하세요.","GradientBoostingRegressor로 Revenue 예측 모델을 학습하세요.","학습한 모델의 예측값을 구하고 R² Score로 성능을 평가하세요.","Hidden layer 2개 이상, Dropout 0.3, 손실함수 MSE로 딥러닝 모델을 설계하세요.","epochs 50, batch_size 32로 모델을 학습하고 EarlyStopping을 적용하세요.","분석 결과를 바탕으로 Revenue에 가장 큰 영향을 미친 변수를 1~2문장으로 서술하세요."],
+    3: ["patients.csv와 records.csv를 PatientID 기준 inner merge하여 df에 저장하세요.","Age 컬럼은 중앙값으로, Diagnosis 컬럼은 최빈값으로 결측치를 대체하세요.","BloodPressure 컬럼에서 IQR 기준 이상치 행을 탐지하고 제거하세요.","Gender 컬럼을 원-핫 인코딩하여 df에 반영하세요.","Seaborn을 사용해 Diagnosis별 환자 수를 countplot으로 시각화하세요.","Age와 BloodPressure의 관계를 jointplot으로 시각화하세요.","수치형 변수 간 상관관계를 계산하고 heatmap으로 시각화하세요.","AdmissionDate에서 Month(월)와 Season(계절) 컬럼을 파생변수로 추출하세요.","Readmission을 target으로 하여 8:2 비율로 Train/Test를 분할하세요.","RandomForestClassifier로 재입원 예측 모델을 학습하세요.","학습한 모델의 예측값을 구하고 AUC Score로 성능을 평가하세요.","Hidden layer 2개 이상, Dropout 0.3, 손실함수 binary_crossentropy로 딥러닝 모델을 설계하세요.","epochs 40, batch_size 32로 모델을 학습하고 confusion_matrix를 시각화하세요.","분석 결과를 바탕으로 재입원에 가장 큰 영향을 미친 변수를 1~2문장으로 서술하세요."],
+  };
+  const qTexts = AICE_QUESTIONS[round] || AICE_QUESTIONS[1];
+
   return (
-    <div style={{ padding:"32px 32px 60px" }}>
+    <div style={{ padding: isMobile ? "16px 14px 60px" : "32px 32px 60px" }}>
       <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0, display:"flex", alignItems:"center", gap:4 }}>
         ← 회차 목록
       </button>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:22 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:isMobile?"flex-start":"flex-end", flexDirection:isMobile?"column":"row", gap:isMobile?8:0, marginBottom:18 }}>
         <div>
-          <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:2 }}>AICE Associate 모의고사</div>
+          <div style={{ fontFamily:SANS, fontSize:isMobile?16:20, fontWeight:800, color:C.text, marginBottom:2 }}>AICE Associate 모의고사</div>
           <div style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>14문항 · 실제 시험과 동일한 구성</div>
         </div>
         {done > 0 && (
-          <div style={{ textAlign:"right" }}>
-            <div style={{ fontFamily:SANS, fontSize:24, fontWeight:800, color: correct/done >= 0.8 ? C.green : C.coral }}>{Math.round((correct/done)*100)}점</div>
+          <div style={{ textAlign:isMobile?"left":"right" }}>
+            <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color: correct/done >= 0.8 ? C.green : C.coral }}>{Math.round((correct/done)*100)}점</div>
             <div style={{ fontFamily:MONO, fontSize:10, color:C.muted }}>{correct}/{done} 정답 · 80점 합격</div>
           </div>
         )}
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"220px 1fr", gap:14 }}>
-        <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-          {(AICE_ALL[round] || AICE_TEMPLATES).map((q) => {
-            const r = results[q.no];
-            return (
-              <button key={q.no} onClick={() => { setSelectedQ(q); setDraft(results[q.no]?.code || ""); }} style={{
-                display:"flex", alignItems:"center", gap:8, padding:"9px 11px", borderRadius:8,
-                border:`1px solid ${selectedQ?.no === q.no ? C.blue : C.line}`,
-                background: selectedQ?.no === q.no ? C.blue+"11" : C.card, cursor:"pointer", textAlign:"left",
-              }}>
-                <span style={{
-                  width:20, height:20, borderRadius:5, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
-                  fontFamily:MONO, fontSize:10, fontWeight:700,
-                  background: !r ? C.card2 : r.correct ? C.green+"33" : C.coral+"33",
-                  color: !r ? C.muted : r.correct ? C.green : C.coral,
-                }}>{!r ? q.no : r.correct ? <Check size={11}/> : <X size={11}/>}</span>
-                <span style={{ fontFamily:SANS, fontSize:11.5, color:C.text, fontWeight:500 }}>{q.type}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:20 }}>
-          {!selectedQ ? (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:300, gap:8 }}>
-              <BookOpen size={28} color={C.muted} />
-              <div style={{ fontFamily:SANS, fontSize:13, color:C.muted }}>왼쪽에서 문항을 선택하세요</div>
-            </div>
-          ) : (
-            <>
-              <div style={{ fontFamily:MONO, fontSize:10, color:C.blue, fontWeight:700, marginBottom:6 }}>Q{selectedQ.no}. {selectedQ.type}</div>
-              <div style={{ fontFamily:SANS, fontSize:13.5, color:C.text, lineHeight:1.6, marginBottom:14 }}>
-                {selectedQ.no === 1 && "call_log.json과 agent_stat.csv를 AgentID 기준 inner merge하여 df에 저장하세요."}
-                {selectedQ.no === 2 && "Duration 컬럼은 평균값으로, Channel 컬럼은 최빈값으로 결측치를 대체하세요."}
-                {selectedQ.no === 3 && "Duration 컬럼에서 IQR 기준 이상치 행을 탐지하고 제거하세요."}
-                {selectedQ.no === 4 && "Channel 컬럼을 원-핫 인코딩하여 df에 반영하세요."}
-                {selectedQ.no === 5 && "Seaborn을 사용해 Channel별 건수 분포를 countplot으로 시각화하세요."}
-                {selectedQ.no === 6 && "Duration과 SatisfactionScore의 관계를 jointplot으로 시각화하세요."}
-                {selectedQ.no === 7 && "수치형 변수 간 상관관계를 계산하고 heatmap으로 시각화하세요."}
-                {selectedQ.no === 8 && "CallDate에서 Weekday(요일)와 Hour(시간대) 컬럼을 파생변수로 추출하세요."}
-                {selectedQ.no === 9 && "SatisfactionScore를 target으로 하여 8:2 비율로 Train/Test를 분할하세요."}
-                {selectedQ.no === 10 && "RandomForestRegressor로 SatisfactionScore 예측 모델을 학습하세요."}
-                {selectedQ.no === 11 && "학습한 모델의 예측값을 구하고 MAE로 성능을 평가하세요."}
-                {selectedQ.no === 12 && "Hidden layer 2개 이상, Dropout 0.2, 손실함수 MSE로 딥러닝 모델을 설계하세요."}
-                {selectedQ.no === 13 && "epochs 30, batch_size 16으로 모델을 학습하고 loss/val_loss 그래프를 비교하세요."}
-                {selectedQ.no === 14 && "분석 결과를 바탕으로 SatisfactionScore에 가장 큰 영향을 미친 변수를 1~2문장으로 서술하세요."}
+      {/* 공통 콘텐츠 패널 */}
+      {(() => {
+        const contentPanel = (
+          <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:isMobile?14:20 }}>
+            {!selectedQ ? (
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:200, gap:8 }}>
+                <BookOpen size={28} color={C.muted} />
+                <div style={{ fontFamily:SANS, fontSize:13, color:C.muted }}>{isMobile?"위에서 문항을 선택하세요":"왼쪽에서 문항을 선택하세요"}</div>
               </div>
-
-              <textarea
-                value={draft}
-                onChange={e => setDraft(e.target.value)}
-                placeholder={selectedQ.no === 14 ? "분석 결과를 작성하세요…" : "여기에 코드를 작성하세요…"}
-                style={{
-                  width:"100%", minHeight:100, borderRadius:8, border:`1px solid ${C.line}`,
-                  background:"#0D1117", fontFamily:MONO, fontSize:12, color:C.text,
-                  padding:12, resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.7,
-                }}
-              />
-
-              <button onClick={grade} disabled={!draft.trim() || grading} style={{
-                marginTop:10, padding:"9px 18px", borderRadius:8, border:"none",
-                background: draft.trim() && !grading ? C.blue : C.line, color:C.white,
-                fontFamily:SANS, fontSize:12.5, fontWeight:700, cursor: draft.trim() && !grading ? "pointer" : "not-allowed",
-              }}>{grading ? "채점 중…" : "제출하고 채점하기"}</button>
-
-              {gradeError && (
-                <div style={{ marginTop:10, fontFamily:SANS, fontSize:12, color:C.coral }}>⚠ {gradeError}</div>
-              )}
-
-              {attempt && (
-                <div style={{ marginTop:16, borderTop:`1px solid ${C.line}`, paddingTop:14 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6, fontFamily:SANS, fontSize:13, fontWeight:700, color: attempt.correct ? C.green : C.coral, marginBottom:10 }}>
-                    {attempt.correct ? <Check size={14}/> : <AlertTriangle size={14}/>}
-                    {attempt.correct ? "정답입니다!" : "오답입니다 — 모범 답안을 확인하세요"}
-                  </div>
-                  {!attempt.correct && attempt.missing.length > 0 && (
-                    <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:10, background:C.coral+"11", padding:"8px 11px", borderRadius:7 }}>
-                      누락된 핵심 키워드: <span style={{ fontFamily:MONO, color:C.coral }}>{attempt.missing.join(", ")}</span>
-                    </div>
-                  )}
-                  <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginBottom:6 }}>모범 답안</div>
-                  <div style={{ background:"#0D1117", borderRadius:8, padding:14, fontFamily:MONO, fontSize:11.5, color:"#A8D8B0", lineHeight:1.7, whiteSpace:"pre-wrap" }}>
-                    {selectedQ.code}
-                  </div>
+            ) : (
+              <>
+                <div style={{ fontFamily:MONO, fontSize:10, color:C.blue, fontWeight:700, marginBottom:6 }}>Q{selectedQ.no}. {selectedQ.type}</div>
+                <div style={{ fontFamily:SANS, fontSize:isMobile?12.5:13.5, color:C.text, lineHeight:1.6, marginBottom:14 }}>
+                  {qTexts[selectedQ.no - 1]}
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+                <textarea
+                  value={draft}
+                  onChange={e => setDraft(e.target.value)}
+                  placeholder={selectedQ.no === 14 ? "분석 결과를 작성하세요…" : "여기에 코드를 작성하세요…"}
+                  style={{
+                    width:"100%", minHeight:isMobile?80:100, borderRadius:8, border:`1px solid ${C.line}`,
+                    background:"#0D1117", fontFamily:MONO, fontSize:isMobile?11:12, color:C.text,
+                    padding:12, resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.7,
+                  }}
+                />
+                <button onClick={grade} disabled={!draft.trim() || grading} style={{
+                  marginTop:10, padding:"9px 18px", borderRadius:8, border:"none",
+                  background: draft.trim() && !grading ? C.blue : C.line, color:"#fff",
+                  fontFamily:SANS, fontSize:12.5, fontWeight:700, cursor: draft.trim() && !grading ? "pointer" : "not-allowed",
+                  width: isMobile ? "100%" : "auto",
+                }}>{grading ? "채점 중…" : "제출하고 채점하기"}</button>
+                {gradeError && <div style={{ marginTop:10, fontFamily:SANS, fontSize:12, color:C.coral }}>⚠ {gradeError}</div>}
+                {attempt && (
+                  <div style={{ marginTop:16, borderTop:`1px solid ${C.line}`, paddingTop:14 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, fontFamily:SANS, fontSize:13, fontWeight:700, color: attempt.correct ? C.green : C.coral, marginBottom:10 }}>
+                      {attempt.correct ? <Check size={14}/> : <AlertTriangle size={14}/>}
+                      {attempt.correct ? "정답입니다!" : "오답입니다 — 모범 답안을 확인하세요"}
+                    </div>
+                    {!attempt.correct && attempt.missing.length > 0 && (
+                      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:10, background:C.coral+"11", padding:"8px 11px", borderRadius:7 }}>
+                        누락된 핵심 키워드: <span style={{ fontFamily:MONO, color:C.coral }}>{attempt.missing.join(", ")}</span>
+                      </div>
+                    )}
+                    <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginBottom:6 }}>모범 답안</div>
+                    <div style={{ background:"#0D1117", borderRadius:8, padding:14, fontFamily:MONO, fontSize:isMobile?10.5:11.5, color:"#A8D8B0", lineHeight:1.7, whiteSpace:"pre-wrap", overflowX:"auto" }}>
+                      {selectedQ.code}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+
+        if (isMobile) return (
+          <div>
+            {/* 모바일: 문항 번호 가로 스크롤 */}
+            <div style={{ display:"flex", gap:5, overflowX:"auto", paddingBottom:8, marginBottom:12 }}>
+              {(AICE_ALL[round] || AICE_TEMPLATES).map((q) => {
+                const r = results[q.no];
+                return (
+                  <button key={q.no} onClick={() => { setSelectedQ(q); setDraft(results[q.no]?.code || ""); }} style={{
+                    flexShrink:0, width:34, height:34, borderRadius:8,
+                    border:`1px solid ${selectedQ?.no===q.no?C.blue:C.line}`,
+                    background: selectedQ?.no===q.no?C.blue+"22" : !r?C.card : r.correct?C.green+"22":C.coral+"22",
+                    cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                    fontFamily:MONO, fontSize:10, fontWeight:700,
+                    color: selectedQ?.no===q.no?C.blue : !r?C.muted : r.correct?C.green:C.coral,
+                  }}>{!r ? q.no : r.correct ? <Check size={10}/> : <X size={10}/>}</button>
+                );
+              })}
+            </div>
+            {contentPanel}
+          </div>
+        );
+
+        return (
+          <div style={{ display:"grid", gridTemplateColumns:"210px 1fr", gap:14 }}>
+            {/* 데스크톱: 문항 목록 사이드바 */}
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              {(AICE_ALL[round] || AICE_TEMPLATES).map((q) => {
+                const r = results[q.no];
+                return (
+                  <button key={q.no} onClick={() => { setSelectedQ(q); setDraft(results[q.no]?.code || ""); }} style={{
+                    display:"flex", alignItems:"center", gap:8, padding:"9px 11px", borderRadius:8,
+                    border:`1px solid ${selectedQ?.no===q.no?C.blue:C.line}`,
+                    background: selectedQ?.no===q.no?C.blue+"11":C.card, cursor:"pointer", textAlign:"left",
+                  }}>
+                    <span style={{
+                      width:20, height:20, borderRadius:5, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                      fontFamily:MONO, fontSize:10, fontWeight:700,
+                      background: !r?C.card2 : r.correct?C.green+"33":C.coral+"33",
+                      color: !r?C.muted : r.correct?C.green:C.coral,
+                    }}>{!r ? q.no : r.correct ? <Check size={11}/> : <X size={11}/>}</span>
+                    <span style={{ fontFamily:SANS, fontSize:11.5, color:C.text, fontWeight:500 }}>{q.type}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {contentPanel}
+          </div>
+        );
+      })()}
     </div>
   );
 }
