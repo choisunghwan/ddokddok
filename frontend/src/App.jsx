@@ -595,7 +595,7 @@ function useIsMobile() {
   return mobile;
 }
 
-function Nav({ tab, setTab, nickname, onLogout, onSettings }) {
+function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest }) {
   const isMobile = useIsMobile();
   const items = [
     { key:"home",   icon: Home,    label:"홈"        },
@@ -609,14 +609,16 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings }) {
     <div style={{ position:"fixed", bottom:0, left:0, right:0, background:C.card, borderTop:`1px solid ${C.line}`, display:"flex", zIndex:10 }}>
       {items.map(({ key, icon: Icon, label }) => {
         const active = tab === key;
+        const locked = isGuest && key === "study";
         return (
           <button key={key} onClick={() => setTab(key)} style={{
             flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             padding:"10px 0 8px", border:"none", background:"transparent",
-            color: active ? C.blue : C.muted, cursor:"pointer",
+            color: locked ? C.muted+"99" : active ? C.blue : C.muted, cursor:"pointer", position:"relative",
           }}>
             <Icon size={20} />
             <span style={{ fontFamily:SANS, fontSize:9, fontWeight:active?700:400 }}>{label}</span>
+            {locked && <span style={{ position:"absolute", top:8, right:"calc(50% - 14px)", fontSize:8, color:C.muted }}>🔒</span>}
           </button>
         );
       })}
@@ -630,33 +632,46 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings }) {
       </div>
       {items.map(({ key, icon: Icon, label }) => {
         const active = tab === key;
+        const locked = isGuest && key === "study";
         return (
           <button key={key} onClick={() => setTab(key)} style={{
             display:"flex", alignItems:"center", gap:10, padding:"11px 12px", borderRadius:10, border:"none",
-            background: active ? C.blue+"22" : "transparent", color: active ? C.blue : C.muted,
+            background: active ? C.blue+"22" : "transparent",
+            color: locked ? C.muted+"88" : active ? C.blue : C.muted,
             cursor:"pointer", fontFamily:SANS, fontSize:14, fontWeight: active ? 700 : 500,
             marginBottom:4, transition:"all 0.15s",
           }}>
             <Icon size={17} />
-            {label}
+            <span style={{ flex:1 }}>{label}</span>
+            {locked && <span style={{ fontSize:11 }}>🔒</span>}
           </button>
         );
       })}
       <div style={{ marginTop:"auto", padding:"10px 12px", borderRadius:10, background:C.card2 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:32, height:32, borderRadius:"50%", background:C.blue+"44", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:13, color:C.blue, fontWeight:700 }}>
-            {nickname?.[0]?.toUpperCase()}
+        {isGuest ? (
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ width:32, height:32, borderRadius:"50%", background:C.muted+"33", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:12, color:C.muted, fontWeight:700 }}>?</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.muted }}>게스트</div>
+              <div style={{ fontFamily:MONO, fontSize:9, color:C.muted+"88" }}>진도 저장 안 됨</div>
+            </div>
           </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nickname}</div>
+        ) : (
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ width:32, height:32, borderRadius:"50%", background:C.blue+"44", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:13, color:C.blue, fontWeight:700 }}>
+              {nickname?.[0]?.toUpperCase()}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nickname}</div>
+            </div>
+            <button onClick={onSettings} title="설정" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex", alignItems:"center" }}>
+              <Settings size={14} />
+            </button>
+            <button onClick={onLogout} title="로그아웃" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex", alignItems:"center" }}>
+              <ArrowRight size={14} />
+            </button>
           </div>
-          <button onClick={onSettings} title="설정" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex", alignItems:"center" }}>
-            <Settings size={14} />
-          </button>
-          <button onClick={onLogout} title="로그아웃" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex", alignItems:"center" }}>
-            <ArrowRight size={14} />
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -777,9 +792,66 @@ function SettingsModal({ nickname, onClose, onNicknameChange, onLogout }) {
   );
 }
 
+// ── 게스트 배너 ─────────────────────────────────
+function GuestBanner({ onLogin, onDismiss }) {
+  const isMobile = useIsMobile();
+  return (
+    <div style={{
+      position:"fixed", top:0, left:0, right:0, zIndex:100,
+      background:"#1a2235", borderBottom:`1px solid ${C.blue}44`,
+      padding:isMobile?"7px 12px":"7px 20px",
+      display:"flex", alignItems:"center", gap:10,
+    }}>
+      <span style={{ fontFamily:SANS, fontSize:isMobile?10.5:12, color:C.muted, flex:1, lineHeight:1.4 }}>
+        📚 게스트 모드 — 진도 저장 및 스터디 그룹은 로그인 후 이용 가능해요
+      </span>
+      <button onClick={onLogin} style={{
+        padding:"4px 10px", borderRadius:6, border:`1px solid ${C.blue}`,
+        background:C.blue+"22", color:C.blue, fontFamily:SANS, fontSize:11, fontWeight:700,
+        cursor:"pointer", flexShrink:0, whiteSpace:"nowrap",
+      }}>로그인하기</button>
+      <button onClick={onDismiss} style={{
+        background:"none", border:"none", color:C.muted, cursor:"pointer",
+        padding:"2px 4px", flexShrink:0, fontFamily:MONO, fontSize:14, lineHeight:1,
+      }}>✕</button>
+    </div>
+  );
+}
+
+// ── 스터디 로그인 유도 모달 ──────────────────────
+function StudyLoginModal({ onLogin, onClose }) {
+  return (
+    <div style={{
+      position:"fixed", inset:0, background:"#00000099", zIndex:200,
+      display:"flex", alignItems:"center", justifyContent:"center",
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background:C.card, borderRadius:16, padding:"28px 24px", maxWidth:320, width:"90%",
+        border:`1px solid ${C.line}`,
+      }}>
+        <div style={{ fontFamily:SANS, fontSize:18, fontWeight:800, color:C.text, marginBottom:8 }}>👥 스터디 그룹</div>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, lineHeight:1.7, marginBottom:22 }}>
+          스터디 그룹은 로그인 후 이용 가능해요.<br/>
+          로그인하면 그룹 참여·생성·출석 체크인을 할 수 있어요.
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={onLogin} style={{
+            flex:2, padding:"11px 0", borderRadius:8, border:"none",
+            background:C.blue, color:"#fff", fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer",
+          }}>로그인하기</button>
+          <button onClick={onClose} style={{
+            flex:1, padding:"11px 0", borderRadius:8, border:`1px solid ${C.line}`,
+            background:"transparent", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer",
+          }}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 로그인 / 회원가입 ────────────────────────────
 
-function AuthScreen({ onAuth }) {
+function AuthScreen({ onAuth, onGuest }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ email: localStorage.getItem("savedEmail") || "", password:"", nickname:"" });
   const [remember, setRemember] = useState(!!localStorage.getItem("savedEmail"));
@@ -870,6 +942,13 @@ function AuthScreen({ onAuth }) {
           background: loading ? C.line : C.blue, color:C.white,
           fontFamily:SANS, fontSize:14, fontWeight:700, cursor: loading ? "not-allowed" : "pointer",
         }}>{loading ? "처리 중…" : mode === "login" ? "로그인" : "회원가입"}</button>
+
+        <div style={{ marginTop:16, textAlign:"center" }}>
+          <button onClick={onGuest} style={{
+            background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:12,
+            cursor:"pointer", textDecoration:"underline", textUnderlineOffset:3,
+          }}>로그인 없이 둘러보기 →</button>
+        </div>
       </div>
     </div>
   );
@@ -887,16 +966,17 @@ function authHeader() {
   return { "Authorization": `Bearer ${localStorage.getItem("token")}` };
 }
 
-function HomeScreen({ setTab, nickname, onSettings, onLogout }) {
+function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }) {
   const [stats, setStats] = useState(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    if (isGuest) return;
     fetch(`${API}/api/dashboard/stats`, { headers: authHeader() })
       .then(r => r.json())
       .then(setStats)
       .catch(() => {});
-  }, []);
+  }, [isGuest]);
 
   const streak   = stats?.streak ?? 0;
   const weekly   = stats?.weekly_minutes ?? 0;
@@ -926,16 +1006,20 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout }) {
               <span style={{ color:C.blue }}>똑</span>똑
             </div>
             <div style={{ fontFamily:SANS, fontSize:13, color:C.text, fontWeight:700, marginTop:2 }}>
-              {nickname}님, {greet()}
+              {isGuest ? "게스트로 둘러보는 중" : `${nickname}님, ${greet()}`}
             </div>
           </div>
           <div style={{ display:"flex", gap:2 }}>
-            <button onClick={onSettings} title="설정" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:6, display:"flex", alignItems:"center" }}>
-              <Settings size={20} />
-            </button>
-            <button onClick={onLogout} title="로그아웃" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:6, display:"flex", alignItems:"center" }}>
-              <LogOut size={20} />
-            </button>
+            {isGuest ? (
+              <button onClick={onLogin} style={{ background:C.blue+"22", border:`1px solid ${C.blue}44`, borderRadius:7, color:C.blue, fontFamily:SANS, fontSize:11, fontWeight:700, padding:"6px 10px", cursor:"pointer" }}>로그인</button>
+            ) : (<>
+              <button onClick={onSettings} title="설정" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:6, display:"flex", alignItems:"center" }}>
+                <Settings size={20} />
+              </button>
+              <button onClick={onLogout} title="로그아웃" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:6, display:"flex", alignItems:"center" }}>
+                <LogOut size={20} />
+              </button>
+            </>)}
           </div>
         </div>
       )}
@@ -3007,30 +3091,59 @@ function StudyScreen() {
 export default function App() {
   const [tab, setTab] = useState("home");
   const [nickname, setNickname] = useState(() => localStorage.getItem("nickname"));
+  const [isGuest, setIsGuest] = useState(() => !localStorage.getItem("token") && sessionStorage.getItem("guest") === "1");
   const [showSettings, setShowSettings] = useState(false);
+  const [showStudyModal, setShowStudyModal] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const isMobile = useIsMobile();
 
-  const handleAuth = (nick) => setNickname(nick);
+  const BANNER_H = 36;
+
+  const handleAuth = (nick) => {
+    setNickname(nick);
+    setIsGuest(false);
+    sessionStorage.removeItem("guest");
+  };
+  const handleGuest = () => {
+    sessionStorage.setItem("guest", "1");
+    setIsGuest(true);
+  };
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("nickname");
     setNickname(null);
+    setIsGuest(false);
+    sessionStorage.removeItem("guest");
+  };
+  const handleBackToLogin = () => {
+    setIsGuest(false);
+    sessionStorage.removeItem("guest");
+    setShowStudyModal(false);
   };
 
-  if (!nickname) return <AuthScreen onAuth={handleAuth} />;
+  const handleSetTab = (t) => {
+    if (t === "study" && isGuest) { setShowStudyModal(true); return; }
+    setTab(t);
+  };
+
+  if (!nickname && !isGuest) return <AuthScreen onAuth={handleAuth} onGuest={handleGuest} />;
+
+  const showBanner = isGuest && !bannerDismissed;
 
   return (
     <div style={{ minHeight:"100vh", background:C.bg, display:"flex" }}>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-      {showSettings && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
-      <Nav tab={tab} setTab={setTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} />
-      <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto" }}>
-        {tab === "home"  && <HomeScreen setTab={setTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} />}
+      {showBanner && <GuestBanner onLogin={handleBackToLogin} onDismiss={() => setBannerDismissed(true)} />}
+      {showStudyModal && <StudyLoginModal onLogin={handleBackToLogin} onClose={() => setShowStudyModal(false)} />}
+      {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
+      <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} />
+      <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
+        {tab === "home"  && <HomeScreen setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
         {tab === "code"  && <CodeScreen />}
         {tab === "cert"  && <CertScreen />}
         {tab === "arch"  && <ArchScreen />}
-        {tab === "study" && <StudyScreen />}
+        {tab === "study" && !isGuest && <StudyScreen />}
       </div>
     </div>
   );
