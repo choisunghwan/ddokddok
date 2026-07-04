@@ -1679,7 +1679,7 @@ function CodeScreen() {
 const CERT_LIST = [
   { id: "aice", name: "AICE Associate", icon: "🏆", desc: "AI 역량 검증 자격증 · 14문항", color: C.purple, available: true },
   { id: "sqld", name: "SQLD",           icon: "🗃️", desc: "SQL 개발자 자격증",            color: C.green,  available: false },
-  { id: "adsp", name: "ADsP",           icon: "📊", desc: "데이터 분석 준전문가",          color: C.blue,   available: false },
+  { id: "adsp", name: "ADsP",           icon: "📊", desc: "데이터 분석 준전문가 · 40문항", color: C.blue,   available: true  },
 ];
 
 function CertListScreen({ onSelect }) {
@@ -1750,12 +1750,262 @@ function AiceExamListScreen({ onSelect, onBack }) {
   );
 }
 
+// ── ADsP 기출 모의고사 ────────────────────────────
+const ADSP_QUESTIONS = [
+  // ── 과목 1: 데이터 이해 (10문항) ───────────────
+  { no:1,  sub:1, q:"빅데이터의 3V 특성으로 올바르게 짝지어진 것은?",
+    opts:["Volume, Velocity, Variety","Volume, Value, Variety","Value, Velocity, Variety","Volume, Velocity, Veracity"],
+    ans:0, ex:"빅데이터의 기본 특성은 3V: 규모(Volume), 속도(Velocity), 다양성(Variety)입니다. 이후 진실성(Veracity), 가치(Value)가 추가되어 5V로 확장됩니다." },
+  { no:2,  sub:1, q:"다음 중 반정형(Semi-structured) 데이터에 해당하는 것은?",
+    opts:["관계형 DB 테이블","XML · JSON 문서","SNS 게시글 · 이미지","엑셀 스프레드시트"],
+    ans:1, ex:"XML, JSON은 구조는 있지만 고정 스키마가 없는 반정형 데이터입니다. 관계형 DB·엑셀은 정형, SNS 텍스트·이미지는 비정형입니다." },
+  { no:3,  sub:1, q:"개인정보 비식별화 기법 중 나이 35 → '30대'처럼 값을 범위로 표현하는 방법은?",
+    opts:["가명처리","총계처리","데이터 범주화","데이터 삭제"],
+    ans:2, ex:"데이터 범주화는 특정 수치를 구간(범주)으로 변환해 개인을 특정하기 어렵게 만드는 비식별화 기법입니다." },
+  { no:4,  sub:1, q:"NoSQL 데이터베이스의 특징으로 올바른 것은?",
+    opts:["ACID 속성을 완벽히 보장","스키마가 항상 고정됨","수평적 확장(Scale-out)이 용이","JOIN 연산에 최적화"],
+    ans:2, ex:"NoSQL은 수평 확장이 용이하고 유연한 스키마를 지원합니다. ACID 완벽 보장은 RDBMS의 특징입니다." },
+  { no:5,  sub:1, q:"다음 중 데이터베이스의 4가지 특성(DBMS 정의)에 해당하지 않는 것은?",
+    opts:["통합된 데이터(Integrated Data)","저장된 데이터(Stored Data)","운영 데이터(Operational Data)","분리된 데이터(Isolated Data)"],
+    ans:3, ex:"DBMS의 데이터 특성: 통합(Integrated)·저장(Stored)·운영(Operational)·공유(Shared). '분리된 데이터'는 해당 없습니다." },
+  { no:6,  sub:1, q:"빅데이터 등장 배경으로 가장 거리가 먼 것은?",
+    opts:["스마트폰·IoT 기기 확산","소셜미디어 활성화","클라우드 컴퓨팅 발전","종이 문서 사용량 증가"],
+    ans:3, ex:"빅데이터는 디지털 기기 확산, 소셜미디어, 클라우드, IoT 등으로 인해 등장했습니다. 종이 문서는 무관합니다." },
+  { no:7,  sub:1, q:"데이터 웨어하우스(Data Warehouse)의 특성이 아닌 것은?",
+    opts:["주제 중심적(Subject-Oriented)","통합적(Integrated)","비휘발적(Non-Volatile)","실시간 갱신(Real-time Update)"],
+    ans:3, ex:"데이터 웨어하우스는 주제 중심·통합·비휘발·시간적 특성을 가집니다. 실시간 갱신은 OLTP(운영DB)의 특성입니다." },
+  { no:8,  sub:1, q:"마스터 데이터 관리(MDM)의 주요 목적으로 올바른 것은?",
+    opts:["거래 데이터의 고속 처리","핵심 데이터(고객·제품 등)의 일관성 유지","비정형 데이터의 구조화","실시간 스트리밍 처리"],
+    ans:1, ex:"MDM은 조직 전체에서 사용하는 핵심 마스터 데이터(고객, 제품, 직원 등)의 정확성과 일관성을 관리합니다." },
+  { no:9,  sub:1, q:"데이터 사이언티스트에게 필요한 역량으로 가장 거리가 먼 것은?",
+    opts:["수학·통계 지식","프로그래밍 능력","비즈니스 도메인 이해","물리 서버 직접 제작·설치"],
+    ans:3, ex:"데이터 사이언티스트는 수학·통계, 프로그래밍(하드스킬), 커뮤니케이션·도메인(소프트스킬)이 필요합니다." },
+  { no:10, sub:1, q:"다음 중 정형 데이터가 아닌 것은?",
+    opts:["관계형 DB 테이블","엑셀(CSV) 파일","동영상·이미지 파일","ERP 트랜잭션 데이터"],
+    ans:2, ex:"동영상·이미지는 구조화되지 않은 비정형 데이터입니다. 관계형 DB, 엑셀, ERP는 정형 데이터입니다." },
+
+  // ── 과목 2: 데이터 분석 기획 (10문항) ──────────
+  { no:11, sub:2, q:"CRISP-DM 방법론의 6단계 순서로 올바른 것은?",
+    opts:["비즈니스이해→데이터이해→데이터준비→모델링→평가→전개","데이터이해→비즈니스이해→데이터준비→모델링→평가→전개","비즈니스이해→데이터준비→데이터이해→모델링→평가→전개","비즈니스이해→모델링→데이터준비→데이터이해→평가→전개"],
+    ans:0, ex:"CRISP-DM 6단계: Business Understanding → Data Understanding → Data Preparation → Modeling → Evaluation → Deployment" },
+  { no:12, sub:2, q:"KDD 프로세스의 순서로 올바른 것은?",
+    opts:["Selection→Preprocessing→Transformation→Mining→Interpretation","Preprocessing→Selection→Transformation→Mining→Interpretation","Selection→Transformation→Preprocessing→Mining→Interpretation","Mining→Selection→Preprocessing→Transformation→Interpretation"],
+    ans:0, ex:"KDD 5단계: 선택(Selection) → 전처리(Preprocessing) → 변환(Transformation) → 데이터 마이닝(Mining) → 해석(Interpretation)" },
+  { no:13, sub:2, q:"분석 방법론 SEMMA의 단계가 아닌 것은?",
+    opts:["Sample (샘플링)","Explore (탐색)","Modify (수정·변환)","Deploy (배포)"],
+    ans:3, ex:"SEMMA = Sample → Explore → Modify → Model → Assess. Deploy(배포)는 CRISP-DM에 해당하며 SEMMA에는 없습니다." },
+  { no:14, sub:2, q:"분석 기획의 '하향식(Top-down) 접근법' 설명으로 옳은 것은?",
+    opts:["데이터 자체에서 인사이트를 발굴","명확한 비즈니스 목표에서 출발","비정형 데이터 분석에 특화","빠른 프로토타이핑에 최적화"],
+    ans:1, ex:"하향식(Top-down)은 목적이 명확한 경우 비즈니스 목표 → 분석 과제 도출 순으로 진행합니다. 상향식(Bottom-up)은 데이터에서 인사이트를 발굴합니다." },
+  { no:15, sub:2, q:"분석 성숙도 모델의 단계 중 가장 높은 수준은?",
+    opts:["도입(Initiation)","활용(Utilization)","확산(Expansion)","최적화(Optimization)"],
+    ans:3, ex:"분석 성숙도: 도입 → 활용 → 확산 → 최적화 단계로 발전합니다. 최적화 단계는 전사적으로 분석이 내재화된 상태입니다." },
+  { no:16, sub:2, q:"분석 과제 우선순위 결정 2×2 매트릭스의 두 축으로 올바른 것은?",
+    opts:["분석 난이도 & 데이터 규모","전략적 중요도(비즈니스 가치) & 실행 용이성","예산 규모 & 분석가 수","데이터 품질 & 분석 기간"],
+    ans:1, ex:"과제 우선순위 매트릭스는 '비즈니스 가치(전략적 중요도)'와 '실행 용이성(비용·기간·난이도)'을 두 축으로 평가합니다." },
+  { no:17, sub:2, q:"분석 거버넌스 체계의 구성 요소가 아닌 것은?",
+    opts:["데이터 분석 표준 및 절차","조직 및 인력 체계","데이터 관리 체계","분석가 해외 파견 프로그램"],
+    ans:3, ex:"분석 거버넌스: 분석 기획·관리 조직, 과제 관리 프로세스, 데이터 관리 체계, 분석 교육 및 변화관리로 구성됩니다." },
+  { no:18, sub:2, q:"전사 분석 업무를 담당하는 별도 전담 조직을 두는 분석 조직 구조는?",
+    opts:["기능 중심형","분산형","집중형","CoE(Center of Excellence)"],
+    ans:2, ex:"집중형 구조는 독립된 분석 전담팀이 전사 분석을 수행합니다. 분산형은 현업 부서에 분석가를 배치합니다." },
+  { no:19, sub:2, q:"분석 마스터 플랜에 포함되는 내용이 아닌 것은?",
+    opts:["단계별 분석 로드맵","소요 예산 및 일정","분석 과제 목록","분석가 개인 연봉 결정 기준"],
+    ans:3, ex:"마스터 플랜: 분석 과제·우선순위, 로드맵, 예산·일정, 조직·거버넌스 방안. 개인 연봉 결정은 해당되지 않습니다." },
+  { no:20, sub:2, q:"데이터 분석 ROI 산정 시 고려하지 않아도 되는 것은?",
+    opts:["분석 시스템 구축 비용","예상 비용 절감 효과","예상 매출 증대 효과","분석 담당자의 출신 대학"],
+    ans:3, ex:"ROI = (기대 효과 - 투자 비용) / 투자 비용. 투자 비용과 기대 효과를 정량적으로 산정해야 하며 담당자 출신 대학은 무관합니다." },
+
+  // ── 과목 3: 데이터 분석 (20문항) ───────────────
+  { no:21, sub:3, q:"정규분포의 특성이 아닌 것은?",
+    opts:["좌우 대칭 형태","평균 = 중앙값 = 최빈값","왜도(Skewness) = 0","표본 크기에 따라 형태가 크게 변한다"],
+    ans:3, ex:"정규분포는 좌우 대칭, 왜도=0, 평균=중앙값=최빈값 특성을 가집니다. 형태는 평균(μ)과 표준편차(σ)에 의해서만 결정됩니다." },
+  { no:22, sub:3, q:"두 범주형 변수 간의 독립성 검정에 사용하는 통계 기법은?",
+    opts:["독립표본 t-검정","일원분산분석(One-way ANOVA)","카이제곱(χ²) 검정","피어슨 상관분석"],
+    ans:2, ex:"카이제곱 검정은 범주형 변수들이 서로 독립인지 검정합니다. t-검정·ANOVA는 연속형 평균 비교, 피어슨은 선형 상관 측정입니다." },
+  { no:23, sub:3, q:"다중 회귀분석에서 독립변수 간 강한 상관관계로 발생하는 문제는?",
+    opts:["이분산성(Heteroscedasticity)","다중공선성(Multicollinearity)","자기상관(Autocorrelation)","잔차 정규성 위반"],
+    ans:1, ex:"다중공선성은 독립변수들 간의 강한 상관으로 회귀계수 추정이 불안정해지는 문제입니다. VIF로 진단합니다." },
+  { no:24, sub:3, q:"CART 의사결정나무의 분류 분리 기준으로 사용되는 불순도 측도는?",
+    opts:["정보이득(Information Gain)","카이제곱(χ²) 통계량","지니 지수(Gini Index)","엔트로피(Entropy)"],
+    ans:2, ex:"CART(Classification And Regression Tree)는 분류 시 지니 지수(Gini Index)를 사용하여 이진(binary) 분리합니다." },
+  { no:25, sub:3, q:"K-평균(K-means) 군집분석의 특징으로 옳은 것은?",
+    opts:["군집 수를 자동으로 결정","이상치(Outlier)에 강건하다","계층적 군집화 방법이다","초기 중심값에 따라 결과가 달라질 수 있다"],
+    ans:3, ex:"K-means는 초기 중심값(centroid) 설정에 결과가 민감합니다. 군집 수 k는 사전 지정이 필요하고 이상치에 취약합니다." },
+  { no:26, sub:3, q:"로지스틱 회귀분석의 종속변수로 적합한 것은?",
+    opts:["연속형 수치 변수","이진형 범주 변수 (0 또는 1)","순서형 변수만","정규분포를 따르는 변수"],
+    ans:1, ex:"로지스틱 회귀는 종속변수가 이진형(0/1)일 때 사용하며, 결과를 0~1 사이의 확률로 출력합니다(시그모이드 함수)." },
+  { no:27, sub:3, q:"연관규칙에서 신뢰도(Confidence)의 의미로 올바른 것은?",
+    opts:["전체 거래 중 A와 B가 함께 등장하는 비율","A를 구매한 거래 중 B도 구매한 비율","A와 B 연관이 우연인지 나타내는 척도","모든 거래에서 B가 등장하는 빈도"],
+    ans:1, ex:"신뢰도 = P(B|A) = P(A∩B)/P(A). A가 발생했을 때 B가 함께 발생하는 조건부 확률입니다. 지지도는 P(A∩B)입니다." },
+  { no:28, sub:3, q:"부스팅(Boosting) 앙상블의 특징으로 올바른 것은?",
+    opts:["여러 모델을 병렬로 독립 학습","이전 모델의 오분류 샘플에 가중치를 높여 순차 학습","무작위 샘플링으로 독립 모델 구성","단순 다수결 투표로 결합"],
+    ans:1, ex:"부스팅은 이전 모델이 잘못 예측한 샘플에 가중치를 높여 순차적으로 약한 학습기(weak learner)를 강화합니다. 대표 알고리즘: AdaBoost, XGBoost." },
+  { no:29, sub:3, q:"혼동행렬(Confusion Matrix)에서 실제 양성(Positive)인데 음성(Negative)으로 예측한 경우는?",
+    opts:["True Positive (TP)","False Positive (FP)","True Negative (TN)","False Negative (FN)"],
+    ans:3, ex:"FN(False Negative, 2종 오류): 실제는 양성이지만 모델이 음성으로 잘못 예측. 의료 진단에서 질병을 놓치는 경우에 해당합니다." },
+  { no:30, sub:3, q:"ARIMA(p,d,q) 모형에서 'q'가 나타내는 것은?",
+    opts:["자기회귀(AR) 차수","차분(Differencing) 횟수","이동평균(MA) 차수","계절성 주기"],
+    ans:2, ex:"ARIMA(p,d,q): p=AR(자기회귀) 차수, d=차분 횟수(정상화), q=MA(이동평균) 차수입니다." },
+  { no:31, sub:3, q:"주성분분석(PCA)의 주요 목적으로 올바른 것은?",
+    opts:["군집 수 자동 결정","고차원 데이터의 차원 축소(정보 손실 최소화)","독립변수 간 상관관계 증가","종속변수 직접 예측"],
+    ans:1, ex:"PCA는 분산을 최대로 설명하는 주성분 방향으로 데이터를 투영하여 차원을 축소합니다. 다중공선성 완화에도 활용합니다." },
+  { no:32, sub:3, q:"SVM(Support Vector Machine)이 최적화하는 핵심 목표는?",
+    opts:["오분류 샘플 수 최소화","결정 경계와 서포트 벡터 사이의 마진(Margin) 최대화","모든 훈련 데이터를 100% 분류","군집 내 분산 최소화"],
+    ans:1, ex:"SVM은 두 클래스를 구분하는 결정 경계(hyperplane)를 마진(Margin)이 최대가 되도록 찾습니다." },
+  { no:33, sub:3, q:"불균형 데이터(Imbalanced Data)에서 모델 평가로 가장 적합한 지표는?",
+    opts:["정확도(Accuracy)","AUC-ROC 또는 F1-Score","평균제곱오차(MSE)","R²(결정계수)"],
+    ans:1, ex:"불균형 데이터에서는 정확도가 높아도 모델이 다수 클래스만 예측할 수 있어 AUC-ROC, F1-Score, G-mean이 더 적합합니다." },
+  { no:34, sub:3, q:"수치형 변수를 0~1 사이 값으로 변환하는 전처리 기법은?",
+    opts:["Z-score 표준화(Standardization)","Min-Max 정규화(Normalization)","원-핫 인코딩(One-hot Encoding)","레이블 인코딩(Label Encoding)"],
+    ans:1, ex:"Min-Max 정규화: x' = (x - x_min)/(x_max - x_min). Z-score는 평균 0·분산 1로 변환합니다." },
+  { no:35, sub:3, q:"인공신경망에서 ReLU 활성화 함수를 사용하는 주된 이유는?",
+    opts:["출력이 0~1 확률로 표현되므로","기울기 소실(Vanishing Gradient) 문제 완화","음수 값 처리가 불가능하므로","계산 비용이 높아 정확하므로"],
+    ans:1, ex:"ReLU = max(0, x)는 양수 구간에서 기울기가 1로 유지되어 시그모이드·tanh의 기울기 소실 문제를 완화합니다." },
+  { no:36, sub:3, q:"랜덤 포레스트(Random Forest)에서 사용하는 앙상블 핵심 기법은?",
+    opts:["부스팅(Boosting)","배깅(Bagging) + 랜덤 특성 선택","스태킹(Stacking)","단순 평균 앙상블"],
+    ans:1, ex:"랜덤 포레스트는 배깅(Bootstrap Aggregating)으로 데이터를 샘플링하고, 각 분기에서 랜덤하게 특성을 선택해 다양성을 확보합니다." },
+  { no:37, sub:3, q:"결측값(Missing Value) 처리 방법으로 가장 부적절한 것은?",
+    opts:["수치형 변수 → 평균·중앙값으로 대체","범주형 변수 → 최빈값으로 대체","회귀 예측 모델로 결측값 추정","결측 여부와 무관하게 임의 최댓값 대입"],
+    ans:3, ex:"임의로 최댓값을 대입하면 데이터 분포가 왜곡됩니다. 단순 삭제·통계값 대체·예측 모델 대체 등이 올바른 방법입니다." },
+  { no:38, sub:3, q:"k-겹 교차검증(k-fold Cross Validation)에 대한 설명으로 옳은 것은?",
+    opts:["데이터를 k등분해 k번 학습·검증을 반복 후 평균","데이터를 단 한 번만 학습·검증으로 분리","훈련 데이터만 사용하여 과적합 감소","검증 세트 크기가 항상 데이터 1건"],
+    ans:0, ex:"k-fold CV: 데이터를 k등분 → k번 반복(매번 다른 1개 fold를 검증, 나머지 k-1을 훈련) → 결과 평균으로 모델 성능 평가." },
+  { no:39, sub:3, q:"다음 중 비지도 학습(Unsupervised Learning)에 해당하는 것은?",
+    opts:["선형 회귀(Linear Regression)","로지스틱 회귀(Logistic Regression)","의사결정나무(Decision Tree)","K-means 군집분석"],
+    ans:3, ex:"K-means는 레이블 없이 데이터의 유사성을 기반으로 군집을 발견하는 비지도 학습입니다. 나머지는 모두 지도 학습입니다." },
+  { no:40, sub:3, q:"시계열 분석에서 정상성(Stationarity) 조건이 아닌 것은?",
+    opts:["시간에 따라 평균이 일정","시간에 따라 분산이 일정","자기공분산이 시점에 무관","뚜렷한 상승·하락 추세(Trend) 존재"],
+    ans:3, ex:"정상 시계열: 평균·분산·자기공분산이 시간에 무관해야 합니다. 추세나 계절성이 있으면 비정상이며 차분·변환으로 정상화합니다." },
+];
+
+function AdspScreen({ onBack }) {
+  const [subFilter, setSubFilter] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const isMobile = useIsMobile();
+
+  const SUB_NAMES = ["전체 (40문항)", "과목1 · 데이터 이해", "과목2 · 분석 기획", "과목3 · 데이터 분석"];
+  const SUB_COLORS = [C.blue, C.purple, C.yellow, C.green];
+  const SUB_PASS = [null, 4, 4, 8];
+
+  const filtered = subFilter === 0 ? ADSP_QUESTIONS : ADSP_QUESTIONS.filter(q => q.sub === subFilter);
+  const subScore = (s) => {
+    const qs = ADSP_QUESTIONS.filter(q => q.sub === s);
+    const c = qs.filter(q => answers[q.no]?.confirmed && answers[q.no]?.sel === q.ans).length;
+    const d = qs.filter(q => answers[q.no]?.confirmed).length;
+    return { correct: c, done: d, total: qs.length };
+  };
+  const allDone = Object.values(answers).filter(a => a?.confirmed).length;
+  const allCorrect = ADSP_QUESTIONS.filter(q => answers[q.no]?.confirmed && answers[q.no]?.sel === q.ans).length;
+  const pass1 = subScore(1).correct >= 4;
+  const pass2 = subScore(2).correct >= 4;
+  const pass3 = subScore(3).correct >= 8;
+  const totalPass = allCorrect >= 24 && pass1 && pass2 && pass3;
+
+  const select = (no, idx) => {
+    setAnswers(a => ({...a, [no]: { sel: idx, confirmed: true }}));
+  };
+
+  return (
+    <div style={{ padding: isMobile?"16px 14px 60px":"32px 32px 60px" }}>
+      <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 자격증 목록</button>
+      <div style={{ fontFamily:SANS, fontSize:isMobile?16:20, fontWeight:800, color:C.text, marginBottom:2 }}>ADsP 데이터 분석 준전문가</div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:20 }}>40문항 · 과목별 40% 이상 & 총점 60점 이상 합격</div>
+
+      {/* 점수판 */}
+      {allDone > 0 && (
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:8, marginBottom:20 }}>
+          {[
+            { label:"전체", ...{correct:allCorrect,done:allDone,total:40}, pass: allCorrect>=24, color:C.blue },
+            { label:"과목1", ...subScore(1), pass:pass1, color:C.purple },
+            { label:"과목2", ...subScore(2), pass:pass2, color:C.yellow },
+            { label:"과목3", ...subScore(3), pass:pass3, color:C.green },
+          ].map(s => (
+            <div key={s.label} style={{ background:C.card2, borderRadius:10, padding:"12px 14px", border:`1px solid ${s.done>0?(s.pass?s.color+"66":C.coral+"66"):C.line}` }}>
+              <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginBottom:4 }}>{s.label}</div>
+              <div style={{ fontFamily:SANS, fontSize:18, fontWeight:800, color:s.done>0?(s.pass?s.color:C.coral):C.muted }}>{s.done>0?`${s.correct}/${s.done}`:"—"}</div>
+              {s.done>0 && <div style={{ fontFamily:MONO, fontSize:9, color:s.pass?s.color:C.coral, marginTop:2 }}>{s.pass?"✓ 과락 없음":"✗ 과락"}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+      {allDone >= 40 && (
+        <div style={{ marginBottom:20, padding:"14px 18px", borderRadius:10, border:`1px solid ${totalPass?C.green:C.coral}`, background:totalPass?C.green+"11":C.coral+"11", fontFamily:SANS, fontSize:14, fontWeight:700, color:totalPass?C.green:C.coral }}>
+          {totalPass?"🎉 합격! 총점 60점 이상 & 과목별 과락 없음":"❌ 불합격 — 총점 60점 이상 또는 과목별 40% 미달"}
+        </div>
+      )}
+
+      {/* 과목 필터 탭 */}
+      <div style={{ display:"flex", gap:6, marginBottom:20, flexWrap:"wrap" }}>
+        {[0,1,2,3].map(s => (
+          <button key={s} onClick={() => setSubFilter(s)} style={{
+            padding:isMobile?"6px 10px":"7px 14px", borderRadius:20, border:`1px solid ${subFilter===s?SUB_COLORS[s]:C.line}`,
+            background: subFilter===s?SUB_COLORS[s]+"22":"transparent",
+            color: subFilter===s?SUB_COLORS[s]:C.muted, fontFamily:SANS, fontSize:isMobile?10:11, fontWeight:subFilter===s?700:400, cursor:"pointer",
+          }}>{isMobile && s>0 ? `과목${s}`:SUB_NAMES[s]}</button>
+        ))}
+      </div>
+
+      {/* 문제 목록 */}
+      <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+        {filtered.map(q => {
+          const a = answers[q.no];
+          const confirmed = a?.confirmed;
+          const correct = confirmed && a.sel === q.ans;
+          const subColor = SUB_COLORS[q.sub];
+          return (
+            <div key={q.no} style={{ background:C.card, border:`1px solid ${confirmed?(correct?C.green+"55":C.coral+"55"):C.line}`, borderRadius:12, padding:isMobile?14:18 }}>
+              <div style={{ display:"flex", gap:8, marginBottom:10, alignItems:"flex-start" }}>
+                <span style={{ flexShrink:0, width:24, height:24, borderRadius:6, background:subColor+"33", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:10, fontWeight:700, color:subColor }}>{q.no}</span>
+                <div style={{ flex:1 }}>
+                  <span style={{ fontFamily:MONO, fontSize:9, color:subColor, marginRight:6, background:subColor+"22", padding:"2px 6px", borderRadius:4 }}>과목{q.sub}</span>
+                  <div style={{ fontFamily:SANS, fontSize:isMobile?12.5:13.5, color:C.text, lineHeight:1.65, marginTop:5 }}>{q.q}</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {q.opts.map((opt, i) => {
+                  const isSelected = a?.sel === i;
+                  const isCorrect = i === q.ans;
+                  let bg = C.card2, border = C.line, color = C.muted;
+                  if (confirmed) {
+                    if (isCorrect) { bg=C.green+"22"; border=C.green; color=C.green; }
+                    else if (isSelected && !isCorrect) { bg=C.coral+"22"; border=C.coral; color=C.coral; }
+                  } else if (isSelected) { bg=C.blue+"22"; border=C.blue; color=C.blue; }
+                  return (
+                    <button key={i} onClick={() => !confirmed && select(q.no, i)} style={{
+                      display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8,
+                      border:`1px solid ${border}`, background:bg, cursor:confirmed?"default":"pointer",
+                      textAlign:"left", width:"100%",
+                    }}>
+                      <span style={{ width:20, height:20, borderRadius:"50%", flexShrink:0, border:`1px solid ${border}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:9, fontWeight:700, color }}>
+                        {confirmed && isCorrect ? "✓" : confirmed && isSelected && !isCorrect ? "✗" : `${i+1}`}
+                      </span>
+                      <span style={{ fontFamily:SANS, fontSize:isMobile?11.5:12.5, color, lineHeight:1.5 }}>{opt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {confirmed && (
+                <div style={{ marginTop:10, padding:"9px 12px", background:"#0D1117", borderRadius:8, fontFamily:SANS, fontSize:11.5, color:C.muted, lineHeight:1.65, borderLeft:`3px solid ${correct?C.green:C.coral}` }}>
+                  <span style={{ color:correct?C.green:C.coral, fontWeight:700, marginRight:6 }}>{correct?"✓ 정답":"✗ 오답"}</span>
+                  {q.ex}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── AICE 모의고사 ─────────────────────────────────
 function CertScreen() {
   const [activeCert, setActiveCert] = useState(null);
   const [activeRound, setActiveRound] = useState(null);
 
   if (!activeCert) return <CertListScreen onSelect={setActiveCert} />;
+  if (activeCert === "adsp") return <AdspScreen onBack={() => setActiveCert(null)} />;
   if (!activeRound) return <AiceExamListScreen onSelect={setActiveRound} onBack={() => setActiveCert(null)} />;
   return <AiceScreen round={activeRound} onBack={() => setActiveRound(null)} />;
 }
