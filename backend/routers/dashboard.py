@@ -111,3 +111,27 @@ def record_session(
     ))
     db.commit()
     return {"ok": True}
+
+
+@router.post("/progress")
+def update_progress(
+    course_id: str,
+    completed_lessons: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    row = db.query(CourseProgress).filter(
+        CourseProgress.user_id == current_user.id,
+        CourseProgress.course_id == course_id,
+    ).first()
+    if row:
+        if completed_lessons > row.completed_lessons:
+            row.completed_lessons = completed_lessons
+    else:
+        db.add(CourseProgress(
+            user_id=current_user.id,
+            course_id=course_id,
+            completed_lessons=completed_lessons,
+        ))
+    db.commit()
+    return {"ok": True}

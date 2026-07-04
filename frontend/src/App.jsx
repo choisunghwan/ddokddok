@@ -1703,37 +1703,79 @@ function ChapterListScreen({ langId, onSelect, onBack }) {
 function LessonListScreen({ langId, chapterId, onSelect, onBack }) {
   const lang = LANG_LIST.find(l => l.id === langId);
   const chapter = CHAPTERS[langId]?.find(c => c.id === chapterId);
+  const completedSet = getCompletedSet(langId);
+  const completedCount = chapter?.lessons.filter(l => completedSet.has(l.id)).length ?? 0;
+  const totalCount = chapter?.lessons.length ?? 0;
+
   return (
     <div style={{ padding:"32px 32px 60px" }}>
       <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← {chapter?.title}</button>
       <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>{chapter?.icon} {chapter?.title}</div>
-      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>학습할 레슨을 선택하세요</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom: completedCount > 0 ? 10 : 28 }}>학습할 레슨을 선택하세요</div>
+      {completedCount > 0 && (
+        <div style={{ fontFamily:MONO, fontSize:11, color:C.green, marginBottom:18 }}>
+          ✓ {completedCount}/{totalCount} 완료
+        </div>
+      )}
       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-        {chapter?.lessons.map((lesson, i) => (
-          <button key={lesson.id} onClick={() => onSelect(lesson)} style={{
-            display:"flex", alignItems:"center", gap:16, padding:"18px 20px",
-            borderRadius:12, border:`1px solid ${lang?.color}44`,
-            background: lang?.color+"0D", cursor:"pointer", textAlign:"left",
-          }}>
-            <div style={{ width:32, height:32, borderRadius:8, background: lang?.color+"33", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:13, fontWeight:700, color: lang?.color }}>
-              {i + 1}
-            </div>
-            <div>
-              <div style={{ fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text }}>{lesson.title}</div>
-              {lesson.desc && <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginTop:2 }}>{lesson.desc}</div>}
-            </div>
-          </button>
-        ))}
+        {chapter?.lessons.map((lesson, i) => {
+          const isDone = completedSet.has(lesson.id);
+          return (
+            <button key={lesson.id} onClick={() => onSelect(lesson)} style={{
+              display:"flex", alignItems:"center", gap:16, padding:"18px 20px",
+              borderRadius:12, border:`1px solid ${isDone ? C.green+"55" : lang?.color+"44"}`,
+              background: isDone ? C.green+"0A" : lang?.color+"0D", cursor:"pointer", textAlign:"left",
+            }}>
+              <div style={{ width:32, height:32, borderRadius:8, background: isDone ? C.green+"33" : lang?.color+"33", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:13, fontWeight:700, color: isDone ? C.green : lang?.color }}>
+                {isDone ? "✓" : i + 1}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontFamily:SANS, fontSize:14, fontWeight:700, color: isDone ? C.muted : C.text }}>{lesson.title}</div>
+                {lesson.desc && <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginTop:2 }}>{lesson.desc}</div>}
+              </div>
+              {isDone && <span style={{ fontFamily:MONO, fontSize:10, color:C.green, flexShrink:0 }}>완료</span>}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function LessonViewScreen({ lesson, onBack }) {
+// localStorage 완료 레슨 헬퍼
+function getCompletedSet(langId) {
+  try { return new Set(JSON.parse(localStorage.getItem(`ddok_done_${langId}`) || "[]")); }
+  catch { return new Set(); }
+}
+function saveCompletedSet(langId, set) {
+  localStorage.setItem(`ddok_done_${langId}`, JSON.stringify([...set]));
+}
+
+function LessonViewScreen({ lesson, langId, isGuest, onBack }) {
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!lesson?.id || !langId || isGuest) return;
+    const set = getCompletedSet(langId);
+    if (set.has(lesson.id)) { setDone(true); return; }
+
+    // 레슨 첫 진입 → 세션 기록 + 진도 업데이트
+    set.add(lesson.id);
+    saveCompletedSet(langId, set);
+    setDone(true);
+
+    const h = authHeader();
+    fetch(`${API}/api/dashboard/session?course_id=${langId}&duration_minutes=5`, { method:"POST", headers:h }).catch(()=>{});
+    fetch(`${API}/api/dashboard/progress?course_id=${langId}&completed_lessons=${set.size}`, { method:"POST", headers:h }).catch(()=>{});
+  }, [lesson?.id, langId, isGuest]);
+
   return (
     <div style={{ padding:"32px 32px 60px" }}>
-      <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 레슨 목록</button>
-      <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:20 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", padding:0 }}>← 레슨 목록</button>
+        {done && <span style={{ fontFamily:MONO, fontSize:11, color:C.green, background:C.green+"22", padding:"3px 8px", borderRadius:5, fontWeight:700 }}>✓ 학습 완료</span>}
+      </div>
+      <div style={{ background:C.card, border:`1px solid ${done ? C.green+"44" : C.line}`, borderRadius:14, padding:20 }}>
         <div style={{ fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>{lesson.title}</div>
         <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:16 }}>{lesson.desc || ""}</div>
         {lesson.isSql
@@ -1747,16 +1789,16 @@ function LessonViewScreen({ lesson, onBack }) {
   );
 }
 
-function CodeScreen() {
+function CodeScreen({ isGuest }) {
   const [lang, setLang]       = useState(null);
   const [chapter, setChapter] = useState(null);
   const [lesson, setLesson]   = useState(null);
 
-  if (!lang)           return <LangListScreen onSelect={setLang} />;
+  if (!lang)            return <LangListScreen onSelect={setLang} />;
   if (lang === "aivis") return <AiConceptsScreen onBack={() => setLang(null)} />;
-  if (!chapter)        return <ChapterListScreen langId={lang} onSelect={setChapter} onBack={() => setLang(null)} />;
-  if (!lesson)         return <LessonListScreen langId={lang} chapterId={chapter} onSelect={setLesson} onBack={() => setChapter(null)} />;
-  return <LessonViewScreen lesson={lesson} onBack={() => setLesson(null)} />;
+  if (!chapter)         return <ChapterListScreen langId={lang} onSelect={setChapter} onBack={() => setLang(null)} />;
+  if (!lesson)          return <LessonListScreen langId={lang} chapterId={chapter} onSelect={setLesson} onBack={() => setChapter(null)} />;
+  return <LessonViewScreen lesson={lesson} langId={lang} isGuest={isGuest} onBack={() => setLesson(null)} />;
 }
 
 // ── 자격증 목록 ──────────────────────────────────
@@ -3095,6 +3137,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showStudyModal, setShowStudyModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, arch:0, study:0 });
   const isMobile = useIsMobile();
 
   const BANNER_H = 36;
@@ -3123,6 +3166,9 @@ export default function App() {
 
   const handleSetTab = (t) => {
     if (t === "study" && isGuest) { setShowStudyModal(true); return; }
+    if (t === tab) {
+      setScreenKeys(k => ({ ...k, [t]: k[t] + 1 }));
+    }
     setTab(t);
   };
 
@@ -3139,11 +3185,11 @@ export default function App() {
       {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
       <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
-        {tab === "home"  && <HomeScreen setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
-        {tab === "code"  && <CodeScreen />}
-        {tab === "cert"  && <CertScreen />}
-        {tab === "arch"  && <ArchScreen />}
-        {tab === "study" && !isGuest && <StudyScreen />}
+        {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
+        {tab === "code"  && <CodeScreen key={screenKeys.code} isGuest={isGuest} />}
+        {tab === "cert"  && <CertScreen key={screenKeys.cert} />}
+        {tab === "arch"  && <ArchScreen key={screenKeys.arch} />}
+        {tab === "study" && !isGuest && <StudyScreen key={screenKeys.study} />}
       </div>
     </div>
   );
