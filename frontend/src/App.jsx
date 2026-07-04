@@ -1884,6 +1884,143 @@ function DiagramViewer({ nodes, lines, steps, viewBox="0 0 710 220" }) {
   );
 }
 
+// ── Claude Code 폴더 구조 트리 ───────────────────
+const CLAUDE_TREE = [
+  { id:"claudemd",       name:"CLAUDE.md",             type:"file",   depth:0,
+    summary:"Claude가 매 대화마다 자동으로 읽는 프로젝트 설명서",
+    detail:"프로젝트 구조, 코딩 스타일, 금지 사항, 기술 스택 등을 적어두면 Claude가 항상 이 내용을 바탕으로 답변합니다. 팀 전체와 Git으로 공유됩니다.",
+    example:"# 기술 스택\n- Frontend: React 19 + Vite\n- Backend: FastAPI + PostgreSQL\n\n# 규칙\n- console.log 커밋 금지\n- 모든 API 엔드포인트에 타입 힌트 필수\n- 커밋 메시지는 한국어로 작성" },
+  { id:"claudelocalmd",  name:"CLAUDE.local.md",        type:"file",   depth:0,
+    summary:"나만 사용하는 개인 메모 — 팀과 공유되지 않음",
+    detail:".gitignore에 포함되어 Git에 올라가지 않습니다. 개인적인 작업 메모, 로컬 환경 특이사항, 임시 TODO 등을 자유롭게 적을 수 있습니다.",
+    example:"# 내 로컬 환경\n- DB 비밀번호: (개인 메모)\n- 로컬 포트 5174 사용 중\n\n# 오늘 할 일\n- 결제 모듈 리팩토링\n- PR #42 리뷰 요청" },
+  { id:"mcpjson",        name:".mcp.json",               type:"file",   depth:0,
+    summary:"Claude에 외부 도구(DB·API·Slack 등)를 연결하는 MCP 설정",
+    detail:"Model Context Protocol(MCP) 서버 설정 파일입니다. Claude가 데이터베이스를 직접 조회하거나 GitHub, Slack 등 외부 서비스와 연동하려면 이 파일에 서버를 등록합니다.",
+    example:'{\n  "mcpServers": {\n    "supabase": {\n      "command": "npx",\n      "args": ["@supabase/mcp-server",\n               "--url", "https://xxx.supabase.co"]\n    },\n    "github": {\n      "command": "npx",\n      "args": ["@github/mcp-server"]\n    }\n  }\n}' },
+  { id:"claudeDir",      name:".claude/",                type:"folder", depth:0,
+    summary:"Claude Code 커스터마이징 파일이 모이는 폴더",
+    detail:"Claude Code의 모든 개인화는 이 폴더에서 이루어집니다. rules, skills, commands, agents, hooks 등 Claude의 행동 방식을 세밀하게 조정할 수 있습니다.",
+    example:"# .claude/ 안에 있는 항목들\nrules/      → 파일 패턴별 조건부 규칙\nskills/     → 재사용 가능한 작업 템플릿\ncommands/   → /명령어 단축키\nagents/     → 전문 역할 에이전트\nhooks/      → 이벤트 기반 자동 스크립트" },
+  { id:"rules",          name:"rules/",                  type:"folder", depth:1,
+    summary:"특정 파일 패턴과 매칭될 때만 자동 활성화되는 조건부 규칙",
+    detail:"일반 CLAUDE.md와 달리, globs 패턴으로 지정한 파일을 다룰 때만 해당 규칙이 로드됩니다. 테스트 파일엔 테스트 규칙만, API 파일엔 설계 규칙만 적용됩니다.",
+    example:"# 파일 패턴 예시\n*.test.ts   → testing.md 규칙 활성화\n**/routers/ → api-design.md 규칙 활성화\n*.sql       → sql-style.md 규칙 활성화" },
+  { id:"testingmd",      name:"testing.md",              type:"file",   depth:2,
+    summary:"테스트 파일을 수정할 때만 켜지는 규칙",
+    detail:"globs 프론트매터로 *.test.* 패턴을 지정하면, 테스트 파일을 다룰 때만 자동 로드됩니다. 테스트 전략, 금지 패턴, 네이밍 규칙 등을 정의합니다.",
+    example:"---\nglobs: [\"**/*.test.*\", \"**/*.spec.*\"]\n---\n\n# 테스트 규칙\n- Mock은 최소한으로, 실제 DB 연동 테스트 권장\n- 테스트명: 'should + 기대 동작'\n- 각 테스트는 독립적으로 실행 가능해야 함" },
+  { id:"apidesignmd",    name:"api-design.md",           type:"file",   depth:2,
+    summary:"백엔드 API 파일 수정 시에만 적용되는 설계 규칙",
+    detail:"routers/, routes/ 패턴의 파일을 다룰 때 자동으로 활성화됩니다. API 일관성을 유지하는 규칙들을 모아둡니다.",
+    example:"---\nglobs: [\"**/routers/**\", \"**/routes/**\"]\n---\n\n# API 설계 규칙\n- 모든 엔드포인트에 타입 힌트 필수\n- 에러는 HTTPException으로 통일\n- URL 패턴: /api/리소스명 (복수형)\n- 인증 필요 시 Depends(get_current_user)" },
+  { id:"skills",         name:"skills/",                 type:"folder", depth:1,
+    summary:"자주 쓰는 작업 패턴을 저장해두고 /명령어로 불러오는 기능",
+    detail:"반복적인 작업 흐름을 미리 정의해두면 /skill-name 으로 즉시 실행할 수 있습니다. 배포 체크리스트, PR 리뷰 패턴, 버그 분석 절차 등을 저장합니다.",
+    example:"# 예시 skills/\ndeploy-check.md   → /deploy-check 실행\nbug-analysis.md   → /bug-analysis 실행\npr-review.md      → /pr-review 실행\n\n# 실행 방법\n/deploy-check → 배포 전 체크리스트 자동 실행" },
+  { id:"commands",       name:"commands/",               type:"folder", depth:1,
+    summary:"/명령어로 쓰는 단축 프롬프트 모음",
+    detail:"복잡한 프롬프트를 /명령어로 단축합니다. 팀 전체가 공통으로 사용하는 작업 명령어를 여기에 정의합니다.",
+    example:"# 등록된 명령어 예시\n/fix-issue 42    → 이슈 #42 자동 수정\n/deploy-check    → 배포 전 점검\n/add-tests       → 커버리지 없는 코드에 테스트 추가\n/translate-ko    → 영문 코드를 한국어 주석 추가" },
+  { id:"fixissuemd",     name:"fix-issue.md",            type:"file",   depth:2,
+    summary:"GitHub 이슈를 찾아 자동으로 수정해주는 명령어",
+    detail:"/fix-issue [번호] 입력 시 GitHub에서 이슈를 조회하고 관련 코드를 찾아 수정해줍니다. $ARGUMENTS로 이슈 번호를 파라미터로 받습니다.",
+    example:"# GitHub 이슈 자동 수정\n\nGitHub 이슈 $ARGUMENTS 번호를 처리합니다:\n\n1. gh issue view $ARGUMENTS 로 이슈 내용 확인\n2. 관련 코드 파일 탐색\n3. 원인 파악 후 수정\n4. 커밋: 'fix: 이슈 제목 (fixes #$ARGUMENTS)'" },
+  { id:"agents",         name:"agents/",                 type:"folder", depth:1,
+    summary:"특정 역할만 담당하는 전문 AI 에이전트",
+    detail:"각 에이전트는 자신의 역할에 맞는 도구만 사용합니다. 코드 리뷰 에이전트는 읽기만, 배포 에이전트는 실행만 허용하는 식으로 권한을 분리합니다.",
+    example:"# 에이전트 종류 예시\ncode-reviewer.md  → 코드 리뷰 전담 (읽기 전용)\ntest-writer.md    → 테스트 작성 전담\ndoc-writer.md     → 문서 작성 전담\nsecurity-scan.md  → 보안 취약점 검사 전담" },
+  { id:"codereviewermd", name:"code-reviewer.md",        type:"file",   depth:2,
+    summary:"코드 리뷰만 전담하는 읽기 전용 AI 에이전트",
+    detail:"이 에이전트는 코드를 수정하지 않고 리뷰만 합니다. Read, Grep 등 읽기 도구만 허용해 안전하게 운용합니다.",
+    example:"# Code Reviewer Agent\n\n당신은 시니어 코드 리뷰어입니다.\n코드를 절대 수정하지 않습니다.\n\n## 검토 항목\n- 버그 및 논리 오류\n- 보안 취약점 (SQL Injection, XSS 등)\n- 성능 병목 지점\n- 코드 중복 및 개선 제안\n\n## 출력 형식\n각 발견사항: 파일명:줄번호 — 문제 설명 — 제안" },
+  { id:"hooks",          name:"hooks/",                  type:"folder", depth:1,
+    summary:"특정 이벤트 발생 시 자동으로 실행되는 쉘 스크립트",
+    detail:"PreToolUse(실행 전), PostToolUse(실행 후), PostApply(파일 수정 후) 등 이벤트에 연결해 자동화합니다. 코드 포맷, 위험 명령 차단, 알림 발송 등에 활용합니다.",
+    example:"# 주요 훅 이벤트\nPreToolUse   → 도구 실행 직전 (차단 가능)\nPostToolUse  → 도구 실행 직후\nPostApply    → 파일 수정 완료 후\nStop         → Claude 응답 완료 후\n\n# settings.json 연결 예시\n\"hooks\": {\n  \"PostApply\": [\".claude/hooks/format.sh\"]\n}" },
+  { id:"formatonsave",   name:"format-on-save.sh",       type:"file",   depth:2,
+    summary:"Claude가 파일 수정 후 자동으로 코드 포맷을 실행하는 훅",
+    detail:"PostApply 이벤트에 연결해두면 Claude가 파일을 수정한 직후 자동으로 prettier, black, gofmt 등 포맷터가 실행됩니다.",
+    example:"#!/bin/bash\n# PostApply 훅 — 자동 코드 포맷\n\nfor FILE in $CLAUDE_FILE_PATHS; do\n  if [[ \"$FILE\" == *.py ]]; then\n    black \"$FILE\" && isort \"$FILE\"\n  elif [[ \"$FILE\" == *.ts ]] || [[ \"$FILE\" == *.tsx ]]; then\n    prettier --write \"$FILE\"\n  elif [[ \"$FILE\" == *.go ]]; then\n    gofmt -w \"$FILE\"\n  fi\ndone" },
+  { id:"blocksecrets",   name:"block-secrets.sh",        type:"file",   depth:2,
+    summary:"위험한 명령어 실행을 사전에 차단하는 보안 훅",
+    detail:"PreToolUse 이벤트에 연결해 rm -rf, DROP TABLE, 시크릿 노출 명령 등을 Claude가 실행하기 전에 자동 차단합니다. exit 1 반환 시 실행이 막힙니다.",
+    example:"#!/bin/bash\n# PreToolUse 훅 — 위험 명령 차단\n\nCMD=\"$CLAUDE_TOOL_INPUT\"\n\n# 위험 패턴 검사\nif echo \"$CMD\" | grep -qE '(rm -rf /|DROP TABLE|DELETE FROM [^W])'; then\n  echo \"⛔ 위험 명령이 감지되어 차단됩니다\"\n  echo \"명령: $CMD\"\n  exit 1\nfi\n\nexit 0  # 허용" },
+  { id:"outputstyles",   name:"output-styles/",          type:"folder", depth:1,
+    summary:"Claude 답변의 형식·언어·말투·상세도를 설정하는 폴더",
+    detail:"간결 모드, 상세 모드, 코드 우선 모드, 한국어 모드 등 다양한 출력 스타일을 미리 정의해두고 필요에 따라 전환합니다.",
+    example:"# 스타일 예시\nconcise.md      → 핵심만 1-2줄로\ndetailed.md     → 단계별 상세 설명\ncode-first.md   → 코드 먼저, 설명 나중\nkorean.md       → 모든 답변 한국어로\njunior.md       → 초보자 눈높이 설명" },
+  { id:"workflows",      name:"workflows/",              type:"folder", depth:1,
+    summary:"여러 에이전트를 순서대로 실행하는 자동화 파이프라인",
+    detail:"복잡한 작업을 여러 에이전트가 이어받아 처리합니다. 예: 코드 작성 에이전트 → 테스트 에이전트 → 리뷰 에이전트 순으로 자동 실행됩니다.",
+    example:"# full-pr-workflow.md 예시\n\n## 1단계: 코드 작성\n$AGENT(code-writer): 기능 구현\n\n## 2단계: 테스트 추가\n$AGENT(test-writer): 테스트 작성\n\n## 3단계: 코드 리뷰\n$AGENT(code-reviewer): 리뷰 및 수정 제안\n\n## 4단계: PR 생성\ngh pr create --title '...' --body '...'" },
+  { id:"agentmemory",    name:"agent-memory/",           type:"folder", depth:1,
+    summary:"에이전트가 대화 간 기억을 유지하는 자동 생성 폴더",
+    detail:"Claude Code가 자동으로 만드는 폴더입니다. 에이전트가 이전 대화에서 학습한 내용, 프로젝트 컨텍스트, 사용자 선호도 등을 파일로 저장해 다음 대화에서 활용합니다.",
+    example:"# 자동 생성 파일 예시\nuser_preferences.md  → 사용자 코딩 스타일 기억\nproject_context.md   → 현재 진행 중인 작업 기억\nerrors_seen.md       → 자주 나타나는 오류 패턴\n\n# 직접 저장 명령\n'이 내용 기억해줘' → 에이전트가 자동 저장" },
+  { id:"settingsjson",   name:"settings.json",           type:"file",   depth:0,
+    summary:"Claude Code 권한·훅·모델·환경변수 전체 설정",
+    detail:"허용/차단 명령어, 훅 연결, 기본 모델 등을 정의합니다. 팀 전체와 Git으로 공유되는 공식 설정입니다.",
+    example:'{\n  "permissions": {\n    "allow": [\n      "Bash(npm run *)",\n      "Bash(git add|commit|push)"\n    ],\n    "deny": ["Bash(rm -rf *)"]\n  },\n  "hooks": {\n    "PostApply": [".claude/hooks/format.sh"],\n    "PreToolUse": [".claude/hooks/block-secrets.sh"]\n  },\n  "model": "claude-sonnet-4-6"\n}' },
+  { id:"settingslocaljson", name:"settings.local.json",  type:"file",   depth:0,
+    summary:"나만 쓰는 설정 오버라이드 — Git 제외, 개인 전용",
+    detail:"settings.json을 개인적으로 덮어씁니다. 개인 API 키, 로컬 전용 환경변수, 개인 선호 모델 등을 여기에 넣습니다. .gitignore에 포함됩니다.",
+    example:'{\n  "env": {\n    "ANTHROPIC_API_KEY": "sk-ant-api03-..."\n  },\n  "model": "claude-opus-4-8",\n  "permissions": {\n    "allow": [\n      "Bash(brew *)",\n      "Bash(open *)"\n    ]\n  }\n}' },
+];
+
+function FolderTreeViewer() {
+  const [selected, setSelected] = useState("claudemd");
+  const isMobile = useIsMobile();
+  const item = CLAUDE_TREE.find(n => n.id === selected);
+
+  const tree = (
+    <div style={{ background:C.card2, borderRadius:10, padding:14, border:`1px solid ${C.line}`, overflowY:"auto", maxHeight: isMobile ? 260 : 560 }}>
+      <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginBottom:8, paddingLeft:4 }}>📁 project/</div>
+      {CLAUDE_TREE.map(node => {
+        const active = selected === node.id;
+        const isFolder = node.type === "folder";
+        return (
+          <button key={node.id} onClick={() => setSelected(node.id)} style={{
+            display:"flex", alignItems:"center", gap:6,
+            width:"100%", padding:"5px 8px", borderRadius:6, border:"none",
+            paddingLeft: 8 + node.depth * 18,
+            background: active ? C.blue+"22" : "transparent",
+            color: active ? C.blue : isFolder ? C.yellow : C.text,
+            cursor:"pointer", textAlign:"left",
+            borderLeft: active ? `2px solid ${C.blue}` : "2px solid transparent",
+            transition:"background 0.1s",
+          }}>
+            <span style={{ fontSize:11 }}>{isFolder ? "📁" : "📄"}</span>
+            <span style={{ fontFamily:MONO, fontSize:11, fontWeight: active ? 700 : 400, whiteSpace:"nowrap" }}>{node.name}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const detail = item && (
+    <div style={{ background:C.card2, borderRadius:10, padding:20, border:`1px solid ${C.line}` }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+        <span style={{ fontSize:22 }}>{item.type === "folder" ? "📁" : "📄"}</span>
+        <div style={{ fontFamily:MONO, fontSize:15, fontWeight:700, color:C.blue }}>{item.name}</div>
+      </div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.text, fontWeight:600, marginBottom:10, lineHeight:1.6 }}>
+        {item.summary}
+      </div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, lineHeight:1.8, marginBottom:14 }}>
+        {item.detail}
+      </div>
+      <div style={{ background:"#0D1117", borderRadius:8, padding:"12px 14px", overflowX:"auto" }}>
+        <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginBottom:6 }}>예시</div>
+        <pre style={{ fontFamily:MONO, fontSize:11, color:C.green, lineHeight:1.75, margin:0, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{item.example}</pre>
+      </div>
+    </div>
+  );
+
+  if (isMobile) return <div style={{ display:"flex", flexDirection:"column", gap:12 }}>{tree}{detail}</div>;
+  return <div style={{ display:"grid", gridTemplateColumns:"240px 1fr", gap:14 }}>{tree}{detail}</div>;
+}
+
 // ── 더미 선언 (이전 코드 호환용, 실제 사용 안 함) ──
 const ARCH_NODES = {};
 
@@ -1897,11 +2034,21 @@ const ARCH_DIAGRAMS = [
   { id:"oauth",     title:"OAuth 2.0 소셜 로그인", desc:"구글 로그인이 내부에서 작동하는 방식 7단계",      icon:"🔑", available:true },
   { id:"cicd",      title:"CI/CD 파이프라인",      desc:"git push → GitHub Actions → Vercel/Render 자동 배포", icon:"⚙️", available:true },
   { id:"rest",      title:"REST API 사이클",       desc:"CORS → JWT 인증 → 라우트 핸들러 → DB → JSON 응답", icon:"🌐", available:true },
+  { id:"claudetree", title:"Claude Code 폴더 구조", desc:"각 파일과 폴더의 역할을 클릭으로 확인하세요",        icon:"📁", available:true },
 ];
 
 function ArchScreen() {
   const [selected, setSelected] = useState(null);
   const d = selected && DIAGRAMS[selected];
+
+  if (selected === "claudetree") return (
+    <div style={{ padding:"32px 32px 60px" }}>
+      <button onClick={() => setSelected(null)} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 아키텍처 목록</button>
+      <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>📁 Claude Code 폴더 구조</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>각 파일과 폴더를 클릭해서 역할과 예시를 확인하세요</div>
+      <FolderTreeViewer />
+    </div>
+  );
 
   if (d) return (
     <div style={{ padding:"32px 32px 60px" }}>
