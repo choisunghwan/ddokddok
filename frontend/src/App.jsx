@@ -1340,7 +1340,8 @@ function Word2VecViz() {
   const [hovered, setHovered] = useState(null);
   const [activeAnalogy, setActiveAnalogy] = useState(null);
   const isMobile = useIsMobile();
-  const W = isMobile ? 300 : 420, H = isMobile ? 220 : 300;
+  const W = isMobile ? Math.min(typeof window !== "undefined" ? window.innerWidth - 40 : 360, 420) : 420;
+  const H = isMobile ? Math.round(W * 0.7) : 300;
   const px = wx => wx * W, py = wy => wy * H;
 
   return (
@@ -1382,7 +1383,7 @@ function Word2VecViz() {
             <div key={word} onMouseEnter={()=>setHovered(word)} onMouseLeave={()=>setHovered(null)}
               style={{ position:"absolute", left:px(v.x), top:py(v.y), transform:"translate(-50%,-50%)", cursor:"pointer" }}>
               <div style={{ width:hovered===word||isActive?14:10, height:hovered===word||isActive?14:10, borderRadius:"50%", background:v.color, boxShadow:isActive?`0 0 12px ${v.color}`:"none", transition:"all 0.15s" }}/>
-              <div style={{ position:"absolute", top:-18, left:"50%", transform:"translateX(-50%)", fontFamily:MONO, fontSize:isMobile?8.5:9.5, color:v.color, whiteSpace:"nowrap", fontWeight:hovered===word||isActive?700:400 }}>{word}</div>
+              <div style={{ position:"absolute", top:-18, left:"50%", transform:"translateX(-50%)", fontFamily:MONO, fontSize:10, color:v.color, whiteSpace:"nowrap", fontWeight:hovered===word||isActive?700:400 }}>{word}</div>
             </div>
           );
         })}
@@ -1489,25 +1490,25 @@ function AttentionViz() {
         <div style={{ display:"flex", gap:isMobile?4:6, flexWrap:"wrap" }}>
           {ATTN_SENTENCE.map((w,i) => (
             <button key={i} onClick={() => setFocused(i)} style={{
-              width:isMobile?38:48, padding:"7px 0", borderRadius:7, border:`1px solid ${focused===i?C.blue:C.line}`,
+              flex:1, padding:"8px 4px", borderRadius:7, border:`1px solid ${focused===i?C.blue:C.line}`,
               background: focused===i?C.blue+"33":C.card2,
-              color: focused===i?C.blue:C.muted, fontFamily:MONO, fontSize:isMobile?9:11, fontWeight:700, cursor:"pointer",
+              color: focused===i?C.blue:C.muted, fontFamily:MONO, fontSize:isMobile?11:12, fontWeight:700, cursor:"pointer",
             }}>{w}</button>
           ))}
         </div>
       </div>
-      <div style={{ display:"flex", gap:isMobile?4:8, marginBottom:16, alignItems:"center" }}>
-        <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, width:60 }}>Key ↓</div>
-        <div style={{ display:"flex", gap:isMobile?4:6, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:isMobile?4:8, marginBottom:16, alignItems:"flex-start" }}>
+        <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, width:50, paddingTop:12, flexShrink:0 }}>Key ↓</div>
+        <div style={{ display:"flex", gap:isMobile?5:6, flexWrap:"wrap", flex:1 }}>
           {ATTN_SENTENCE.map((w,i) => (
             <div key={i} style={{
-              width:isMobile?38:48, padding:"10px 0", borderRadius:7,
+              flex:"1 1 auto", minWidth:isMobile?44:48, maxWidth:64, padding:isMobile?"11px 4px":"10px 0", borderRadius:7,
               background: C.blue+alphaToHex(weights[i]),
               border:`1px solid ${C.blue}${alphaToHex(weights[i]*0.5)}`,
               display:"flex", flexDirection:"column", alignItems:"center", gap:4,
             }}>
-              <span style={{ fontFamily:MONO, fontSize:isMobile?9:11, color:C.text, fontWeight:700 }}>{w}</span>
-              <span style={{ fontFamily:MONO, fontSize:8, color:C.muted }}>{(weights[i]*100).toFixed(0)}%</span>
+              <span style={{ fontFamily:MONO, fontSize:isMobile?11:12, color:C.text, fontWeight:700 }}>{w}</span>
+              <span style={{ fontFamily:MONO, fontSize:isMobile?9:9, color:C.muted }}>{(weights[i]*100).toFixed(0)}%</span>
             </div>
           ))}
         </div>
@@ -1530,9 +1531,8 @@ const NN_LAYERS = [
 
 function NeuralNetViz() {
   const [activeNode, setActiveNode] = useState(null);
-  const isMobile = useIsMobile();
-  const W = isMobile ? 300 : 400, H = 240;
-  const layerX = i => 50 + (i/(NN_LAYERS.length-1))*(W-100);
+  const W = 420, H = 260;
+  const layerX = i => 60 + (i/(NN_LAYERS.length-1))*(W-120);
   const nodeY = (li, ni) => {
     const n = NN_LAYERS[li].nodes;
     const spacing = Math.min(36, (H-40)/n);
@@ -1543,7 +1543,7 @@ function NeuralNetViz() {
   return (
     <div>
       <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:10 }}>노드를 클릭하면 연결된 뉴런이 활성화돼요</div>
-      <svg width={W} height={H} style={{ background:"#0D1117", borderRadius:12, maxWidth:"100%" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display:"block", background:"#0D1117", borderRadius:12 }}>
         {NN_LAYERS.slice(0,-1).map((layer,li) =>
           Array.from({ length:layer.nodes },(_,ni) =>
             Array.from({ length:NN_LAYERS[li+1].nodes },(_,nj) => {
@@ -1567,7 +1567,7 @@ function NeuralNetViz() {
           })
         )}
         {NN_LAYERS.map((layer,li) => (
-          <text key={li} x={layerX(li)} y={H-6} textAnchor="middle" fill={layer.color} fontFamily={MONO} fontSize={isMobile?8:9} fontWeight={700}>{layer.name}</text>
+          <text key={li} x={layerX(li)} y={H-8} textAnchor="middle" fill={layer.color} fontFamily={MONO} fontSize={11} fontWeight={700}>{layer.name}</text>
         ))}
       </svg>
       <div style={{ marginTop:12, display:"flex", gap:12, fontFamily:MONO, fontSize:10.5, color:C.muted, flexWrap:"wrap" }}>
@@ -1901,6 +1901,26 @@ const ADSP_ROUNDS = {
     _Q(18,3,"로지스틱 회귀에서 사용하는 시그모이드(Sigmoid) 함수의 출력 범위는?",["(-∞, +∞)","(0, 1)","[-1, 1)","[0, +∞)"],1,"시그모이드 σ(x) = 1/(1+e^(-x))의 출력은 (0,1) 범위로 이진 분류의 확률 표현에 적합합니다."),
     _Q(19,3,"시계열 분석에서 계절성(Seasonality)을 제거하는 일반적인 방법은?",["차분(Differencing)","로그 변환","계절 분해(Seasonal Decomposition)","Min-Max 정규화"],2,"계절성은 STL 등 계절 분해로 제거합니다. 추세 제거는 차분, 분산 불안정은 로그 변환으로 처리합니다."),
     _Q(20,3,"텍스트 마이닝에서 TF-IDF 값이 높은 단어의 의미는?",["문서 전체에서 자주 등장하는 일반적 단어","해당 문서에서 중요하고 다른 문서에서는 드문 단어","문서 길이가 짧다","단어 감성이 긍정적"],1,"TF-IDF = TF(문서 내 빈도) × IDF(역문서 빈도). 해당 문서에서 자주 등장하지만 전체 문서에서 드문 단어일수록 높습니다."),
+    _Q(21,1,"OLAP(Online Analytical Processing)의 특징으로 옳은 것은?",["실시간 트랜잭션 처리에 최적화","다차원 데이터 분석 및 집계에 특화","비정형 데이터 저장에 사용","실시간 배치 처리 시스템"],1,"OLAP은 다차원 데이터 분석·집계에 특화됩니다. OLTP는 트랜잭션, Hadoop은 비정형 대용량 처리에 적합합니다."),
+    _Q(22,1,"데이터 웨어하우스(Data Warehouse)의 특징으로 옳지 않은 것은?",["주제 지향적(Subject-Oriented)","통합적(Integrated)","비휘발성(Non-Volatile)","실시간 트랜잭션 처리에 최적화"],3,"데이터 웨어하우스: 주제 지향, 통합, 비휘발, 시계열 특성. 실시간 트랜잭션(OLTP)과 반대 개념입니다."),
+    _Q(23,1,"ETL에서 'Transform(변환)' 단계의 주요 작업은?",["원본 시스템에서 데이터 추출","데이터 정제·형식 변환·통합 처리","목적 시스템에 데이터 적재","데이터 품질 리포트 작성"],1,"T(Transform): 데이터 형식 변환, 중복 제거, 표준화, 비즈니스 규칙 적용 등을 수행합니다."),
+    _Q(24,1,"API를 통한 데이터 수집에 대한 설명으로 옳은 것은?",["파일을 직접 다운로드하는 방식","서버가 제공하는 인터페이스를 통해 데이터 요청·수신","DB를 직접 복제하는 방식","웹 크롤링과 동일한 방식"],1,"API는 공식 인터페이스를 통해 JSON/XML 형태로 데이터를 요청·수신하는 방법으로 크롤링보다 안정적입니다."),
+    _Q(25,1,"가명처리(Pseudonymization)에 대한 설명으로 옳은 것은?",["개인을 완전히 식별 불가능하게 만드는 처리","추가 정보 없이는 특정 개인을 알아볼 수 없게 처리","원본 데이터를 영구 삭제","암호화와 완전히 동일"],1,"가명처리는 '추가 정보 없이는' 개인을 식별할 수 없게 처리합니다. 익명처리(복원 불가)와 구분됩니다."),
+    _Q(26,2,"분석 방법론 단계별 산출물 연결이 옳지 않은 것은?",["문제 정의 → 분석 기획서","데이터 수집 → 원시 데이터셋","모델링 → 학습된 모델","배포 → 비즈니스 요구사항 정의서"],3,"배포 단계 산출물: 배포 모델, 운영 매뉴얼, 모니터링 대시보드. 비즈니스 요구사항 정의서는 문제 정의 단계입니다."),
+    _Q(27,2,"분석 과제 우선순위 포트폴리오 매트릭스의 두 축은?",["ROI와 데이터 품질","비즈니스 전략 중요도와 실행 용이성","비용과 시간","팀 역량과 데이터 가용성"],1,"우선순위 매트릭스: 비즈니스 전략 중요도(가치) × 실행 용이성(난이도). QuickWin은 중요도·용이성 모두 높은 영역입니다."),
+    _Q(28,2,"분석 투자 '유형 효과(Tangible Benefits)'에 해당하는 것은?",["브랜드 이미지 강화","직원 만족도 향상","연간 비용 절감 500만 원","고객 충성도 증가"],2,"유형 효과는 금액으로 측정 가능합니다. 브랜드 이미지·직원 만족도·고객 충성도는 무형 효과입니다."),
+    _Q(29,2,"데이터 거버넌스 정책(Policy)의 역할로 옳은 것은?",["데이터 수집 자동화","데이터 사용에 대한 원칙·규정·기준 수립","데이터 분석 알고리즘 선택","데이터 시각화 도구 관리"],1,"거버넌스 정책은 데이터 소유권, 접근 권한, 품질 기준, 보안 등 전사적 규정을 수립합니다."),
+    _Q(30,2,"도메인 지식(Domain Knowledge)의 역할로 옳은 것은?",["프로그래밍 언어 사용","통계 알고리즘 구현","비즈니스 맥락 이해 및 분석 결과의 현실적 해석","DB 관리"],2,"도메인 지식은 분석 결과를 비즈니스 맥락에서 해석하고 실용적 인사이트를 도출하는 데 필수입니다."),
+    _Q(31,3,"범주형 변수 간 독립성을 검정하는 통계 방법은?",["t-검정","F-검정","카이제곱(χ²) 검정","Z-검정"],2,"카이제곱 검정은 두 범주형 변수의 독립성을 검정합니다. 성별과 구매 여부, 지역과 선호도 분석에 활용됩니다."),
+    _Q(32,3,"부스팅과 배깅의 차이로 옳은 것은?",["부스팅은 병렬 학습, 배깅은 순차 학습","부스팅은 순차적으로 이전 오류에 집중, 배깅은 독립적 병렬 학습","부스팅은 회귀에만, 배깅은 분류에만 사용","둘 다 단일 알고리즘만 사용"],1,"부스팅: 순차 학습(이전 오류 집중). 배깅: 독립적 병렬 학습. AdaBoost·XGBoost=부스팅, Random Forest=배깅입니다."),
+    _Q(33,3,"k-fold 교차 검증의 주요 목적은?",["데이터 증강","모델의 일반화 성능을 안정적으로 추정","특성 선택 자동화","하이퍼파라미터 최적화"],1,"k-fold CV는 데이터를 k등분 후 k회 학습·검증 반복하여 편향 없이 일반화 성능을 추정합니다."),
+    _Q(34,3,"ROC 곡선의 X축과 Y축으로 올바른 것은?",["정밀도와 재현율","거짓 양성률(FPR)과 진짜 양성률(TPR)","정확도와 F1","임계값과 정확도"],1,"ROC: X=FPR(1-Specificity), Y=TPR(Recall). 왼쪽 상단에 가까울수록 좋은 모델입니다."),
+    _Q(35,3,"K-means 군집 분석의 단점으로 옳은 것은?",["군집 수(k) 자동 결정","초기 중심점 선택에 민감","계층적 구조 자동 생성","이상치 자동 제거"],1,"K-means: 초기 중심점에 따라 결과 불안정, k 사전 지정 필요, 구형 군집 가정 등이 단점입니다."),
+    _Q(36,3,"Min-Max 정규화의 결과로 옳은 것은?",["평균 0, 표준편차 1","모든 값이 [0, 1] 범위로 변환","이상치 영향 완전 제거","분포가 정규분포로 변환"],1,"Min-Max: (x-min)/(max-min). 결과 [0,1]. 이상치에 민감합니다. Z-score는 평균 0, 표준편차 1입니다."),
+    _Q(37,3,"SVM에서 서포트 벡터(Support Vector)의 의미는?",["모든 학습 데이터 포인트","결정 경계와 가장 가까운 데이터 포인트","오분류된 데이터 포인트","가장 멀리 있는 데이터 포인트"],1,"서포트 벡터는 결정 경계와 가장 가까운 데이터 포인트로, 마진을 결정합니다. SVM은 이 마진을 최대화하는 경계를 찾습니다."),
+    _Q(38,3,"협업 필터링(CF) 추천의 아이템 기반 방식 특징은?",["사용자 속성 기반 추천","유사 사용자의 구매 패턴 활용","아이템 간 유사도(동시 구매 패턴) 기반 추천","콘텐츠 특성 분석 추천"],2,"아이템 기반 CF는 아이템 간 유사도(동시 구매 패턴)를 활용합니다. 사용자 기반 CF는 유사 사용자 패턴을 활용합니다."),
+    _Q(39,3,"계층적 군집 분석의 결과물은?",["군집 레이블 테이블","덴드로그램(Dendrogram)","산점도","박스플롯"],1,"계층적 군집 결과는 덴드로그램으로 표현됩니다. 군집 병합 과정을 트리로 시각화하며 적정 군집 수 결정에 사용됩니다."),
+    _Q(40,3,"확률론적 경사 하강법(SGD)의 특징으로 옳은 것은?",["전체 데이터를 한 번에 처리","소수의 샘플로 파라미터를 업데이트","학습률이 고정","배치 경사 하강법보다 항상 정확"],1,"SGD는 미니 배치 또는 단일 샘플로 그래디언트를 추정하여 파라미터를 업데이트합니다. 빠르고 메모리 효율적이나 노이즈가 있습니다."),
   ],
   45: [
     _Q(1,1,"빅데이터의 가치(Value) 창출 방법으로 가장 거리가 먼 것은?",["재사용·재조합을 통한 서비스 개발","데이터 기반 비즈니스 모델 혁신","개인정보 무단 수집 및 판매","이종 데이터 결합으로 인사이트 발굴"],2,"개인정보 무단 수집·판매는 법적으로 금지되며 데이터 윤리에 반합니다."),
@@ -1923,6 +1943,26 @@ const ADSP_ROUNDS = {
     _Q(18,3,"예측값과 실제값 차이의 절댓값 평균인 회귀 평가 지표는?",["MSE(Mean Squared Error)","MAE(Mean Absolute Error)","RMSE","MAPE"],1,"MAE = (1/n)Σ|y_i - ŷ_i|. 이상치 영향이 MSE보다 적고 원데이터와 같은 단위로 해석이 용이합니다."),
     _Q(19,3,"자연어 처리에서 형태소 분석의 목적은?",["문장의 감정 분석","단어를 의미 있는 최소 단위(형태소)로 분해","문서 간 유사도 계산","개체명(인명·지명) 인식"],1,"형태소 분석은 '나는 학교에 간다' → '나/는/학교/에/가/ㄴ다'처럼 최소 의미 단위로 분해합니다."),
     _Q(20,3,"L2 정규화(Ridge)의 특징으로 옳은 것은?",["일부 계수를 정확히 0으로 만들어 변수 선택","모든 계수를 0 방향으로 줄이되 0이 되지는 않음","계수 제약이 없음","트리 모델에서만 사용 가능"],1,"L2(Ridge)는 계수 제곱합을 패널티로 부여해 0 방향으로 축소하지만 0이 되지는 않습니다. L1(Lasso)은 변수 선택 효과가 있습니다."),
+    _Q(21,1,"반정형 데이터(Semi-structured Data)의 예시로 옳은 것은?",["관계형 DB 테이블","JSON·XML 파일","이미지·동영상 파일","바이너리 로그"],1,"반정형 데이터는 스키마가 유연한 JSON, XML, CSV 등입니다. 완전한 구조(관계형 DB)와 비구조(이미지) 사이에 위치합니다."),
+    _Q(22,1,"빅데이터 3V 중 Variety(다양성)에 해당하는 예시는?",["하루 10TB 데이터 생성","초당 1000건 트랜잭션 처리","텍스트·이미지·센서 데이터 혼합","분석 결과의 경제적 가치"],2,"Variety는 정형·반정형·비정형 등 다양한 형태의 데이터를 의미합니다."),
+    _Q(23,1,"MapReduce에서 'Reduce' 단계의 역할은?",["데이터를 여러 노드에 분산","키-값 쌍으로 데이터 변환","중간 결과를 집계하여 최종 결과 생성","데이터를 네트워크로 전송"],2,"MapReduce: Map(분산 처리, 중간 키-값 생성) → Reduce(중간 결과 집계, 최종 결과 출력)."),
+    _Q(24,1,"데이터 카탈로그(Data Catalog)의 주요 기능으로 옳은 것은?",["데이터를 실시간으로 변환","조직의 데이터 자산 목록화 및 메타데이터 관리","데이터 백업 및 복구","데이터 암호화 처리"],1,"데이터 카탈로그는 데이터 자산의 위치·형식·의미·소유자 등 메타데이터를 관리하여 필요한 데이터를 빠르게 찾고 활용하게 합니다."),
+    _Q(25,1,"데이터 리니지(Data Lineage)의 의미로 옳은 것은?",["데이터의 법적 소유권","데이터 발생부터 현재까지 이동·변환 경로 추적","데이터 접근 권한 관리","데이터 암호화 알고리즘"],1,"데이터 리니지는 데이터의 출처와 이동·변환 이력을 추적합니다. 품질 문제 디버깅과 규정 준수 감사에 활용됩니다."),
+    _Q(26,2,"분석 프로젝트 타당성 검토 항목이 아닌 것은?",["경제적 타당성(비용-편익)","기술적 타당성(역량 수준)","운영적 타당성(조직 역량)","분석가의 개인 선호도"],3,"타당성 검토: 경제적·기술적·운영적·법적 타당성. 개인 선호는 포함되지 않습니다."),
+    _Q(27,2,"데이터 스토리텔링의 핵심 요소가 아닌 것은?",["청중 수준에 맞는 언어","핵심 인사이트의 명확한 전달","모든 분석 과정의 상세 설명","시각화를 통한 이해 지원"],2,"스토리텔링: 청중 맞춤 언어, 인사이트 강조, 시각화가 핵심입니다. 모든 과정 상세 설명은 핵심을 가릴 수 있습니다."),
+    _Q(28,2,"빅데이터 분석의 '내부 데이터'에 해당하는 것은?",["트위터·인스타그램 게시글","정부 공공 데이터 포털","회사 ERP 시스템 판매 데이터","웹 크롤링 경쟁사 데이터"],2,"내부 데이터: ERP·CRM·POS·내부 DB 등 조직 내부 생성 데이터. 외부 데이터: SNS·공공 데이터·크롤링 등."),
+    _Q(29,2,"분석 마스터 플랜 중장기 로드맵 수립의 중요 고려 사항은?",["최신 AI 기술 무조건 도입","현재 분석 수준 진단과 목표 수준 간 GAP 분석","경쟁사 분석 기술 복제","분석 도구 라이선스 비용 최소화"],1,"로드맵: 현재 성숙도(As-Is) → 목표 수준(To-Be) → GAP 분석 → 단계적 실행 계획."),
+    _Q(30,2,"KPI 설정 SMART 원칙 중 'A'의 의미는?",["Analytical","Achievable(달성 가능한)","Automated","Accurate"],1,"SMART: Specific·Measurable·Achievable·Relevant·Time-bound. A는 KPI가 현실적으로 달성 가능해야 함을 의미합니다."),
+    _Q(31,3,"정규 분포를 따르지 않는 두 독립 집단의 중앙값 비교에 사용하는 검정은?",["독립표본 t-검정","쌍체표본 t-검정","맨-휘트니 U 검정","카이제곱 검정"],2,"맨-휘트니 U 검정은 정규성 가정 없이 두 독립 집단의 중앙값을 비교하는 비모수 검정입니다."),
+    _Q(32,3,"특성 중요도(Feature Importance)를 직접 제공하는 알고리즘은?",["K-means","로지스틱 회귀","Random Forest","DBSCAN"],2,"Random Forest는 각 특성이 불순도 감소에 기여한 정도로 특성 중요도를 직접 계산합니다."),
+    _Q(33,3,"불균형 데이터 처리 방법이 아닌 것은?",["오버샘플링(SMOTE)","언더샘플링","클래스 가중치 조정","데이터 Min-Max 정규화"],3,"불균형 처리: 오버샘플링·언더샘플링·가중치 조정·임계값 조정. Min-Max 정규화는 불균형 해소 기법이 아닙니다."),
+    _Q(34,3,"Random Forest의 특징으로 옳은 것은?",["단일 의사결정나무로 구성","특성 중요도 계산 불가","배깅과 특성 무작위 선택을 결합한 앙상블","과적합에 매우 취약"],2,"Random Forest = 배깅(Bootstrap 샘플) + 특성 무작위 선택. 과적합에 강하고 특성 중요도를 제공합니다."),
+    _Q(35,3,"회귀 분석에서 잔차(Residual)의 정의로 옳은 것은?",["모델 파라미터의 합","실제값과 예측값의 차이","독립·종속변수의 상관계수","표준화된 예측값"],1,"잔차 = 실제값 - 예측값. 잔차 분석으로 선형성·등분산성·정규성·독립성 가정을 검토합니다."),
+    _Q(36,3,"기울기 소실(Vanishing Gradient) 문제를 완화하는 방법이 아닌 것은?",["ReLU 활성화 함수 사용","배치 정규화","잔차 연결(Residual Connection)","시그모이드 활성화 함수 사용"],3,"시그모이드 함수는 기울기 소실의 원인입니다. ReLU·배치 정규화·잔차 연결이 해결책입니다."),
+    _Q(37,3,"딥러닝 레이어가 학습하는 특징으로 옳은 것은?",["고정된 규칙 기반 특징","입력 데이터의 계층적 추상 특징","수동 설계된 특징","단순 선형 변환만"],1,"딥러닝은 저수준(엣지·색상) → 중수준(패턴) → 고수준(객체) 순으로 계층적 특징을 자동 학습합니다."),
+    _Q(38,3,"분류 문제와 회귀 문제의 차이로 옳은 것은?",["분류는 연속 출력, 회귀는 이산 출력","분류는 이산 클래스 예측, 회귀는 연속 수치 예측","둘 다 레이블 없이 학습","분류에서만 손실 함수 사용"],1,"분류: 이산 클래스(스팸/정상). 회귀: 연속 수치(집값·온도). 분류는 크로스 엔트로피, 회귀는 MSE 손실 함수를 사용합니다."),
+    _Q(39,3,"원-핫 인코딩(One-Hot Encoding)의 목적은?",["연속형 변수 이산화","범주형 변수를 수치형 이진 벡터로 변환","결측값을 평균으로 대체","데이터 정규화"],1,"원-핫 인코딩은 순서 관계 없는 범주형 변수를 알고리즘이 처리할 수 있는 이진 벡터로 변환합니다."),
+    _Q(40,3,"자기 회귀 모형(AR: AutoRegressive Model)의 의미는?",["현재 값이 미래 외부 요인에 의해 결정","현재 값이 과거 값들의 선형 조합으로 표현","현재 값이 과거 오차항의 선형 조합","현재 값이 이동 평균으로만 결정"],1,"AR(p): y_t = φ₁y_{t-1} + ... + φₚy_{t-p} + ε. 현재 값이 과거 p개 시점의 자신 값에 의존합니다."),
   ],
   46: [
     _Q(1,1,"빅데이터 플랫폼의 구성 요소가 아닌 것은?",["데이터 수집 레이어","데이터 저장 레이어","데이터 처리·분석 레이어","데이터 자동 삭제 레이어"],3,"빅데이터 플랫폼은 수집→저장→처리·분석→서비스(시각화·배포) 레이어로 구성됩니다."),
@@ -1945,6 +1985,26 @@ const ADSP_ROUNDS = {
     _Q(18,3,"분류 문제의 손실 함수로 사용되는 교차 엔트로피(Cross-Entropy)에 대한 설명으로 옳은 것은?",["회귀 문제에 주로 사용","예측 확률 분포와 실제 분포의 차이를 측정","군집 수를 결정하는 기준","이상치 탐지에 특화"],1,"크로스 엔트로피는 분류 문제에서 예측 확률 분포와 실제 분포의 차이를 측정하는 손실 함수입니다."),
     _Q(19,3,"scikit-learn에서 모델을 학습시키는 메서드는?",["predict()","fit()","transform()","evaluate()"],1,"scikit-learn에서 fit()은 모델 학습, predict()는 예측, transform()은 데이터 변환, score()는 성능 평가입니다."),
     _Q(20,3,"빅데이터 배치 이동 도구로 HDFS와 관계형 DB 간 데이터를 전송하는 것은?",["Apache Kafka","Apache Flink","Apache Spark Streaming","Apache Sqoop"],3,"Apache Sqoop은 HDFS와 RDBMS 간 데이터를 배치로 이동합니다. Kafka·Flink·Spark Streaming은 실시간 스트리밍 처리 프레임워크입니다."),
+    _Q(21,1,"데이터 거버넌스 평가 기준 중 데이터 값이 정의된 규칙과 형식을 따르는지를 나타내는 품질 지표는?",["정확성(Accuracy)","완전성(Completeness)","유효성(Validity)","유일성(Uniqueness)"],2,"유효성은 데이터가 사전 정의된 규칙·형식·범위를 준수하는지 여부입니다. 예) 날짜 형식 YYYY-MM-DD, 나이 0~150."),
+    _Q(22,1,"하둡(Hadoop) 에코시스템 중 HBase의 특징으로 옳은 것은?",["SQL 기반 관계형 데이터베이스","HDFS 위에서 동작하는 분산 칼럼형 NoSQL","실시간 스트림 처리 엔진","데이터 워크플로우 스케줄러"],1,"HBase는 HDFS 위에서 동작하는 분산 칼럼 기반 NoSQL DB로 대용량 희소 데이터를 빠르게 읽고 씁니다."),
+    _Q(23,1,"데이터 마이닝에서 연관 규칙(Association Rule)의 지지도(Support) 공식은?",["P(A) × P(B)","P(A∩B) / P(B)","P(A∩B) / 전체 거래 수","P(B|A) / P(B)"],2,"지지도 = P(A∩B) = (A와 B 동시 포함 거래 수) / (전체 거래 수). 규칙의 빈도 수준을 나타냅니다."),
+    _Q(24,1,"Parquet, ORC 파일 형식의 장점으로 옳은 것은?",["인간이 직접 읽기 용이","열 기반 저장으로 집계 쿼리 성능 우수","실시간 쓰기 최적화","관계형 DB에서 직접 사용 가능"],1,"Parquet·ORC는 열 기반(Columnar) 저장 포맷으로 집계·분석 쿼리 시 필요한 컬럼만 읽어 I/O와 저장 공간을 절약합니다."),
+    _Q(25,1,"클라우드 서비스 모델 중 플랫폼(PaaS)에 해당하는 것은?",["AWS EC2(가상 서버)","AWS S3(스토리지)","Google App Engine","Microsoft Office 365"],2,"PaaS: 개발 환경·런타임·미들웨어 제공(Google App Engine, Heroku). IaaS: 인프라(EC2, S3). SaaS: 소프트웨어(Office 365)."),
+    _Q(26,2,"비즈니스 가치 관점에서 분석 과제 우선순위를 결정할 때 고려 요소가 아닌 것은?",["기대 ROI","구현 난이도","데이터 가용성","분석가 생년월일"],3,"우선순위 결정: 기대 ROI·전략 중요도·구현 난이도·데이터 가용성·긴급성. 개인 신상 정보는 해당 없습니다."),
+    _Q(27,2,"하향식(Top-Down) 분석 기획의 특징으로 옳은 것은?",["현업 데이터 탐색으로 과제 발굴","경영 전략·목표 중심으로 분석 과제 정의","분석가 개인 흥미 위주 탐색","데이터 가용성 먼저 확인 후 전략 수립"],1,"하향식: 전략 목표 → 핵심 질문 → 분석 과제 도출. 상향식: 데이터 탐색 → 패턴 발견 → 비즈니스 가치 연결."),
+    _Q(28,2,"데이터 분석 결과 보고서의 핵심 독자(경영진)에게 적합한 보고 방식은?",["모든 알고리즘 수식 상세 기술","수백 페이지 분량의 기술 문서","핵심 인사이트와 비즈니스 의미 중심 요약","원시 데이터 전체 첨부"],2,"경영진 보고: 핵심 결론과 비즈니스 의미를 한눈에 파악할 수 있도록 간결하게 요약합니다."),
+    _Q(29,2,"분석 환경 구성 시 개발·스테이징·운영 환경을 분리하는 이유는?",["비용 절감","테스트 안전성 확보 및 운영 안정성 유지","분석가 학습 용이","데이터 중복 방지"],1,"환경 분리: 개발(자유 실험) → 스테이징(운영 전 최종 검증) → 운영(실서비스). 운영 환경 보호와 품질 확보."),
+    _Q(30,2,"분석 과제의 KPI를 설정할 때 '측정 가능성(Measurable)'이 의미하는 바는?",["담당자가 측정 결과를 이해할 수 있음","수치·지표로 진행 정도를 객관적으로 파악 가능","측정 도구가 자동화되어 있음","측정 비용이 낮음"],1,"측정 가능성은 진행 정도와 달성 여부를 수치·지표로 객관적으로 확인할 수 있어야 함을 의미합니다."),
+    _Q(31,3,"시계열 데이터의 분해(Decomposition) 구성 요소가 아닌 것은?",["추세(Trend)","계절성(Seasonality)","잔차(Residual)","클러스터(Cluster)"],3,"시계열 분해: 추세(장기 방향성) + 계절성(주기 패턴) + 순환(장기 경기) + 잔차(불규칙 요소). 클러스터는 군집 분석 개념입니다."),
+    _Q(32,3,"딥러닝의 배치 정규화(Batch Normalization)의 효과로 옳은 것은?",["모델 파라미터 수 감소","각 레이어 입력 분포를 안정화하여 학습 속도 향상","데이터 증강(Augmentation)","이상치 자동 제거"],1,"배치 정규화는 미니배치 단위로 레이어 입력 분포(평균 0, 분산 1)를 정규화하여 내부 공변량 이동을 줄이고 학습을 빠르게 합니다."),
+    _Q(33,3,"SVM(Support Vector Machine)에서 마진(Margin)이란?",["학습률(Learning Rate)","결정 경계와 가장 가까운 데이터 포인트 사이의 거리","손실 함수 값","히든 레이어 수"],1,"SVM은 클래스 사이의 마진(결정 경계와 서포트 벡터 간 거리)을 최대화하는 결정 경계를 찾습니다."),
+    _Q(34,3,"다음 중 앙상블(Ensemble) 학습 기법에 해당하지 않는 것은?",["배깅(Bagging)","부스팅(Boosting)","스태킹(Stacking)","드롭아웃(Dropout)"],3,"드롭아웃은 신경망의 정규화 기법입니다. 배깅·부스팅·스태킹은 대표적인 앙상블 기법입니다."),
+    _Q(35,3,"k-겹 교차검증(k-fold Cross Validation)의 k값이 클수록 나타나는 현상은?",["학습 데이터 비율 감소","검증 신뢰도 향상, 계산 비용 증가","과적합 증가","모델 단순화"],1,"k가 클수록 더 많은 데이터로 학습하고 더 적은 데이터로 검증하므로 분산이 줄고 신뢰도가 올라가지만 k배의 계산 비용이 듭니다."),
+    _Q(36,3,"데이터 증강(Data Augmentation) 기법이 주로 사용되는 분야는?",["정형 데이터 회귀 분석","시계열 ARIMA 모델링","이미지·텍스트 딥러닝","SQL 쿼리 최적화"],2,"데이터 증강은 이미지(회전·반전·색상 조정)나 텍스트(동의어 교체) 등 비정형 딥러닝에서 훈련 데이터를 인위적으로 늘리는 기법입니다."),
+    _Q(37,3,"Precision(정밀도)와 Recall(재현율)의 관계로 옳은 것은?",["항상 동일한 값","임계값 변화에 따라 트레이드오프 관계","Precision이 높으면 Recall도 항상 높음","서로 독립적으로 동시에 최대화 가능"],1,"임계값을 높이면 Precision↑ Recall↓, 낮추면 Precision↓ Recall↑. 두 지표는 트레이드오프 관계입니다."),
+    _Q(38,3,"DBSCAN 클러스터링 알고리즘의 특징으로 옳은 것은?",["구형 군집에만 적합","클러스터 수를 미리 지정해야 함","임의 형태 군집 탐지 및 노이즈 포인트 처리 가능","거리 기반 유사도만 사용"],2,"DBSCAN: 밀도 기반 군집. 클러스터 수 자동 결정, 비구형 군집 탐지, 노이즈(이상치) 자동 분류."),
+    _Q(39,3,"회귀 모형의 성능 평가 지표 RMSE(Root Mean Squared Error)의 특징은?",["오차를 절댓값으로 처리","큰 오차에 민감하며 원래 단위와 같음","분류 문제에 사용","값이 클수록 성능이 좋음"],1,"RMSE는 오차의 제곱 평균의 제곱근으로 큰 오차에 더 민감합니다. 단위가 원래 변수와 같아 해석이 직관적입니다."),
+    _Q(40,3,"GAN(Generative Adversarial Network)에서 두 신경망의 역할로 옳은 것은?",["인코더는 압축, 디코더는 복원","생성자는 가짜 데이터 생성, 판별자는 진위 여부 판별","정책망과 가치망의 협력","분류기와 회귀기의 앙상블"],1,"GAN: 생성자(Generator)는 실제 같은 가짜 데이터를 생성하고, 판별자(Discriminator)는 진짜와 가짜를 구별합니다. 경쟁을 통해 품질이 향상됩니다."),
   ],
   47: [
     _Q(1,1,"정형·반정형·비정형 데이터를 원본 형태로 저장하는 저장소는?",["데이터 마트(Data Mart)","데이터 레이크(Data Lake)","데이터 웨어하우스(DW)","운영 DB(OLTP)"],1,"데이터 레이크는 원본 형태 그대로 다양한 유형의 데이터를 저장합니다. ELT 방식을 사용하며 분석 유연성이 높습니다."),
@@ -1967,6 +2027,26 @@ const ADSP_ROUNDS = {
     _Q(18,3,"군집 내 응집도와 군집 간 분리도를 동시에 측정하는 군집 타당성 지표는?",["엘보우 방법(Elbow Method)","실루엣 계수(Silhouette Coefficient)","덴드로그램(Dendrogram)","갭 통계량(Gap Statistic)"],1,"실루엣 계수 = (b-a)/max(a,b). a=군집 내 평균 거리, b=가장 가까운 다른 군집 평균 거리. -1~1 사이로 1에 가까울수록 좋습니다."),
     _Q(19,3,"이항분포 B(n, p)의 평균(기댓값)은?",["p","np","np(1-p)","√(np(1-p))"],1,"이항분포 B(n, p)의 평균 = np, 분산 = np(1-p), 표준편차 = √(np(1-p))입니다."),
     _Q(20,3,"모델 설명 가능성(Explainability)이 가장 높은 알고리즘은?",["Random Forest","Deep Neural Network","로지스틱 회귀(Logistic Regression)","Gradient Boosting"],2,"로지스틱 회귀는 계수(coefficient)의 의미를 직접 해석할 수 있어 설명 가능성이 높습니다. 앙상블·딥러닝은 블랙박스 모델입니다."),
+    _Q(21,1,"실시간 스트리밍 데이터 처리를 위한 대표적인 플랫폼은?",["Apache Sqoop","Apache Kafka","Apache Hive","Apache Oozie"],1,"Apache Kafka는 대용량 실시간 스트리밍 데이터 처리 플랫폼입니다. Sqoop은 배치 이동, Hive는 배치 쿼리, Oozie는 워크플로우 스케줄러입니다."),
+    _Q(22,1,"데이터 표준화(Standardization) 결과 데이터의 분포 특성은?",["최소값 0, 최대값 1","평균 0, 표준편차 1","모든 값이 양수","데이터 분포 형태가 정규분포로 변환"],1,"표준화(Z-score normalization): (x-μ)/σ → 평균 0, 표준편차 1. 정규분포 형태 자체를 바꾸지는 않습니다."),
+    _Q(23,1,"그래프 데이터베이스(Graph DB)의 대표적인 활용 사례는?",["거래 내역 배치 집계","소셜 네트워크 관계 분석·추천","행렬 연산 가속","로그 파일 압축 저장"],1,"그래프 DB(Neo4j 등)는 노드·엣지·속성으로 관계 데이터를 저장하며 소셜 네트워크·추천·지식 그래프에 활용됩니다."),
+    _Q(24,1,"개인정보 중 특별히 민감하여 처리 시 별도 동의가 필요한 '민감 정보'에 해당하지 않는 것은?",["유전자 정보","범죄 경력","주민등록번호","사상·신념"],2,"개인정보보호법 민감 정보: 사상·신념, 노동조합·정당 가입, 건강·성생활, 유전자, 범죄 경력 등. 주민등록번호는 고유식별정보입니다."),
+    _Q(25,1,"데이터 웨어하우스에서 특정 주제나 부서를 위해 만든 소규모 데이터 집합소는?",["데이터 레이크","데이터 마트(Data Mart)","ODS","마스터 데이터"],1,"데이터 마트는 특정 부서(영업·마케팅 등)나 주제를 위해 DW의 일부를 부분적으로 추출한 소규모 데이터 저장소입니다."),
+    _Q(26,2,"분석 성숙도 모델(Analytics Maturity Model)의 가장 높은 단계는?",["기술적 분석(Descriptive Analytics)","진단적 분석(Diagnostic Analytics)","예측적 분석(Predictive Analytics)","처방적 분석(Prescriptive Analytics)"],3,"성숙도: 기술(무슨 일이?) → 진단(왜?) → 예측(어떻게 될까?) → 처방(어떻게 해야 하나?). 처방적 분석이 최상위입니다."),
+    _Q(27,2,"분석 과제 범위(Scope) 정의 시 주의할 점으로 옳은 것은?",["가능한 많은 변수와 문제를 포함","분석 목적에 집중된 명확한 경계 설정","비즈니스 맥락 고려 불필요","예산 산정 후 범위 결정"],1,"범위 정의: 분석 목적에 집중된 명확한 경계, 현실적인 시간·자원 제약, 이해관계자 합의가 중요합니다."),
+    _Q(28,2,"데이터 기반 의사결정에서 '확증 편향(Confirmation Bias)'의 위험은?",["데이터 수집 비용 증가","기존 믿음을 지지하는 데이터만 선택적으로 사용","모델 학습 속도 저하","분석 결과가 항상 정확해짐"],1,"확증 편향은 기존 가설·믿음을 지지하는 증거만 선택적으로 수용하여 객관적 분석을 방해합니다."),
+    _Q(29,2,"분석 현업 부서에 데이터 분석 능력을 확산하는 '데이터 민주화(Data Democratization)'의 목적은?",["데이터를 소수 전문가만 독점","모든 구성원이 데이터에 쉽게 접근·활용하도록 지원","보안을 위해 데이터 접근 제한","데이터 분석 결과 외부 공개"],1,"데이터 민주화는 셀프서비스 분석 도구와 교육을 통해 현업이 스스로 데이터를 활용할 수 있게 합니다."),
+    _Q(30,2,"분석 결과 현업 반영을 위한 변화 관리(Change Management)에서 가장 중요한 것은?",["최고 성능의 알고리즘 선택","이해관계자 소통·교육·저항 관리","데이터 수집량 증가","모델 재학습 자동화"],1,"분석 결과 도입 성패는 이해관계자 소통, 사용자 교육, 조직 저항 관리 등 변화 관리에 달려 있습니다."),
+    _Q(31,3,"주성분 분석(PCA)의 결과로 생성되는 주성분들의 특성은?",["원래 변수와 동일한 의미","서로 직교(uncorrelated)하며 분산 설명력 내림차순","상관 관계가 강한 성분","모두 동일한 분산 설명력"],1,"PCA 주성분: 서로 직교(상관 없음), 분산 설명력 내림차순(PC1>PC2>...), 원래 변수의 선형 결합입니다."),
+    _Q(32,3,"의사결정나무에서 불순도 측정에 사용되는 지니 지수(Gini Index)의 범위는?",["[-1, 1]","[0, 1]","[0, 0.5]","[0, ∞)"],1,"지니 지수 범위 [0, 1-1/k]. 이진 분류에서 [0, 0.5]. 0에 가까울수록 순수(같은 클래스)를 의미합니다."),
+    _Q(33,3,"시계열 예측에서 ARIMA(p,d,q)의 'p' 파라미터의 의미는?",["이동 평균 차수","차분(Differencing) 횟수","자기 회귀(AR) 항의 차수","계절성 주기"],2,"ARIMA(p,d,q): p=AR(자기회귀) 차수, d=차분 횟수, q=MA(이동평균) 차수입니다."),
+    _Q(34,3,"딥러닝 학습 시 과적합 방지를 위해 학습 중 일부 노드를 무작위로 비활성화하는 기법은?",["배치 정규화","드롭아웃(Dropout)","L1 정규화","조기 종료"],1,"드롭아웃은 학습 시 무작위로 노드를 비활성화하여 앙상블 효과를 통해 과적합을 방지합니다."),
+    _Q(35,3,"Gradient Boosting에서 각 트리가 학습하는 것은?",["이전 트리들의 평균","이전 모델들의 잔차(Residual)","전체 데이터의 부트스트랩 샘플","무작위 특성 부분집합"],1,"그래디언트 부스팅은 각 새로운 트리가 이전 모델의 잔차(오차)를 학습하여 순차적으로 오차를 줄입니다."),
+    _Q(36,3,"K-means 클러스터링 초기화 방법 K-means++의 목적은?",["k 값 자동 선택","초기 중심점을 멀리 분산되도록 선택하여 수렴 안정화","연산 속도 최대화","비구형 군집 처리"],1,"K-means++는 초기 중심점을 거리 비례 확률로 멀리 선택하여 수렴 안정성을 높이고 지역 최솟값 함정을 줄입니다."),
+    _Q(37,3,"혼동 행렬(Confusion Matrix)에서 FP(False Positive)의 의미는?",["실제 양성을 양성으로 올바르게 예측","실제 음성을 양성으로 잘못 예측","실제 양성을 음성으로 잘못 예측","실제 음성을 음성으로 올바르게 예측"],1,"FP = 실제는 음성(Negative)인데 양성(Positive)으로 잘못 예측. Type I 오류(1종 오류)라고도 합니다."),
+    _Q(38,3,"회귀 분석에서 독립변수가 1 단위 증가할 때 종속변수의 변화량을 나타내는 것은?",["절편(Intercept)","회귀계수(Regression Coefficient)","결정계수(R²)","잔차(Residual)"],1,"회귀계수는 독립변수 1 단위 증가 시 종속변수의 평균적 변화량입니다. 양수이면 정비례, 음수이면 반비례 관계입니다."),
+    _Q(39,3,"교차 검증(Cross Validation)의 주요 목적으로 옳은 것은?",["학습 속도 향상","데이터 증강","일반화 성능 신뢰성 있게 추정","모델 파라미터 수 감소"],2,"교차 검증은 데이터를 여러 방식으로 분할하여 모델 성능을 다양한 데이터 부분집합에서 측정해 일반화 성능을 신뢰성 있게 추정합니다."),
+    _Q(40,3,"데이터 파이프라인의 자동화·버전 관리·모니터링·재학습을 포함하는 실무 체계는?",["ETL 자동화","MLOps(Machine Learning Operations)","데이터 스튜어드십","CI/CD(소프트웨어)"],1,"MLOps는 ML 모델 개발(Dev)과 운영(Ops)을 통합하여 모델 배포·모니터링·재학습·버전 관리를 자동화합니다."),
   ],
   48: [
     _Q(1,1,"학습 데이터의 패턴을 학습해 새로운 텍스트·이미지 등을 생성하는 AI는?",["판별형 AI","생성형 AI(Generative AI)","규칙 기반 AI","강화 학습 AI"],1,"생성형 AI는 GPT·Stable Diffusion처럼 학습 데이터 패턴으로 새로운 콘텐츠를 생성합니다."),
@@ -1989,6 +2069,26 @@ const ADSP_ROUNDS = {
     _Q(18,3,"AutoML이 자동화하지 못하는 단계는?",["특성 공학(Feature Engineering)","모델 선택(Model Selection)","하이퍼파라미터 튜닝","비즈니스 목표 수립"],3,"AutoML은 특성 공학, 모델 선택, 하이퍼파라미터 최적화, 앙상블 구성을 자동화합니다. 비즈니스 목표는 사람이 수립해야 합니다."),
     _Q(19,3,"소셜 네트워크 관계 분석·추천 시스템에 활용되는 신경망 구조는?",["CNN(합성곱 신경망)","RNN(순환 신경망)","GNN(그래프 신경망)","Autoencoder"],2,"GNN은 노드·엣지로 구성된 그래프 데이터를 처리합니다. 소셜 네트워크, 지식 그래프, 분자 구조 분석에 활용됩니다."),
     _Q(20,3,"미리 정의된 모든 하이퍼파라미터 조합을 전수 탐색하는 최적화 방법은?",["랜덤 서치(Random Search)","베이지안 최적화","그리드 서치(Grid Search)","조기 종료(Early Stopping)"],2,"그리드 서치는 모든 조합을 전수 탐색합니다. 랜덤 서치는 무작위 샘플링, 베이지안 최적화는 이전 결과를 활용한 효율적 탐색입니다."),
+    _Q(21,1,"공정하고 책임 있는 AI 개발을 위해 핵심으로 제시되는 가이드라인 원칙이 아닌 것은?",["공정성(Fairness)","투명성(Transparency)","책임성(Accountability)","최대 수익성(Maximum Profitability)"],3,"AI 윤리 원칙: 공정성, 투명성, 책임성, 안전성, 프라이버시 보호. 최대 수익성은 AI 윤리 원칙이 아닙니다."),
+    _Q(22,1,"데이터 아키텍처 관점에서 데이터 레이크하우스(Lakehouse)의 특징은?",["완전한 비정형 데이터만 저장","데이터 레이크의 유연성과 DW의 ACID 트랜잭션·구조화 쿼리를 통합","오직 관계형 데이터만 지원","배치 처리만 가능"],1,"레이크하우스는 데이터 레이크의 저비용·유연성과 데이터 웨어하우스의 ACID, 스키마, 성능을 결합한 현대적 아키텍처입니다."),
+    _Q(23,1,"GDPR(EU 일반 데이터 보호 규정)의 핵심 원칙이 아닌 것은?",["데이터 최소화(Data Minimization)","목적 제한(Purpose Limitation)","저장 제한(Storage Limitation)","데이터 무제한 수집 원칙"],3,"GDPR 원칙: 적법·공정·투명, 목적 제한, 데이터 최소화, 정확성, 저장 제한, 무결성·기밀성. 무제한 수집은 위반입니다."),
+    _Q(24,1,"AI 모델이 학습 데이터에 없는 새 상황에서 성능이 저하되는 현상은?",["편향(Bias)","분산(Variance)","분포 이동(Distribution Shift)","과적합(Overfitting)"],2,"분포 이동(Covariate Shift 등)은 학습 데이터와 배포 환경의 데이터 분포 차이로 모델 성능이 저하되는 현상입니다."),
+    _Q(25,1,"대용량 데이터를 압축 저장하고 칼럼 기반으로 빠른 분석 쿼리를 지원하는 AWS 서비스는?",["Amazon RDS","Amazon Redshift","Amazon DynamoDB","Amazon EC2"],1,"Amazon Redshift는 클라우드 기반 데이터 웨어하우스 서비스로 페타바이트 규모 분석을 지원합니다."),
+    _Q(26,2,"분석 보고서 시각화 원칙 중 '데이터 잉크 비율(Data-Ink Ratio)'의 의미는?",["사용하는 색상 수를 최대화","차트의 실제 데이터를 나타내는 잉크 비율을 높이고 불필요한 장식 제거","배경색을 화려하게","3D 차트 적극 활용"],1,"터프티(Tufte)의 데이터 잉크 비율: 차트의 잉크 중 실제 데이터를 표현하는 비율을 최대화하여 불필요한 장식(차트 정크)을 제거합니다."),
+    _Q(27,2,"분석 과제 수행에서 데이터 수집 시 '데이터 편향(Data Bias)' 방지 방법으로 옳은 것은?",["특정 집단 데이터만 수집","대표성 있는 데이터를 균형 있게 수집","가장 구하기 쉬운 데이터만 사용","샘플 크기를 최소화"],1,"데이터 편향 방지: 목표 모집단 전체를 대표하는 균형 잡힌 샘플 수집, 수집 방법의 편향 검토."),
+    _Q(28,2,"분석 결과의 비즈니스 가치 창출을 위한 마지막 단계인 '가치화'에서 핵심 활동은?",["데이터 수집","알고리즘 선택","분석 인사이트를 실제 의사결정·행동으로 연결","모델 성능 평가"],2,"가치화는 분석 인사이트를 실제 비즈니스 프로세스·의사결정에 반영하여 경제적·사회적 가치를 창출하는 단계입니다."),
+    _Q(29,2,"분석 조직의 역할 중 현업 부서에 내재되어 비즈니스와 데이터를 연결하는 역할은?",["데이터 엔지니어","데이터 사이언티스트","시민 데이터 분석가(Citizen Data Analyst)","데이터 스튜어드"],2,"시민 데이터 분석가는 현업 부서에서 비즈니스 맥락을 이해하며 셀프서비스 도구로 데이터를 분석하는 역할입니다."),
+    _Q(30,2,"분석 플랫폼 선정 기준으로 가장 중요하지 않은 것은?",["데이터 처리 성능 및 확장성","보안 및 데이터 거버넌스 지원","분석 목적·규모 적합성","개발팀 담당자의 개인 취향"],3,"플랫폼 선정: 처리 성능, 확장성, 보안, 통합성, 비용, 사용 편의성, 기술 지원. 개인 취향은 기준이 아닙니다."),
+    _Q(31,3,"LIME(Local Interpretable Model-agnostic Explanations)의 목적은?",["모델 전체적 특성 요약","블랙박스 모델의 개별 예측 결과를 국소적으로 해석","모델 재학습 자동화","데이터 정규화 기법"],1,"LIME은 복잡한 블랙박스 모델의 특정 예측 결과를 국소적으로 단순한 해석 가능 모델로 근사하여 설명합니다."),
+    _Q(32,3,"Attention Mechanism을 도입한 트랜스포머(Transformer)가 기존 RNN 대비 가진 장점은?",["파라미터 수가 적음","순차적 처리로 학습 안정","병렬 처리 가능, 장거리 의존성 포착 우수","메모리 사용량이 적음"],2,"트랜스포머는 셀프 어텐션으로 병렬 처리가 가능하고 시퀀스 내 장거리 의존성을 효과적으로 포착합니다."),
+    _Q(33,3,"SHAP(SHapley Additive exPlanations) 값의 역할은?",["모델 학습률 조정","각 특성이 예측값에 기여한 정도를 수치로 설명","데이터 전처리 자동화","하이퍼파라미터 최적화"],1,"SHAP는 게임 이론의 샤플리 값을 기반으로 각 특성이 모델 예측에 얼마나 기여했는지를 수치로 제공합니다."),
+    _Q(34,3,"이진 분류의 임계값(Threshold)을 0.3으로 낮추면 예상되는 변화는?",["정밀도(Precision) 향상, 재현율(Recall) 감소","재현율(Recall) 향상, 정밀도(Precision) 감소","정확도(Accuracy) 항상 향상","AUC 값 향상"],1,"임계값을 낮추면 양성 예측이 늘어 재현율↑ 정밀도↓. 암 검진·사기 탐지처럼 FN이 치명적인 경우에 활용합니다."),
+    _Q(35,3,"인과 관계(Causation)와 상관 관계(Correlation)의 차이에 대한 설명으로 옳은 것은?",["상관 관계가 있으면 반드시 인과 관계가 있다","인과 관계가 있으면 반드시 상관 관계가 있다","상관 관계와 인과 관계는 항상 동일하다","둘 중 하나만 성립할 수 없다"],1,"인과 관계가 있으면 상관 관계가 존재하지만, 상관 관계가 있다고 인과 관계를 의미하지는 않습니다. 상관 ≠ 인과."),
+    _Q(36,3,"전이 학습(Transfer Learning)의 핵심 개념은?",["소수 데이터로 처음부터 학습","대규모 데이터로 사전 학습된 모델을 새 과제에 파인튜닝(fine-tuning)","비지도 학습으로 레이블 없이 학습","강화 학습으로 보상 최대화"],1,"전이 학습: ImageNet·GPT 등으로 사전 학습된 모델의 지식을 새 태스크에 이전(fine-tuning)하여 소량 데이터로도 높은 성능을 냅니다."),
+    _Q(37,3,"Confusion Matrix에서 실제 음성 중 음성으로 올바르게 예측한 비율은?",["민감도(Sensitivity)","특이도(Specificity)","정밀도(Precision)","F1-Score"],1,"특이도(Specificity) = TN/(TN+FP). 실제 음성 중 음성으로 올바르게 분류한 비율. 민감도(Recall)의 반대 개념입니다."),
+    _Q(38,3,"가중치 감소(Weight Decay)의 효과와 동일한 정규화 기법은?",["L1 정규화(Lasso)","L2 정규화(Ridge)","드롭아웃","배치 정규화"],1,"가중치 감소(Weight Decay)는 손실 함수에 가중치 제곱합을 더하는 L2 정규화와 동일한 효과를 냅니다."),
+    _Q(39,3,"적대적 공격(Adversarial Attack)에 대한 설명으로 옳은 것은?",["데이터 수집을 방해하는 공격","인간이 인지하기 어려운 미세한 노이즈를 입력에 추가해 모델 오분류 유발","모델 학습 속도를 저하시키는 공격","데이터베이스를 파괴하는 공격"],1,"적대적 공격은 인간 눈에 보이지 않는 미세 노이즈를 이미지 등에 추가하여 AI 모델이 오분류하도록 유도합니다."),
+    _Q(40,3,"분산 학습(Distributed Training) 방식 중 데이터를 여러 노드에 분산하고 각 노드가 전체 모델을 보유하는 방법은?",["모델 병렬화(Model Parallelism)","데이터 병렬화(Data Parallelism)","파이프라인 병렬화","하이브리드 병렬화"],1,"데이터 병렬화는 전체 모델을 각 노드에 복사하고 데이터를 분할하여 동시에 학습합니다. 모델 병렬화는 모델 자체를 분할합니다."),
   ],
 };
 
@@ -2137,7 +2237,7 @@ function AdspExamListScreen({ onSelect, onBack }) {
         ← 자격증 목록
       </button>
       <div style={{ fontFamily:SANS, fontSize:isMobile?17:20, fontWeight:800, color:C.text, marginBottom:4 }}>ADsP 데이터 분석 준전문가</div>
-      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>응시할 회차를 선택하세요 · 회차별 20문항</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>응시할 회차를 선택하세요 · 회차별 40문항</div>
       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
         {ADSP_EXAMS.map(exam => (
           <button key={exam.round} onClick={() => onSelect(exam.round)} style={{
@@ -2168,7 +2268,7 @@ function AdspScreen({ round, onBack }) {
   const questions = ADSP_ROUNDS[round] || [];
   const examInfo = ADSP_EXAMS.find(e => e.round === round) || { label:`${round}회 기출`, date:"" };
 
-  const SUB_NAMES = ["전체 (20문항)", "과목1 · 데이터 이해", "과목2 · 분석 기획", "과목3 · 데이터 분석"];
+  const SUB_NAMES = [`전체 (${questions.length}문항)`, "과목1 · 데이터 이해", "과목2 · 분석 기획", "과목3 · 데이터 분석"];
   const SUB_COLORS = [C.blue, C.purple, C.yellow, C.green];
 
   const filtered = subFilter === 0 ? questions : questions.filter(q => q.sub === subFilter);
@@ -2193,7 +2293,7 @@ function AdspScreen({ round, onBack }) {
     <div style={{ padding: isMobile?"16px 14px 60px":"32px 32px 60px" }}>
       <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>← 회차 선택</button>
       <div style={{ fontFamily:SANS, fontSize:isMobile?16:20, fontWeight:800, color:C.text, marginBottom:2 }}>ADsP {examInfo.label}</div>
-      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:20 }}>20문항 · {examInfo.date} · 과목별 40% 이상 & 총점 60점 이상 합격</div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:20 }}>{questions.length}문항 · {examInfo.date} · 과목별 40% 이상 & 총점 60점 이상 합격</div>
 
       {/* 점수판 */}
       {allDone > 0 && (
@@ -2693,6 +2793,8 @@ const DIAGRAMS = {
 function DiagramViewer({ nodes, lines, steps, viewBox="0 0 710 220" }) {
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(1);
+  const isMobile = useIsMobile();
+  const vbW = parseInt(viewBox.split(" ")[2]);
   const rafRef = useRef(null);
   useEffect(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -2712,8 +2814,9 @@ function DiagramViewer({ nodes, lines, steps, viewBox="0 0 710 220" }) {
   const fx=fn.x+fn.w/2, fy=fn.y+fn.h/2, tx=tn.x+tn.w/2, ty=tn.y+tn.h/2;
   const px=fx+(tx-fx)*progress, py=fy+(ty-fy)*progress;
   return (
-    <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:14,padding:20}}>
-      <svg width="100%" viewBox={viewBox} style={{display:"block"}}>
+    <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:14,padding:isMobile?12:20}}>
+      <div style={{ overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling:"touch", borderRadius:10 }}>
+      <svg width={isMobile ? vbW * 0.85 : "100%"} viewBox={viewBox} style={{display:"block",minWidth:isMobile?vbW*0.85:undefined}}>
         {lines.map((l,i)=><line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={C.line} strokeWidth="1.5" strokeDasharray="5 4"/>)}
         {Object.entries(nodes).map(([id,n])=>{
           const active=cur.from===id||cur.to===id;
@@ -2729,7 +2832,8 @@ function DiagramViewer({ nodes, lines, steps, viewBox="0 0 710 220" }) {
         <circle cx={px} cy={py} r={14} fill={cur.color} opacity={0.15}/>
         <circle cx={px} cy={py} r={7} fill={cur.color}/>
       </svg>
-      <div style={{background:C.card2,borderRadius:10,padding:"12px 16px",marginTop:12}}>
+      </div>
+      <div style={{background:C.card2,borderRadius:10,padding:isMobile?"10px 12px":"12px 16px",marginTop:12}}>
         <div style={{fontFamily:MONO,fontSize:11,color:cur.color,fontWeight:700,marginBottom:6}}>{cur.label}</div>
         <div style={{fontFamily:MONO,fontSize:11,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{cur.detail}</div>
       </div>
