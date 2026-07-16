@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StudyAI — 화면 사용 가이드</title>
+<style>
+/* ── 토큰 ───────────────────────────────── */
+:root {
+  --bg:       #F7F8FC;
+  --surface:  #FFFFFF;
+  --surface2: #EFF1F8;
+  --border:   #E2E6F0;
+  --text:     #1A1F32;
+  --muted:    #6B7480;
+  --accent:   #4F8EF7;
+  --green:    #34D399;
+  --yellow:   #FBBF24;
+  --coral:    #F87171;
+  --purple:   #A78BFA;
+  --tag-bg:   #EEF3FF;
+  --tag-text: #3B6FD4;
+  --shadow:   0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+  --radius:   12px;
+  --nav-w:    220px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:       #0E1117;
+    --surface:  #161B27;
+    --surface2: #1D2235;
+    --border:   #252B40;
+    --text:     #E8EAFF;
+    --muted:    #6B7480;
+    --tag-bg:   #1E2A4A;
+    --tag-text: #7AAAF8;
+    --shadow:   0 1px 4px rgba(0,0,0,.3), 0 4px 20px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:       #0E1117;
+  --surface:  #161B27;
+  --surface2: #1D2235;
+  --border:   #252B40;
+  --text:     #E8EAFF;
+  --muted:    #6B7480;
+  --tag-bg:   #1E2A4A;
+  --tag-text: #7AAAF8;
+  --shadow:   0 1px 4px rgba(0,0,0,.3), 0 4px 20px rgba(0,0,0,.25);
+}
+:root[data-theme="light"] {
+  --bg:       #F7F8FC;
+  --surface:  #FFFFFF;
+  --surface2: #EFF1F8;
+  --border:   #E2E6F0;
+  --text:     #1A1F32;
+  --muted:    #6B7480;
+  --tag-bg:   #EEF3FF;
+  --tag-text: #3B6FD4;
+  --shadow:   0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+}
+
+/* ── 리셋 & 기본 ─────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── 레이아웃 ────────────────────────────── */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── 사이드 네비 ─────────────────────────── */
+.sidenav {
+  width: var(--nav-w);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 28px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidenav-logo {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 24px;
+  padding-left: 8px;
+}
+.sidenav-logo span { color: var(--accent); }
+.sidenav-section {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 16px 0 6px 8px;
+}
+.sidenav a {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  transition: background .15s, color .15s;
+}
+.sidenav a:hover, .sidenav a.active {
+  background: var(--tag-bg);
+  color: var(--accent);
+  text-decoration: none;
+}
+.theme-toggle {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  padding-left: 8px;
+  user-select: none;
+}
+.toggle-pill {
+  width: 34px; height: 18px;
+  background: var(--border);
+  border-radius: 9px;
+  position: relative;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle-pill::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: left .2s;
+}
+[data-theme="dark"] .toggle-pill { background: var(--accent); }
+[data-theme="dark"] .toggle-pill::after { left: 19px; }
+
+/* ── 메인 콘텐츠 ─────────────────────────── */
+.main {
+  flex: 1;
+  max-width: 860px;
+  padding: 48px 48px 80px;
+  overflow-x: hidden;
+}
+
+/* ── 헤더 ────────────────────────────────── */
+.page-header {
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+}
+.page-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.page-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.25;
+  text-wrap: balance;
+  margin-bottom: 12px;
+}
+.page-title span { color: var(--accent); }
+.page-desc {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 520px;
+  line-height: 1.75;
+}
+.meta-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+}
+
+/* ── 섹션 ────────────────────────────────── */
+.section { margin-bottom: 56px; }
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.section-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+.section-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.section-nav-tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+/* ── 카드 ────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+/* ── 기능 목록 ───────────────────────────── */
+.feature-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.feature-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+.feat-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* ── 2단 그리드 ──────────────────────────── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.mini-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.mini-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.mini-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── 화면 미리보기 ───────────────────────── */
+.screen-preview {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.preview-bar {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.preview-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.preview-url {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 8px;
+}
+.preview-body {
+  background: #0E1117;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  min-height: 100px;
+}
+
+/* ── 네비 목업 ───────────────────────────── */
+.mock-sidebar {
+  width: 40px;
+  background: #161B27;
+  border-radius: 8px;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.mock-icon {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: #252B40;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+}
+.mock-icon.active { background: #4F8EF7; }
+.mock-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mock-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #1D2235;
+}
+.mock-bar.accent { background: #4F8EF7; width: 40%; }
+.mock-bar.short { width: 55%; }
+.mock-bar.medium { width: 75%; }
+.mock-bar.full { width: 100%; }
+.mock-card {
+  background: #161B27;
+  border: 1px solid #252B40;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.mock-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.mock-chip {
+  height: 6px;
+  border-radius: 3px;
+  background: #34D399;
+  width: 30%;
+}
+.mock-chip.blue { background: #4F8EF7; width: 45%; }
+.mock-chip.muted { background: #252B40; width: 35%; }
+
+/* ── 배지/태그 ───────────────────────────── */
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+.badge-blue  { background: #4F8EF722; color: #4F8EF7; }
+.badge-green { background: #34D39922; color: #34D399; }
+.badge-coral { background: #F8717122; color: #F87171; }
+.badge-muted { background: #6B748022; color: #6B7480; }
+
+/* ── 노트 박스 ───────────────────────────── */
+.note {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.65;
+  margin-top: 12px;
+}
+.note-info  { background: #4F8EF714; border-left: 3px solid #4F8EF7; color: var(--text); }
+.note-warn  { background: #FBBF2414; border-left: 3px solid #FBBF24; color: var(--text); }
+.note-icon  { flex-shrink: 0; font-size: 14px; }
+
+/* ── 흐름 스텝 ───────────────────────────── */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 16px;
+}
+.step {
+  display: flex;
+  gap: 14px;
+  position: relative;
+}
+.step:not(:last-child) .step-line { visibility: visible; }
+.step-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+.step-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-line {
+  width: 1px;
+  flex: 1;
+  background: var(--border);
+  margin: 4px 0;
+  min-height: 12px;
+  visibility: hidden;
+}
+.step-body {
+  padding: 2px 0 18px;
+}
+.step-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.step-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── 테이블 ──────────────────────────────── */
+.table-wrap { overflow-x: auto; margin-bottom: 16px; border-radius: 10px; border: 1px solid var(--border); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--muted);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ── 반응형 ──────────────────────────────── */
+@media (max-width: 768px) {
+  .sidenav { display: none; }
+  .main { padding: 28px 20px 60px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .page-title { font-size: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── 사이드 네비 ── -->
+  <nav class="sidenav">
+    <div class="sidenav-logo"><span>Study</span>AI</div>
+
+    <div class="sidenav-section">개요</div>
+    <a href="#overview" class="active">서비스 소개</a>
+    <a href="#infra">인프라 구성</a>
+
+    <div class="sidenav-section">화면</div>
+    <a href="#auth">로그인 / 회원가입</a>
+    <a href="#home">홈 대시보드</a>
+    <a href="#code">코딩 학습</a>
+    <a href="#cert">자격증 대비</a>
+    <a href="#arch">아키텍처</a>
+    <a href="#study">스터디 그룹</a>
+
+    <div class="sidenav-section">부록</div>
+    <a href="#guest">게스트 모드</a>
+    <a href="#settings">설정</a>
+
+    <div class="theme-toggle" onclick="toggleTheme()">
+      <div class="toggle-pill"></div>
+      다크 모드
+    </div>
+  </nav>
+
+  <!-- ── 메인 ── -->
+  <main class="main">
+
+    <!-- 헤더 -->
+    <div class="page-header" id="overview">
+      <div class="page-eyebrow">화면 사용 가이드 v1.0</div>
+      <h1 class="page-title"><span>Study</span>AI — 웹 서비스 산출물</h1>
+      <p class="page-desc">
+        인공지능 및 개발 역량 강화를 위한 학습 플랫폼입니다.
+        코딩 학습, 자격증 기출 풀기, AI 개념 시각화, 스터디 그룹 기능을 통합 제공합니다.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip">🌐 <a href="https://ddokddok-phi.vercel.app" target="_blank">ddokddok-phi.vercel.app</a></span>
+        <span class="meta-chip">📅 2025년 7월</span>
+        <span class="meta-chip">⚙️ React 19 + FastAPI + Supabase</span>
+      </div>
+    </div>
+
+    <!-- 인프라 -->
+    <section class="section" id="infra">
+      <div class="section-header">
+        <div class="section-icon" style="background:#4F8EF722">🏗️</div>
+        <div>
+          <div class="section-title">인프라 구성</div>
+          <div class="section-sub">서비스 운영 환경</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>역할</th><th>서비스</th><th>주소</th><th>비고</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-blue">프론트엔드</span></td>
+              <td>Vercel</td>
+              <td><code style="font-family:Consolas,monospace;font-size:11px;color:var(--accent)">ddokddok-phi.vercel.app</code></td>
+              <td>GitHub push 시 자동 배포</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-green">백엔드</span></td>
+              <td>Render</td>
+              <td><code style="font-family:Consolas,monospace;font-size:11px;color:var(--accent)">ddokddok.onrender.com</code></td>
+              <td>FastAPI · 15분 무활동 슬립</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-muted">데이터베이스</span></td>
+              <td>Supabase</td>
+              <td>PostgreSQL (서울 리전)</td>
+              <td>사용자 · 진도 · 제출 이력 저장</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 로그인 -->
+    <section class="section" id="auth">
+      <div class="section-header">
+        <div class="section-icon" style="background:#F8717122">🔐</div>
+        <div>
+          <div class="section-title">로그인 / 회원가입</div>
+          <div class="section-sub">AuthScreen</div>
+        </div>
+        <div class="section-nav-tag">진입점</div>
+      </div>
+
+      <!-- 미리보기 -->
+      <div class="screen-preview">
+        <div class="preview-bar">
+          <div class="preview-dot" style="background:#F87171"></div>
+          <div class="preview-dot" style="background:#FBBF24"></div>
+          <div class="preview-dot" style="background:#34D399"></div>
+          <span class="preview-url">ddokddok-phi.vercel.app</span>
+        </div>
+        <div class="preview-body" style="justify-content:center;align-items:center">
+          <div style="width:200px;background:#161B27;border:1px solid #252B40;border-radius:12px;padding:20px 18px">
+            <div style="font-weight:800;font-size:14px;color:#E8EAFF;margin-bottom:2px"><span style="color:#4F8EF7">Study</span>AI</div>
+            <div style="font-size:10px;color:#6B7480;margin-bottom:14px">학습을 이어가세요</div>
+            <div style="height:24px;background:#1D2235;border-radius:6px;border:1px solid #252B40;margin-bottom:6px"></div>
+            <div style="height:24px;background:#1D2235;border-radius:6px;border:1px solid #252B40;margin-bottom:10px"></div>
+            <div style="height:26px;background:#4F8EF7;border-radius:7px;display:flex;align-items:center;justify-content:center">
+              <div style="width:50px;height:7px;background:#ffffff55;border-radius:4px"></div>
+            </div>
+            <div style="margin-top:10px;font-size:9px;color:#4F8EF7;text-align:center">로그인 없이 둘러보기 →</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">기능</div>
+        <ul class="feature-list">
+          <li><div class="feat-dot"></div>이메일 + 비밀번호로 <strong>회원가입</strong> 및 <strong>로그인</strong></li>
+          <li><div class="feat-dot"></div><strong>이메일 저장</strong> 체크박스 — 다음 방문 시 자동 입력</li>
+          <li><div class="feat-dot"></div>Enter 키로 제출 가능</li>
+          <li><div class="feat-dot"></div><strong>게스트 모드</strong> 버튼 — 회원가입 없이 핵심 기능 체험</li>
+        </ul>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-left"><div class="step-num">1</div><div class="step-line"></div></div>
+          <div class="step-body"><div class="step-title">이메일 · 비밀번호 입력</div><div class="step-desc">기존 계정이 없으면 상단 탭에서 "회원가입" 선택 후 닉네임도 입력</div></div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">2</div><div class="step-line"></div></div>
+          <div class="step-body"><div class="step-title">로그인 버튼 클릭</div><div class="step-desc">서버가 JWT 토큰을 발급 — 자동으로 대시보드로 이동</div></div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">3</div></div>
+          <div class="step-body"><div class="step-title">대시보드 진입</div><div class="step-desc">이후 페이지 새로고침해도 토큰이 유지되어 자동 로그인</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 홈 -->
+    <section class="section" id="home">
+      <div class="section-header">
+        <div class="section-icon" style="background:#34D39922">🏠</div>
+        <div>
+          <div class="section-title">홈 대시보드</div>
+          <div class="section-sub">HomeScreen</div>
+        </div>
+        <div class="section-nav-tag">홈</div>
+      </div>
+
+      <div class="screen-preview">
+        <div class="preview-bar">
+          <div class="preview-dot" style="background:#F87171"></div>
+          <div class="preview-dot" style="background:#FBBF24"></div>
+          <div class="preview-dot" style="background:#34D399"></div>
+          <span class="preview-url">/ 홈</span>
+        </div>
+        <div class="preview-body">
+          <div class="mock-sidebar">
+            <div style="font-size:8px;font-weight:800;color:#4F8EF7;margin-bottom:4px">S</div>
+            <div class="mock-icon active">🏠</div>
+            <div class="mock-icon">💻</div>
+            <div class="mock-icon">📚</div>
+            <div class="mock-icon">🌐</div>
+            <div class="mock-icon">👥</div>
+          </div>
+          <div class="mock-content">
+            <div class="mock-row">
+              <div style="height:16px;background:#4F8EF7;border-radius:4px;width:35%;opacity:.7"></div>
+              <div style="height:8px;background:#1D2235;border-radius:4px;flex:1"></div>
+            </div>
+            <!-- stat chips -->
+            <div class="mock-row" style="gap:6px">
+              <div style="flex:1;background:#161B27;border:1px solid #252B40;border-radius:8px;padding:8px">
+                <div style="font-size:8px;color:#FBBF24;margin-bottom:4px">🔥 연속</div>
+                <div style="height:10px;background:#FBBF2444;border-radius:3px"></div>
+              </div>
+              <div style="flex:1;background:#161B27;border:1px solid #252B40;border-radius:8px;padding:8px">
+                <div style="font-size:8px;color:#4F8EF7;margin-bottom:4px">⏱️ 주간</div>
+                <div style="height:10px;background:#4F8EF744;border-radius:3px"></div>
+              </div>
+              <div style="flex:1;background:#161B27;border:1px solid #252B40;border-radius:8px;padding:8px">
+                <div style="font-size:8px;color:#34D399;margin-bottom:4px">✅ 완료</div>
+                <div style="height:10px;background:#34D39944;border-radius:3px"></div>
+              </div>
+            </div>
+            <!-- 과목 카드 -->
+            <div class="mock-card">
+              <div class="mock-bar short"></div>
+              <div style="height:5px;background:#4F8EF7;border-radius:3px;width:42%"></div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-bar medium"></div>
+              <div style="height:5px;background:#F87171;border-radius:3px;width:18%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">기능</div>
+        <ul class="feature-list">
+          <li><div class="feat-dot"></div><strong>학습 현황 통계</strong> — 연속 학습일(🔥), 이번 주 학습 시간(⏱️), 완료 레슨 수</li>
+          <li><div class="feat-dot"></div><strong>이번 주 학습 현황</strong> 막대 차트 (요일별 분 단위)</li>
+          <li><div class="feat-dot"></div><strong>이어서 학습하기</strong> — 과목별 진행률 바 + 클릭 시 해당 화면 이동</li>
+          <li><div class="feat-dot"></div>우측 상단 <strong>설정 ⚙️</strong> 버튼으로 프로필 관리 이동</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 코딩 학습 -->
+    <section class="section" id="code">
+      <div class="section-header">
+        <div class="section-icon" style="background:#A78BFA22">💻</div>
+        <div>
+          <div class="section-title">코딩 학습</div>
+          <div class="section-sub">CodeScreen</div>
+        </div>
+        <div class="section-nav-tag">코딩 학습</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="mini-card">
+          <div class="mini-title">🐍 Python</div>
+          <div class="mini-desc">for 루프 · 조건문 · 함수 · 딕셔너리 · 컴프리헨션 등 기초~중급 레슨</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">☕ Java</div>
+          <div class="mini-desc">클래스 · 상속 · 컬렉션 · 예외처리 등 객체지향 핵심</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">🗃️ SQL</div>
+          <div class="mini-desc">SELECT · JOIN · GROUP BY · 서브쿼리 기초 실습</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">🏆 AICE</div>
+          <div class="mini-desc">자격증 연계 AI 코드 실습 — 데이터 전처리 · 모델링 · 평가</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">알고리즘 시각화</div>
+        <ul class="feature-list">
+          <li><div class="feat-dot"></div>for 루프 · 버블 정렬 · 조건문 · while · 함수 · 딕셔너리 · 문자열 메서드 · 리스트 컴프리헨션</li>
+          <li><div class="feat-dot"></div>코드 실행 흐름을 <strong>단계별 애니메이션</strong>으로 확인</li>
+          <li><div class="feat-dot"></div>변수 상태 실시간 확인 패널</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">AI 개념 시각화</div>
+        <ul class="feature-list">
+          <li><div class="feat-dot"></div><strong>Word2Vec</strong> — 단어 벡터 2D 시각화 + 유추 버튼</li>
+          <li><div class="feat-dot"></div><strong>토큰화</strong> — 문장을 토큰으로 쪼개는 애니메이션</li>
+          <li><div class="feat-dot"></div><strong>어텐션 메커니즘</strong> — 단어 간 주목도 히트맵</li>
+          <li><div class="feat-dot"></div><strong>신경망 구조</strong> — 노드 클릭 시 연결선 활성화</li>
+        </ul>
+      </div>
+
+      <div class="note note-info">
+        <div class="note-icon">ℹ️</div>
+        <div>게스트 모드에서도 코딩 학습 열람이 가능하지만, 진도 저장은 로그인 후 이용할 수 있습니다.</div>
+      </div>
+    </section>
+
+    <!-- 자격증 -->
+    <section class="section" id="cert">
+      <div class="section-header">
+        <div class="section-icon" style="background:#FBBF2422">📚</div>
+        <div>
+          <div class="section-title">자격증 대비</div>
+          <div class="section-sub">CertScreen — ADsP · AICE</div>
+        </div>
+        <div class="section-nav-tag">자격증</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="mini-card">
+          <div class="mini-title">📊 ADsP 기출문제</div>
+          <div class="mini-desc">13 · 22 · 23 · 44~48회 실제 기출 · 회차별 선택 모드 · 과목별 합격선 체크</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">🤖 AICE Associate</div>
+          <div class="mini-desc">AI 자격증 모의고사 · 파이썬 AI 코드 문제 · 즉시 채점</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">ADsP 시험 구성</div>
+        <div class="table-wrap" style="margin-bottom:0;border:none;border-radius:0">
+          <table>
+            <thead>
+              <tr><th>과목</th><th>문항 수</th><th>합격 기준</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1과목 — 데이터 이해</td><td style="font-variant-numeric:tabular-nums">10문항</td><td>4점 이상 (40%)</td></tr>
+              <tr><td>2과목 — 데이터 분석 기획</td><td style="font-variant-numeric:tabular-nums">10문항</td><td>4점 이상 (40%)</td></tr>
+              <tr><td>3과목 — 데이터 분석</td><td style="font-variant-numeric:tabular-nums">30문항</td><td>12점 이상 (40%)</td></tr>
+              <tr><td><strong>합계</strong></td><td style="font-variant-numeric:tabular-nums"><strong>50문항</strong></td><td><strong>총점 60% 이상 + 과목 40% 이상</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">사용 흐름</div>
+        <div class="steps" style="margin-bottom:0">
+          <div class="step">
+            <div class="step-left"><div class="step-num">1</div><div class="step-line"></div></div>
+            <div class="step-body"><div class="step-title">회차 선택</div><div class="step-desc">13회(2018) · 22~23회 · 44~48회 중 원하는 기출 선택</div></div>
+          </div>
+          <div class="step">
+            <div class="step-left"><div class="step-num">2</div><div class="step-line"></div></div>
+            <div class="step-body"><div class="step-title">문제 풀기</div><div class="step-desc">4지선다 클릭 → 즉시 정오답 표시 + 해설 확인</div></div>
+          </div>
+          <div class="step">
+            <div class="step-left"><div class="step-num">3</div></div>
+            <div class="step-body"><div class="step-title">결과 확인</div><div class="step-desc">과목별 점수 · 합격 여부 · 틀린 문항 해설 리뷰</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 아키텍처 -->
+    <section class="section" id="arch">
+      <div class="section-header">
+        <div class="section-icon" style="background:#4F8EF722">🌐</div>
+        <div>
+          <div class="section-title">아키텍처 학습</div>
+          <div class="section-sub">ArchScreen</div>
+        </div>
+        <div class="section-nav-tag">아키텍처</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">제공 다이어그램</div>
+        <ul class="feature-list">
+          <li><div class="feat-dot"></div><strong>JWT 인증 흐름</strong> — 로그인 → 토큰 발급 → API 호출 7단계</li>
+          <li><div class="feat-dot"></div><strong>이 서비스 시스템 구성</strong> — Vercel · Render · Supabase 간 데이터 흐름</li>
+          <li><div class="feat-dot"></div><strong>OAuth 2.0 소셜 로그인</strong> — 구글 로그인 내부 동작 7단계</li>
+          <li><div class="feat-dot"></div><strong>CORS 동작 원리</strong> — Preflight 요청 흐름</li>
+          <li><div class="feat-dot"></div>각 노드 클릭 시 <strong>상세 설명</strong> (HTTP 헤더 · 코드 예시 포함)</li>
+        </ul>
+      </div>
+
+      <div class="note note-info">
+        <div class="note-icon">💡</div>
+        <div>개발자가 자주 헷갈리는 인증·통신 개념을 실제 서비스 코드 기반으로 시각화합니다. 게스트 모드에서도 전체 이용 가능합니다.</div>
+      </div>
+    </section>
+
+    <!-- 스터디 -->
+    <section class="section" id="study">
+      <div class="section-header">
+        <div class="section-icon" style="background:#34D39922">👥</div>
+        <div>
+          <div class="section-title">스터디 그룹</div>
+          <div class="section-sub">StudyScreen — 로그인 필요</div>
+        </div>
+        <div class="section-nav-tag">스터디</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">기능</div>
+        <ul class="feature-list">
+          <li><div class="feat-dot"></div>스터디 그룹 <strong>생성 · 참여</strong></li>
+          <li><div class="feat-dot"></div>오늘의 출석 <strong>체크인</strong> 버튼</li>
+          <li><div class="feat-dot"></div>그룹별 <strong>연속 스트릭</strong> · 오늘 참여 현황 확인</li>
+          <li><div class="feat-dot"></div>진행 중인 <strong>학습 토픽</strong> 표시</li>
+        </ul>
+      </div>
+
+      <div class="note note-warn">
+        <div class="note-icon">⚠️</div>
+        <div>스터디 그룹은 <strong>로그인 필수</strong>입니다. 게스트 모드에서는 탭이 잠금 처리됩니다.</div>
+      </div>
+    </section>
+
+    <!-- 게스트 모드 -->
+    <section class="section" id="guest">
+      <div class="section-header">
+        <div class="section-icon" style="background:#6B748022">👤</div>
+        <div>
+          <div class="section-title">게스트 모드</div>
+          <div class="section-sub">로그인 없이 체험</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>화면</th><th>게스트</th><th>로그인</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>홈 대시보드</td><td><span class="badge badge-green">✓ 열람</span></td><td><span class="badge badge-green">✓ + 진도 저장</span></td></tr>
+            <tr><td>코딩 학습</td><td><span class="badge badge-green">✓ 열람</span></td><td><span class="badge badge-green">✓ + 진도 저장</span></td></tr>
+            <tr><td>자격증 대비</td><td><span class="badge badge-green">✓ 풀기 가능</span></td><td><span class="badge badge-green">✓ 이력 저장</span></td></tr>
+            <tr><td>아키텍처</td><td><span class="badge badge-green">✓ 전체 이용</span></td><td><span class="badge badge-green">✓ 전체 이용</span></td></tr>
+            <tr><td>스터디 그룹</td><td><span class="badge badge-coral">✗ 잠금</span></td><td><span class="badge badge-green">✓ 전체 이용</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 설정 -->
+    <section class="section" id="settings">
+      <div class="section-header">
+        <div class="section-icon" style="background:#A78BFA22">⚙️</div>
+        <div>
+          <div class="section-title">설정</div>
+          <div class="section-sub">홈 우측 상단 ⚙️ 아이콘</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">기능</div>
+        <ul class="feature-list">
+          <li><div class="feat-dot"></div><strong>비밀번호 변경</strong></li>
+          <li><div class="feat-dot"></div><strong>닉네임 변경</strong></li>
+          <li><div class="feat-dot"></div><strong>회원 탈퇴</strong> — 모든 학습 데이터 영구 삭제 (확인 다이얼로그 포함)</li>
+          <li><div class="feat-dot"></div><strong>로그아웃</strong></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+function toggleTheme() {
+  const root = document.documentElement;
+  const current = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+}
+
+// 활성 링크 하이라이트
+const links = document.querySelectorAll('.sidenav a[href^="#"]');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const id = e.target.getAttribute('id');
+      const link = document.querySelector(`.sidenav a[href="#${id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -75% 0px' });
+
+document.querySelectorAll('section[id], div[id]').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
