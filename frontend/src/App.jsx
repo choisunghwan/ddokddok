@@ -628,7 +628,7 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest }) {
   return (
     <div style={{ position:"fixed", left:0, top:0, bottom:0, width:200, background:C.card, borderRight:`1px solid ${C.line}`, display:"flex", flexDirection:"column", padding:"24px 12px", zIndex:10 }}>
       <div onClick={() => setTab("home")} style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:20, color:C.text, marginBottom:36, paddingLeft:8, cursor:"pointer" }}>
-        <span style={{ color:C.blue }}>똑</span>똑
+        <span style={{ color:C.blue }}>Study</span>AI
       </div>
       {items.map(({ key, icon: Icon, label }) => {
         const active = tab === key;
@@ -903,7 +903,7 @@ function AuthScreen({ onAuth, onGuest }) {
     <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div style={{ width:360, background:C.card, borderRadius:16, padding:"36px 32px", border:`1px solid ${C.line}` }}>
         <div style={{ fontFamily:SANS, fontWeight:800, fontSize:22, color:C.text, marginBottom:4 }}>
-          <span style={{ color:C.blue }}>똑</span>똑
+          <span style={{ color:C.blue }}>Study</span>AI
         </div>
         <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>
           {mode === "login" ? "학습을 이어가세요" : "지금 시작하세요"}
@@ -1003,7 +1003,7 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
           <div>
             <div style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:18, color:C.text }}>
-              <span style={{ color:C.blue }}>똑</span>똑
+              <span style={{ color:C.blue }}>Study</span>AI
             </div>
             <div style={{ fontFamily:SANS, fontSize:13, color:C.text, fontWeight:700, marginTop:2 }}>
               {isGuest ? "게스트로 둘러보는 중" : `${nickname}님, ${greet()}`}
