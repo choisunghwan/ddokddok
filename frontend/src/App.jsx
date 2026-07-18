@@ -4601,6 +4601,178 @@ function StudyScreen() {
   );
 }
 
+// ── 집중 사운드 플레이어 ─────────────────────────
+const SOUNDS = [
+  { id:"fire",  emoji:"🔥", label:"모닥불",  color:"#F97316" },
+  { id:"rain",  emoji:"🌧️", label:"빗소리",  color:"#60A5FA" },
+  { id:"wave",  emoji:"🌊", label:"파도",    color:"#34D399" },
+  { id:"focus", emoji:"🎵", label:"집중",    color:"#A78BFA" },
+];
+
+function createAmbientNode(ctx, type) {
+  const bufSize = 2 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+
+  if (type === "fire") {
+    let last = 0;
+    for (let i = 0; i < bufSize; i++) {
+      const w = Math.random() * 2 - 1;
+      last = (last + 0.02 * w) / 1.02;
+      data[i] = last * 3.5;
+    }
+  } else if (type === "rain") {
+    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  } else if (type === "wave") {
+    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  } else {
+    // pink noise (focus)
+    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+    for (let i = 0; i < bufSize; i++) {
+      const w = Math.random() * 2 - 1;
+      b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759;
+      b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856;
+      b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
+      data[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11; b6=w*0.115926;
+    }
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const gain = ctx.createGain();
+
+  if (type === "fire") {
+    // crackle: low-pass + amplitude modulation
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 800; lp.Q.value = 0.5;
+    const crackleGain = ctx.createGain();
+    const osc = ctx.createOscillator();
+    osc.type = "sawtooth"; osc.frequency.value = 0.3;
+    const oscGain = ctx.createGain(); oscGain.gain.value = 0.18;
+    osc.connect(oscGain); oscGain.connect(crackleGain.gain);
+    crackleGain.gain.value = 0.5;
+    osc.start();
+    src.connect(lp); lp.connect(crackleGain); crackleGain.connect(gain);
+    gain.gain.value = 0.55;
+    gain.connect(ctx.destination);
+    src.start();
+    return { stop: () => { try { src.stop(); osc.stop(); } catch(e){} gain.disconnect(); }, gain };
+  }
+
+  if (type === "rain") {
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 1200; hp.Q.value = 0.5;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 8000;
+    src.connect(hp); hp.connect(lp); lp.connect(gain);
+    gain.gain.value = 0.35;
+    gain.connect(ctx.destination);
+    src.start();
+    return { stop: () => { try { src.stop(); } catch(e){} gain.disconnect(); }, gain };
+  }
+
+  if (type === "wave") {
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 400;
+    const waveGain = ctx.createGain();
+    const lfo = ctx.createOscillator();
+    lfo.type = "sine"; lfo.frequency.value = 0.12;
+    const lfoG = ctx.createGain(); lfoG.gain.value = 0.3;
+    lfo.connect(lfoG); lfoG.connect(waveGain.gain);
+    waveGain.gain.value = 0.5;
+    lfo.start();
+    src.connect(lp); lp.connect(waveGain); waveGain.connect(gain);
+    gain.gain.value = 0.6;
+    gain.connect(ctx.destination);
+    src.start();
+    return { stop: () => { try { src.stop(); lfo.stop(); } catch(e){} gain.disconnect(); }, gain };
+  }
+
+  // focus (pink)
+  src.connect(gain);
+  gain.gain.value = 0.22;
+  gain.connect(ctx.destination);
+  src.start();
+  return { stop: () => { try { src.stop(); } catch(e){} gain.disconnect(); }, gain };
+}
+
+function AmbientPlayer() {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(null);
+  const [vol, setVol] = useState(0.6);
+  const nodeRef = useRef(null);
+  const ctxRef = useRef(null);
+
+  const play = (id) => {
+    if (nodeRef.current) { nodeRef.current.stop(); nodeRef.current = null; }
+    if (active === id) { setActive(null); return; }
+    if (!ctxRef.current || ctxRef.current.state === "closed") {
+      ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (ctxRef.current.state === "suspended") ctxRef.current.resume();
+    const node = createAmbientNode(ctxRef.current, id);
+    node.gain.gain.value = node.gain.gain.value * vol;
+    nodeRef.current = node;
+    setActive(id);
+  };
+
+  const changeVol = (v) => {
+    setVol(v);
+    if (nodeRef.current) nodeRef.current.gain.gain.value = v * 0.6;
+  };
+
+  useEffect(() => () => { if (nodeRef.current) nodeRef.current.stop(); }, []);
+
+  const cur = SOUNDS.find(s => s.id === active);
+
+  return (
+    <div style={{ position:"fixed", bottom:24, right:24, zIndex:9999, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
+      {open && (
+        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"16px 18px", width:220, boxShadow:"0 8px 32px #0008" }}>
+          <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:12 }}>집중 사운드</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+            {SOUNDS.map(s => (
+              <button key={s.id} onClick={() => play(s.id)} style={{
+                display:"flex", alignItems:"center", gap:10,
+                background: active===s.id ? s.color+"22" : C.card2,
+                border: `1px solid ${active===s.id ? s.color : C.line}`,
+                borderRadius:10, padding:"9px 12px", cursor:"pointer",
+                transition:"all .15s",
+              }}>
+                <span style={{ fontSize:16 }}>{s.emoji}</span>
+                <span style={{ fontFamily:SANS, fontSize:13, color: active===s.id ? s.color : C.text, fontWeight: active===s.id ? 700 : 400 }}>{s.label}</span>
+                {active===s.id && <span style={{ marginLeft:"auto", fontSize:10, color:s.color }}>▶ 재생중</span>}
+              </button>
+            ))}
+          </div>
+          {active && (
+            <div style={{ marginTop:14, paddingTop:12, borderTop:`1px solid ${C.line}` }}>
+              <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginBottom:6 }}>볼륨</div>
+              <input type="range" min={0} max={1} step={0.01} value={vol}
+                onChange={e => changeVol(parseFloat(e.target.value))}
+                style={{ width:"100%", accentColor: cur?.color || C.blue }} />
+            </div>
+          )}
+        </div>
+      )}
+      <button onClick={() => setOpen(o => !o)} style={{
+        width:48, height:48, borderRadius:"50%",
+        background: active ? (cur?.color || C.blue) : C.card2,
+        border:`1px solid ${active ? (cur?.color+"66" || C.line) : C.line}`,
+        cursor:"pointer", fontSize:20, display:"flex", alignItems:"center", justifyContent:"center",
+        boxShadow: active ? `0 0 16px ${cur?.color}55` : "0 2px 12px #0006",
+        transition:"all .2s",
+        animation: active ? "pulse-ambient 2s ease-in-out infinite" : "none",
+      }}>
+        {active ? cur?.emoji : "🔇"}
+      </button>
+      <style>{`@keyframes pulse-ambient { 0%,100%{box-shadow:0 0 10px ${cur?.color||C.blue}44} 50%{box-shadow:0 0 22px ${cur?.color||C.blue}88} }`}</style>
+    </div>
+  );
+}
+
 // ── 루트 ────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("home");
@@ -4656,6 +4828,7 @@ export default function App() {
       {showStudyModal && <StudyLoginModal onLogin={handleBackToLogin} onClose={() => setShowStudyModal(false)} />}
       {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
       <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} />
+      <AmbientPlayer />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
         {tab === "code"  && <CodeScreen key={screenKeys.code} isGuest={isGuest} />}
