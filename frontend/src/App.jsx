@@ -967,20 +967,26 @@ function authHeader() {
 }
 
 function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }) {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats]     = useState(null);
+  const [loading, setLoading] = useState(!isGuest);
+  const [error, setError]     = useState(false);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
+  const fetchStats = () => {
     if (isGuest) return;
+    setLoading(true); setError(false);
     fetch(`${API}/api/dashboard/stats`, { headers: authHeader() })
-      .then(r => r.json())
-      .then(setStats)
-      .catch(() => {});
-  }, [isGuest]);
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(d => { setStats(d); setLoading(false); })
+      .catch(() => { setError(true); setLoading(false); });
+  };
+
+  useEffect(() => { fetchStats(); }, [isGuest]);
 
   const streak   = stats?.streak ?? 0;
   const weekly   = stats?.weekly_minutes ?? 0;
   const solved   = stats?.completed_problems ?? 0;
+  const todaySec = stats?.today_seconds ?? 0;
   const chart    = stats?.weekly_chart ?? [
     { day:"월", min:0 }, { day:"화", min:0 }, { day:"수", min:0 },
     { day:"목", min:0 }, { day:"금", min:0 }, { day:"토", min:0 }, { day:"일", min:0 },
@@ -1030,19 +1036,39 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
       {isMobile && <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>오늘도 30분만 투자해볼까요?</div>}
 
       {/* 스탯 */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:28 }}>
-        {[
-          { label:"연속 학습일", value: streak ? `${streak}일` : "-", icon:"🔥", color:C.yellow },
-          { label:"이번 주 학습", value: weekly ? `${weekly}분` : "-", icon:"⏱️", color:C.blue },
-          { label:"완료 문제", value: solved ? `${solved}개` : "-", icon:"✅", color:C.green },
-        ].map((s) => (
-          <div key={s.label} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"16px 18px" }}>
-            <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
-            <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:s.color }}>{s.value}</div>
-            <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:2 }}>{s.label}</div>
+      {error && (
+        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"14px 18px", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.muted }}>서버가 슬립 중이에요 — 잠깐 기다렸다 새로고침 해보세요</div>
+          <button onClick={fetchStats} style={{ background:C.blue+"22", border:"none", borderRadius:8, color:C.blue, fontFamily:SANS, fontSize:12, fontWeight:700, padding:"6px 12px", cursor:"pointer" }}>재시도</button>
+        </div>
+      )}
+      {(() => {
+        const fmtSec = (s) => {
+          const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+          if (h > 0 && m > 0) return `${h}시간 ${m}분`;
+          if (h > 0) return `${h}시간`;
+          if (m > 0) return `${m}분`;
+          return s > 0 ? `${s}초` : "-";
+        };
+        const statItems = [
+          { label:"연속 학습일", value: streak ? `${streak}일`    : "-",           icon:"🔥", color:C.yellow },
+          { label:"오늘 공부",   value: fmtSec(todaySec),                           icon:"⏱️", color:C.blue   },
+          { label:"완료 문제",   value: solved ? `${solved}개`    : "-",           icon:"✅", color:C.green  },
+        ];
+        return (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:28 }}>
+            {statItems.map((s) => (
+              <div key={s.label} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"16px 18px", position:"relative", overflow:"hidden" }}>
+                {loading && <div style={{ position:"absolute", inset:0, background:C.card+"CC", display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{ width:16, height:16, border:`2px solid ${C.line}`, borderTopColor:C.blue, borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/></div>}
+                <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
+                <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:s.color }}>{s.value}</div>
+                <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:2 }}>{s.label}</div>
+              </div>
+            ))}
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* 주간 활동 */}
       <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:28 }}>
@@ -4740,8 +4766,10 @@ function StudyTimer() {
   const [sessionSecs, setSession] = useState(0);
   const [baseToday, setBaseToday] = useState(lsLoad);
   const [synced, setSynced]       = useState(false);
-  const sessionRef  = useRef(0);
-  const intervalRef = useRef(null);
+  const sessionRef   = useRef(0);
+  const baseTodayRef = useRef(lsLoad());
+  const intervalRef  = useRef(null);
+  const autoSaveRef  = useRef(null);
 
   // 앱 로드 시 DB에서 오늘 누적 가져오기
   useEffect(() => {
@@ -4750,10 +4778,22 @@ function StudyTimer() {
         const localSecs = lsLoad();
         const best = Math.max(secs, localSecs);
         setBaseToday(best);
+        baseTodayRef.current = best;
         lsSave(best);
       }
       setSynced(true);
     });
+  }, []);
+
+  // 페이지 종료/탭 전환 시 저장
+  useEffect(() => {
+    const save = () => {
+      const total = baseTodayRef.current + sessionRef.current;
+      if (total > 0) { lsSave(total); dbSave(total); }
+    };
+    window.addEventListener("beforeunload", save);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
+    return () => window.removeEventListener("beforeunload", save);
   }, []);
 
   const fmt = (s) => {
@@ -4777,26 +4817,37 @@ function StudyTimer() {
       sessionRef.current += 1;
       setSession(sessionRef.current);
     }, 1000);
+    // 60초마다 자동 저장
+    autoSaveRef.current = setInterval(() => {
+      const total = baseTodayRef.current + sessionRef.current;
+      persist(total);
+    }, 60000);
     setRunning(true);
   };
 
   const handlePause = () => {
     clearInterval(intervalRef.current);
+    clearInterval(autoSaveRef.current);
     setRunning(false);
-    persist(baseToday + sessionRef.current);
+    persist(baseTodayRef.current + sessionRef.current);
   };
 
   const handleReset = () => {
     clearInterval(intervalRef.current);
+    clearInterval(autoSaveRef.current);
     setRunning(false);
-    const total = baseToday + sessionRef.current;
+    const total = baseTodayRef.current + sessionRef.current;
     persist(total);
     setBaseToday(total);
+    baseTodayRef.current = total;
     sessionRef.current = 0;
     setSession(0);
   };
 
-  useEffect(() => () => clearInterval(intervalRef.current), []);
+  useEffect(() => () => {
+    clearInterval(intervalRef.current);
+    clearInterval(autoSaveRef.current);
+  }, []);
 
   const todayTotal = baseToday + sessionSecs;
   const goalSecs = 4 * 3600;

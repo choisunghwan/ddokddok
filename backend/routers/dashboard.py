@@ -72,7 +72,7 @@ def get_stats(db: Session = Depends(get_db), current_user: User = Depends(get_cu
         for i in range(7)
     ]
 
-    # 연속 학습일
+    # 연속 학습일 (코딩 세션 + AICE 제출 + 타이머 사용일 통합)
     session_dates = [
         r[0] for r in db.query(sqlfunc.date(StudySession.created_at))
         .filter(StudySession.user_id == current_user.id).distinct().all()
@@ -81,7 +81,20 @@ def get_stats(db: Session = Depends(get_db), current_user: User = Depends(get_cu
         r[0] for r in db.query(sqlfunc.date(AiceSubmission.created_at))
         .filter(AiceSubmission.user_id == current_user.id).distinct().all()
     ]
-    streak = calc_streak(session_dates + aice_dates)
+    timer_dates = [
+        r.date for r in db.query(StudyTimerStat).filter(
+            StudyTimerStat.user_id == current_user.id,
+            StudyTimerStat.total_seconds > 0,
+        ).all()
+    ]
+    streak = calc_streak(session_dates + aice_dates + timer_dates)
+
+    # 오늘 타이머 누적 초
+    today_timer = db.query(StudyTimerStat).filter(
+        StudyTimerStat.user_id == current_user.id,
+        StudyTimerStat.date == today,
+    ).first()
+    today_seconds = today_timer.total_seconds if today_timer else 0
 
     # 코스별 진행률
     progress_rows = db.query(CourseProgress).filter(
@@ -102,6 +115,7 @@ def get_stats(db: Session = Depends(get_db), current_user: User = Depends(get_cu
         "completed_problems": completed_problems,
         "weekly_chart": weekly_chart,
         "course_progress": course_progress,
+        "today_seconds": today_seconds,
     }
 
 
