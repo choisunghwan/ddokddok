@@ -1003,12 +1003,14 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
       });
     }
 
-    const onTimerSaved = () => fetchStats();
-    window.addEventListener("timer-saved", onTimerSaved);
+    const onRefresh = () => fetchStats();
+    window.addEventListener("timer-saved",   onRefresh);
+    window.addEventListener("stats-changed", onRefresh);
     const onVisible = () => { if (!document.hidden) fetchStats(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      window.removeEventListener("timer-saved", onTimerSaved);
+      window.removeEventListener("timer-saved",   onRefresh);
+      window.removeEventListener("stats-changed", onRefresh);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [isGuest]);
@@ -1113,7 +1115,10 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
 
       {/* 주간 활동 */}
       <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:28 }}>
-        <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:14 }}>이번 주 학습 현황</div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>이번 주 학습 현황</div>
+          <button onClick={fetchStats} disabled={loading} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:14, padding:4, opacity: loading ? 0.4 : 1 }} title="새로고침">↻</button>
+        </div>
         <ResponsiveContainer width="100%" height={110}>
           <BarChart data={chart} margin={{ top:0, right:0, left:-30, bottom:0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={C.line} vertical={false} />
@@ -1832,17 +1837,20 @@ function LessonViewScreen({ lesson, langId, isGuest, onBack }) {
     if (!lesson?.id || !langId || isGuest) return;
     const set = getCompletedSet(langId);
     const h   = authHeader();
+    const notify = () => window.dispatchEvent(new CustomEvent("stats-changed"));
 
-    // 방문할 때마다 오늘 세션 기록 (streak 누적)
-    fetch(`${API}/api/dashboard/session?course_id=${langId}&duration_minutes=5`, { method:"POST", headers:h }).catch(()=>{});
+    // 방문마다 세션 기록 (streak)
+    fetch(`${API}/api/dashboard/session?course_id=${langId}&duration_minutes=5`, { method:"POST", headers:h })
+      .then(notify).catch(() => {});
 
     if (set.has(lesson.id)) { setDone(true); return; }
 
-    // 첫 완료 → 진도 업데이트
+    // 첫 완료 → 진도 업데이트 후 대시보드 갱신 알림
     set.add(lesson.id);
     saveCompletedSet(langId, set);
     setDone(true);
-    fetch(`${API}/api/dashboard/progress?course_id=${langId}&completed_lessons=${set.size}`, { method:"POST", headers:h }).catch(()=>{});
+    fetch(`${API}/api/dashboard/progress?course_id=${langId}&completed_lessons=${set.size}`, { method:"POST", headers:h })
+      .then(notify).catch(() => {});
   }, [lesson?.id, langId, isGuest]);
 
   return (

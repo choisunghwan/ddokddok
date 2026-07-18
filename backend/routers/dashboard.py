@@ -11,10 +11,10 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 DAYS_KR = ["월", "화", "수", "목", "금", "토", "일"]
 
 COURSE_TOTALS = {
-    "py": 80,
-    "java": 60,
-    "aice": 14,
-    "sql": 50,
+    "py": 9,
+    "java": 6,
+    "aice": 50,
+    "sql": 8,
 }
 
 
