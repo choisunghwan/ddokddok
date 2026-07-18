@@ -956,11 +956,18 @@ function AuthScreen({ onAuth, onGuest }) {
 
 // ── 홈 ─────────────────────────────────────────
 const COURSE_META = [
-  { id: "py",   lang: "Python",           color: C.blue,   icon: "🐍", total: 80,  badge: "인기"   },
-  { id: "java", lang: "Java",             color: C.coral,  icon: "☕", total: 60,  badge: ""       },
-  { id: "aice", lang: "AICE Associate",   color: C.purple, icon: "🏆", total: 14,  badge: "자격증" },
-  { id: "sql",  lang: "SQL",              color: C.green,  icon: "🗃️", total: 50,  badge: "신규"  },
+  { id: "py",   lang: "Python",           color: C.blue,   icon: "🐍", total: 9,  badge: "인기"   },
+  { id: "java", lang: "Java",             color: C.coral,  icon: "☕", total: 6,  badge: ""       },
+  { id: "aice", lang: "AICE Associate",   color: C.purple, icon: "🏆", total: 50, badge: "자격증" },
+  { id: "sql",  lang: "SQL",              color: C.green,  icon: "🗃️", total: 8,  badge: "신규"  },
 ];
+
+function getLocalDone(courseId) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(`ddok_done_${courseId}`) || "[]");
+    return Array.isArray(arr) ? arr.length : 0;
+  } catch { return 0; }
+}
 
 function authHeader() {
   return { "Authorization": `Bearer ${localStorage.getItem("token")}` };
@@ -983,10 +990,21 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
 
   useEffect(() => {
     fetchStats();
-    // 타이머 저장 이벤트 수신 시 갱신
+
+    // localStorage 레슨 진도 → DB 동기화 (처음 한 번, 기존에 한 학습 반영)
+    if (!isGuest) {
+      ["py","java","sql"].forEach(id => {
+        const cnt = getLocalDone(id);
+        if (cnt > 0) {
+          fetch(`${API}/api/dashboard/progress?course_id=${id}&completed_lessons=${cnt}`, {
+            method:"POST", headers: authHeader(),
+          }).catch(() => {});
+        }
+      });
+    }
+
     const onTimerSaved = () => fetchStats();
     window.addEventListener("timer-saved", onTimerSaved);
-    // 탭 포커스 복귀 시 갱신
     const onVisible = () => { if (!document.hidden) fetchStats(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
@@ -1014,7 +1032,10 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
   const progressMap = Object.fromEntries(
     (stats?.course_progress ?? []).map(cp => [cp.course_id, cp.completed_lessons])
   );
-  const courses = COURSE_META.map(c => ({ ...c, progress: progressMap[c.id] ?? 0 }));
+  const courses = COURSE_META.map(c => {
+    if (c.id === "aice") return { ...c, progress: solved, total: Math.max(solved || 0, 50) };
+    return { ...c, progress: progressMap[c.id] ?? 0 };
+  });
 
   const greet = () => {
     const h = new Date().getHours();
@@ -1071,9 +1092,9 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
           return s > 0 ? `${s}초` : "-";
         };
         const statItems = [
-          { label:"연속 학습일", value: streak ? `${streak}일`    : "-",           icon:"🔥", color:C.yellow },
-          { label:"오늘 공부",   value: fmtSec(todaySec),                           icon:"⏱️", color:C.blue   },
-          { label:"완료 문제",   value: solved ? `${solved}개`    : "-",           icon:"✅", color:C.green  },
+          { label:"연속 학습일",   value: streak ? `${streak}일`  : "-", icon:"🔥", color:C.yellow },
+          { label:"오늘 공부",     value: fmtSec(todaySec),               icon:"⏱️", color:C.blue   },
+          { label:"학습 완료",     value: solved ? `${solved}개`  : "-", icon:"✅", color:C.green  },
         ];
         return (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:28 }}>
@@ -1107,22 +1128,29 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
       {/* 이어서 */}
       <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:12 }}>이어서 학습하기</div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-        {courses.map((c) => (
-          <button key={c.id} onClick={() => setTab(c.id === "aice" ? "cert" : "code")} style={{
-            textAlign:"left", padding:"14px 16px", borderRadius:12, border:`1px solid ${C.line}`,
-            background:C.card, cursor:"pointer",
-          }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <span style={{ fontSize:20 }}>{c.icon}</span>
-              {c.badge && <span style={{ fontFamily:MONO, fontSize:9, color:c.color, background:c.color+"22", padding:"2px 6px", borderRadius:4, fontWeight:700 }}>{c.badge}</span>}
-            </div>
-            <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:10 }}>{c.lang}</div>
-            <div style={{ height:4, background:C.line, borderRadius:3, overflow:"hidden" }}>
-              <div style={{ height:"100%", width:`${Math.min((c.progress/c.total)*100, 100)}%`, background:c.color, borderRadius:3 }} />
-            </div>
-            <div style={{ fontFamily:MONO, fontSize:10, color:C.muted, marginTop:5 }}>{c.progress} / {c.total} 완료</div>
-          </button>
-        ))}
+        {courses.map((c) => {
+          const pct = c.total > 0 ? Math.min((c.progress / c.total) * 100, 100) : 0;
+          const isAice = c.id === "aice";
+          return (
+            <button key={c.id} onClick={() => setTab(isAice ? "cert" : "code")} style={{
+              textAlign:"left", padding:"14px 16px", borderRadius:12,
+              border:`1px solid ${c.progress > 0 ? c.color+"44" : C.line}`,
+              background: c.progress > 0 ? c.color+"0A" : C.card, cursor:"pointer",
+            }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                <span style={{ fontSize:20 }}>{c.icon}</span>
+                {c.badge && <span style={{ fontFamily:MONO, fontSize:9, color:c.color, background:c.color+"22", padding:"2px 6px", borderRadius:4, fontWeight:700 }}>{c.badge}</span>}
+              </div>
+              <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:10 }}>{c.lang}</div>
+              <div style={{ height:4, background:C.line, borderRadius:3, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${pct}%`, background:c.color, borderRadius:3, transition:"width .4s" }} />
+              </div>
+              <div style={{ fontFamily:MONO, fontSize:10, color: c.progress > 0 ? c.color : C.muted, marginTop:5, fontWeight: c.progress > 0 ? 700 : 400 }}>
+                {isAice ? (c.progress > 0 ? `${c.progress}문제 정답` : "도전해보세요") : `${c.progress} / ${c.total} 완료`}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -1803,15 +1831,17 @@ function LessonViewScreen({ lesson, langId, isGuest, onBack }) {
   useEffect(() => {
     if (!lesson?.id || !langId || isGuest) return;
     const set = getCompletedSet(langId);
+    const h   = authHeader();
+
+    // 방문할 때마다 오늘 세션 기록 (streak 누적)
+    fetch(`${API}/api/dashboard/session?course_id=${langId}&duration_minutes=5`, { method:"POST", headers:h }).catch(()=>{});
+
     if (set.has(lesson.id)) { setDone(true); return; }
 
-    // 레슨 첫 진입 → 세션 기록 + 진도 업데이트
+    // 첫 완료 → 진도 업데이트
     set.add(lesson.id);
     saveCompletedSet(langId, set);
     setDone(true);
-
-    const h = authHeader();
-    fetch(`${API}/api/dashboard/session?course_id=${langId}&duration_minutes=5`, { method:"POST", headers:h }).catch(()=>{});
     fetch(`${API}/api/dashboard/progress?course_id=${langId}&completed_lessons=${set.size}`, { method:"POST", headers:h }).catch(()=>{});
   }, [lesson?.id, langId, isGuest]);
 
