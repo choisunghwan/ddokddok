@@ -2476,6 +2476,30 @@ const ADSP_CONCEPTS = [
     color: C.coral,
     tags: ["가설검정", "유의수준", "통계"],
   },
+  {
+    id: "regression",
+    title: "회귀분석",
+    sub: "단순·다중 선형회귀 · 로지스틱 회귀",
+    emoji: "📉",
+    color: C.blue,
+    tags: ["회귀","선형","예측","계수"],
+  },
+  {
+    id: "clustering",
+    title: "군집분석",
+    sub: "K-Means · 계층적 군집 · DBSCAN",
+    emoji: "🔵",
+    color: C.green,
+    tags: ["군집","비지도학습","K-Means"],
+  },
+  {
+    id: "association-analysis",
+    title: "연관분석",
+    sub: "Association Rule · Apriori · FP-Growth",
+    emoji: "🔗",
+    color: C.purple,
+    tags: ["연관규칙","Apriori","장바구니"],
+  },
 ];
 
 function ConceptListScreen({ onSelect, onBack }) {
@@ -2516,12 +2540,399 @@ function ConceptListScreen({ onSelect, onBack }) {
 }
 
 function ConceptDetailScreen({ conceptId, onBack }) {
-  if (conceptId === "para-nonpara")       return <ConceptParaNonpara onBack={onBack} />;
-  if (conceptId === "population-sample")  return <ConceptPopulationSample onBack={onBack} />;
-  if (conceptId === "timeseries")         return <ConceptTimeSeries onBack={onBack} />;
-  if (conceptId === "association")        return <ConceptAssociation onBack={onBack} />;
-  if (conceptId === "pvalue")             return <ConceptPValue onBack={onBack} />;
+  if (conceptId === "para-nonpara")        return <ConceptParaNonpara onBack={onBack} />;
+  if (conceptId === "population-sample")   return <ConceptPopulationSample onBack={onBack} />;
+  if (conceptId === "timeseries")          return <ConceptTimeSeries onBack={onBack} />;
+  if (conceptId === "association")         return <ConceptAssociation onBack={onBack} />;
+  if (conceptId === "pvalue")              return <ConceptPValue onBack={onBack} />;
+  if (conceptId === "regression")          return <ConceptRegression onBack={onBack} />;
+  if (conceptId === "clustering")          return <ConceptClustering onBack={onBack} />;
+  if (conceptId === "association-analysis") return <ConceptAssociationAnalysis onBack={onBack} />;
   return null;
+}
+
+// ── 회귀분석 ─────────────────────────────────────
+function ConceptRegression({ onBack }) {
+  const G = (col) => ({ color:col, fontWeight:700 });
+  const S = {
+    wrap: { padding:"28px 32px 60px" },
+    back: { background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 },
+    eyebrow: (col) => ({ fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", color:col, marginBottom:6 }),
+    title: { fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 },
+    sub: { fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 },
+    secTitle: { fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:12 },
+    box: (col) => ({ background:C.card2, border:`1px solid ${col||C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 }),
+    card: (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:12, padding:"16px 18px", borderTop:`3px solid ${col}`, marginBottom:12 }),
+    formula: { fontFamily:MONO, fontSize:13, background:C.card2, borderRadius:8, padding:"10px 14px", color:C.green, marginTop:8, lineHeight:1.8 },
+    examBox: { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", marginBottom:14 },
+    examHdr: { background:"#4F8EF712", borderBottom:`1px solid ${C.line}`, padding:"10px 18px", fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", color:C.blue, textTransform:"uppercase", display:"flex", alignItems:"center", gap:7 },
+    dot: { width:5, height:5, borderRadius:"50%", background:C.blue, flexShrink:0, marginTop:7 },
+    th: (col) => ({ fontFamily:SANS, fontSize:11, fontWeight:700, padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}`, color:col||C.muted, textAlign:"left" }),
+    td: { fontFamily:SANS, fontSize:13, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.text },
+    tdK: { fontFamily:SANS, fontSize:12, fontWeight:700, padding:"10px 14px", background:C.card2, color:C.muted },
+  };
+
+  const types = [
+    { col:C.blue,   emoji:"📐", name:"단순 선형회귀", desc:"독립변수 1개로 종속변수 예측", ex:"공부시간 → 시험점수", formula:"Y = β₀ + β₁X + ε" },
+    { col:C.purple, emoji:"📊", name:"다중 선형회귀", desc:"독립변수 여러 개로 종속변수 예측", ex:"공부시간+수면시간 → 시험점수", formula:"Y = β₀ + β₁X₁ + β₂X₂ + … + ε" },
+    { col:C.coral,  emoji:"🔀", name:"로지스틱 회귀", desc:"결과가 0/1인 분류 문제에 사용", ex:"나이+흡연 → 질병 유무(0/1)", formula:"P(Y=1) = 1 / (1 + e^-(β₀+β₁X))" },
+  ];
+
+  return (
+    <div style={S.wrap}>
+      <button onClick={onBack} style={S.back}>← 개념 목록</button>
+      <div style={S.eyebrow(C.blue)}>ADsP 핵심 개념 06</div>
+      <div style={S.title}>회귀분석</div>
+      <div style={S.sub}>변수 간의 관계를 수식으로 모델링해 예측하는 지도학습</div>
+
+      {/* 핵심 정의 */}
+      <div style={{ ...S.box(C.blue+"33"), borderLeft:`3px solid ${C.blue}` }}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          <span style={G(C.blue)}>독립변수(원인 X)</span>가 <span style={G(C.blue)}>종속변수(결과 Y)</span>에 얼마나 영향을 미치는지 수식으로 표현해요.<br/>
+          "공부를 1시간 더 하면 점수가 몇 점 오를까?" 같은 질문에 답하는 분석이에요.
+        </div>
+      </div>
+
+      {/* 3가지 유형 */}
+      <div style={S.secTitle}>회귀분석의 종류</div>
+      {types.map(t => (
+        <div key={t.name} style={S.card(t.col)}>
+          <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:t.col, marginBottom:6 }}>{t.emoji} {t.name}</div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.7, marginBottom:6 }}>{t.desc}</div>
+          <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginBottom:8 }}>예) {t.ex}</div>
+          <div style={{ ...S.formula, color:t.col }}>{t.formula}</div>
+        </div>
+      ))}
+
+      {/* 회귀계수 해석 */}
+      <div style={S.secTitle}>핵심 용어 해석</div>
+      <div style={{ borderRadius:11, border:`1px solid ${C.line}`, overflow:"hidden", marginBottom:14 }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr>
+              <th style={S.th(C.blue)}>용어</th>
+              <th style={S.th()}>의미</th>
+              <th style={S.th(C.green)}>해석 예시</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["β₀ (절편)", "X=0일 때 Y의 예측값","공부 0시간 → 기본 점수 40점"],
+              ["β₁ (회귀계수)", "X 1단위 증가 시 Y 변화량","1시간 더 공부 → +5점"],
+              ["R² (결정계수)", "모델이 Y 변동의 몇 %를 설명하는지","R²=0.8 → 80% 설명"],
+              ["ε (오차)", "모델로 설명 못하는 부분","컨디션, 운 등 기타 요인"],
+            ].map(([k,m,ex], i, arr) => (
+              <tr key={k}>
+                <td style={{ ...S.tdK, fontFamily:MONO, fontSize:12, borderBottom:i===arr.length-1?"none":undefined }}>{k}</td>
+                <td style={{ ...S.td, borderBottom:i===arr.length-1?"none":undefined }}>{m}</td>
+                <td style={{ ...S.td, fontSize:12, color:C.green, borderBottom:i===arr.length-1?"none":undefined }}>{ex}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 가정 */}
+      <div style={{ ...S.box(), borderLeft:`3px solid ${C.yellow}` }}>
+        <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.yellow, marginBottom:10 }}>⚠️ 선형회귀의 4가지 가정 (시험 출제)</div>
+        {["선형성 — X와 Y의 관계가 선형", "독립성 — 오차들이 서로 독립", "등분산성 — 오차의 분산이 일정 (이분산 X)", "정규성 — 오차가 정규분포"].map((a, i) => (
+          <div key={i} style={{ display:"flex", gap:10, marginBottom:i<3?7:0, alignItems:"flex-start" }}>
+            <div style={{ ...S.dot, background:C.yellow }}/>
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.text }}>{a}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 시험 포인트 */}
+      <div style={S.examBox}>
+        <div style={S.examHdr}>🎯 시험 포인트</div>
+        <div style={{ padding:"16px 18px" }}>
+          {[
+            "회귀계수 β₁이 양수 → X가 증가할수록 Y도 증가 (양의 관계)",
+            "R² (결정계수): 0~1 사이, 1에 가까울수록 모델이 잘 설명 — 과적합 주의",
+            "다중공선성: 독립변수들끼리 상관관계가 높으면 회귀계수 추정 불안정",
+            "로지스틱 회귀는 결과가 연속형이 아닌 범주형(0/1)일 때 사용",
+            "최소제곱법(OLS): 잔차(실제-예측)의 제곱합을 최소화해 계수 추정",
+          ].map((pt, i) => (
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:i<4?9:0, alignItems:"flex-start" }}>
+              <div style={S.dot}/>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{pt}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 군집분석 ─────────────────────────────────────
+function ConceptClustering({ onBack }) {
+  const G = (col) => ({ color:col, fontWeight:700 });
+  const S = {
+    wrap: { padding:"28px 32px 60px" },
+    back: { background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 },
+    eyebrow: { fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", color:C.green, marginBottom:6 },
+    title: { fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 },
+    sub: { fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 },
+    secTitle: { fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:12 },
+    box: (col) => ({ background:C.card2, border:`1px solid ${col||C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 }),
+    card: (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:12, padding:"16px 18px", borderTop:`3px solid ${col}`, marginBottom:12 }),
+    examBox: { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", marginBottom:14 },
+    examHdr: { background:"#34D39912", borderBottom:`1px solid ${C.line}`, padding:"10px 18px", fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", color:C.green, textTransform:"uppercase", display:"flex", alignItems:"center", gap:7 },
+    dot: (col) => ({ width:5, height:5, borderRadius:"50%", background:col||C.green, flexShrink:0, marginTop:7 }),
+    th: (col) => ({ fontFamily:SANS, fontSize:11, fontWeight:700, padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}`, color:col||C.muted, textAlign:"left" }),
+    td: { fontFamily:SANS, fontSize:13, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.text },
+    tdK: { fontFamily:SANS, fontSize:12, fontWeight:700, padding:"10px 14px", background:C.card2, color:C.muted },
+  };
+
+  const kmeans = [
+    { step:"①", icon:"🎲", text:"K개의 초기 중심점(Centroid)을 무작위로 설정" },
+    { step:"②", icon:"📏", text:"각 데이터를 가장 가까운 중심점의 군집에 배정" },
+    { step:"③", icon:"📍", text:"각 군집의 평균으로 중심점을 업데이트" },
+    { step:"④", icon:"🔄", text:"중심점이 변하지 않을 때까지 ②③ 반복 → 수렴" },
+  ];
+
+  return (
+    <div style={S.wrap}>
+      <button onClick={onBack} style={S.back}>← 개념 목록</button>
+      <div style={S.eyebrow}>ADsP 핵심 개념 07</div>
+      <div style={S.title}>군집분석</div>
+      <div style={S.sub}>레이블 없이 데이터를 비슷한 그룹으로 묶는 비지도학습</div>
+
+      {/* 핵심 정의 */}
+      <div style={{ ...S.box(C.green+"33"), borderLeft:`3px solid ${C.green}` }}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          <span style={G(C.green)}>정답 레이블 없이</span> 데이터 간의 <span style={G(C.green)}>유사도(거리)</span>를 기반으로 자동으로 그룹을 만드는 분석이에요.<br/>
+          고객 세그먼테이션, 이상치 탐지, 문서 분류에 많이 사용해요.
+        </div>
+      </div>
+
+      {/* K-Means */}
+      <div style={S.secTitle}>K-Means 알고리즘 (가장 많이 출제)</div>
+      <div style={S.card(C.green)}>
+        <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:12 }}>K개의 군집으로 분류 — K는 사전에 지정해야 함</div>
+        {kmeans.map((r, i) => (
+          <div key={i} style={{ display:"flex", gap:12, marginBottom:i<3?10:0, alignItems:"flex-start" }}>
+            <div style={{ width:28, height:28, borderRadius:8, background:C.green+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{r.icon}</div>
+            <div>
+              <span style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.green }}>{r.step} </span>
+              <span style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{r.text}</span>
+            </div>
+          </div>
+        ))}
+        <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:12, padding:"8px 10px", background:C.card2, borderRadius:7 }}>
+          📌 단점: K값을 미리 알아야 함 / 초기 중심점에 민감 / 이상치에 취약
+        </div>
+      </div>
+
+      {/* 군집 종류 비교 */}
+      <div style={S.secTitle}>주요 군집분석 방법 비교</div>
+      <div style={{ borderRadius:11, border:`1px solid ${C.line}`, overflow:"hidden", marginBottom:14 }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr>
+              <th style={S.th(C.green)}>방법</th>
+              <th style={S.th()}>특징</th>
+              <th style={S.th()}>K 사전지정</th>
+              <th style={S.th()}>장점</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["K-Means","중심점 기반 반복","필요","빠르고 단순"],
+              ["계층적 군집","거리 기반 트리 구조","불필요","덴드로그램으로 시각화"],
+              ["DBSCAN","밀도 기반","불필요","이상치 자동 제거, 비원형 군집"],
+            ].map(([m,f,k,a], i, arr) => (
+              <tr key={m}>
+                <td style={{ ...S.tdK, fontWeight:700, color:C.green, borderBottom:i===arr.length-1?"none":undefined }}>{m}</td>
+                <td style={{ ...S.td, borderBottom:i===arr.length-1?"none":undefined }}>{f}</td>
+                <td style={{ ...S.td, color:k==="필요"?C.coral:C.muted, fontWeight:700, borderBottom:i===arr.length-1?"none":undefined }}>{k}</td>
+                <td style={{ ...S.td, fontSize:12, color:C.muted, borderBottom:i===arr.length-1?"none":undefined }}>{a}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 거리 척도 */}
+      <div style={{ ...S.box(), borderLeft:`3px solid ${C.purple}` }}>
+        <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.purple, marginBottom:10 }}>📐 거리 척도 (군집 유사도 측정)</div>
+        {[
+          ["유클리드 거리", "직선 거리 — 가장 많이 사용", "√((x₁-x₂)² + (y₁-y₂)²)"],
+          ["맨해튼 거리", "격자 이동 거리 (절댓값 합)", "|x₁-x₂| + |y₁-y₂|"],
+          ["코사인 유사도", "방향 기반 — 텍스트 분석에 유리", "cos(θ) = A·B / (|A||B|)"],
+        ].map(([k,d,f], i) => (
+          <div key={k} style={{ marginBottom:i<2?10:0 }}>
+            <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.text, marginBottom:2 }}>{k}</div>
+            <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginBottom:3 }}>{d}</div>
+            <div style={{ fontFamily:MONO, fontSize:11, color:C.purple, background:C.card2, borderRadius:6, padding:"4px 8px" }}>{f}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 시험 포인트 */}
+      <div style={S.examBox}>
+        <div style={S.examHdr}>🎯 시험 포인트</div>
+        <div style={{ padding:"16px 18px" }}>
+          {[
+            "군집분석 = 비지도학습 — 사전에 정답 레이블 없음",
+            "K-Means: K는 사전 지정, 유클리드 거리 기반, 이상치에 민감",
+            "계층적 군집: 덴드로그램(수형도)으로 군집 형성 과정 시각화 가능",
+            "DBSCAN: 밀도 기반 → 이상치를 Noise로 처리, K 불필요",
+            "최적 K 선택: 엘보우 기법(SSE 감소 폭이 줄어드는 지점)",
+          ].map((pt, i) => (
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:i<4?9:0, alignItems:"flex-start" }}>
+              <div style={S.dot()}/>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{pt}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 연관분석 ─────────────────────────────────────
+function ConceptAssociationAnalysis({ onBack }) {
+  const G = (col) => ({ color:col, fontWeight:700 });
+  const S = {
+    wrap: { padding:"28px 32px 60px" },
+    back: { background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 },
+    eyebrow: { fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", color:C.purple, marginBottom:6 },
+    title: { fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 },
+    sub: { fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 },
+    secTitle: { fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:12 },
+    box: (col) => ({ background:C.card2, border:`1px solid ${col||C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 }),
+    card: (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:12, padding:"16px 18px", borderTop:`3px solid ${col}`, marginBottom:12 }),
+    examBox: { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", marginBottom:14 },
+    examHdr: { background:"#A78BFA12", borderBottom:`1px solid ${C.line}`, padding:"10px 18px", fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", color:C.purple, textTransform:"uppercase", display:"flex", alignItems:"center", gap:7 },
+    dot: { width:5, height:5, borderRadius:"50%", background:C.purple, flexShrink:0, marginTop:7 },
+    th: (col) => ({ fontFamily:SANS, fontSize:11, fontWeight:700, padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}`, color:col||C.muted, textAlign:"left" }),
+    td: { fontFamily:SANS, fontSize:13, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.text },
+    tdK: { fontFamily:SANS, fontSize:12, fontWeight:700, padding:"10px 14px", background:C.card2, color:C.muted },
+    badge: (col) => ({ display:"inline-block", fontFamily:MONO, fontSize:11, fontWeight:700, color:col, background:col+"18", borderRadius:6, padding:"2px 8px" }),
+  };
+
+  const aprioriSteps = [
+    { icon:"1️⃣", title:"최소 지지도 설정", desc:"예) 최소 지지도 = 0.2 (전체 거래의 20% 이상)" },
+    { icon:"2️⃣", title:"빈발 항목 집합 탐색", desc:"최소 지지도를 만족하는 아이템 조합을 1개 → 2개 → 3개 순으로 확장" },
+    { icon:"3️⃣", title:"연관규칙 생성", desc:"빈발 항목 집합에서 최소 신뢰도를 만족하는 규칙 A→B 추출" },
+    { icon:"4️⃣", title:"향상도로 필터링", desc:"향상도 > 1인 의미 있는 규칙만 선택" },
+  ];
+
+  return (
+    <div style={S.wrap}>
+      <button onClick={onBack} style={S.back}>← 개념 목록</button>
+      <div style={S.eyebrow}>ADsP 핵심 개념 08</div>
+      <div style={S.title}>연관분석</div>
+      <div style={S.sub}>항목 간의 연관 규칙을 발견하는 비지도학습</div>
+
+      {/* 핵심 정의 */}
+      <div style={{ ...S.box(C.purple+"33"), borderLeft:`3px solid ${C.purple}` }}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          <span style={G(C.purple)}>"A를 구매하면 B도 구매한다"</span>는 패턴을 데이터에서 자동으로 발견하는 분석이에요.<br/>
+          마트의 <span style={G(C.purple)}>장바구니 분석</span>이 대표적이며, 추천 시스템·웹 로그 분석에도 활용돼요.
+        </div>
+      </div>
+
+      {/* 핵심 지표 링크 */}
+      <div style={{ ...S.box(), borderLeft:`3px solid ${C.yellow}`, marginBottom:14 }}>
+        <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.yellow, marginBottom:8 }}>🛒 핵심 지표 — 지지도·신뢰도·향상도</div>
+        <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+          {[["지지도","P(A∩B)","전체에서 함께 등장 비율",C.yellow],["신뢰도","P(A∩B)/P(A)","A 샀을 때 B 살 확률",C.blue],["향상도","신뢰도/P(B)","우연 대비 연관 강도",C.green]].map(([k,f,d,col]) => (
+            <div key={k} style={{ flex:"1 1 140px", background:C.card, borderRadius:9, padding:"10px 12px", border:`1px solid ${col}22` }}>
+              <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:col, marginBottom:4 }}>{k}</div>
+              <div style={{ fontFamily:MONO, fontSize:11, color:col, marginBottom:4 }}>{f}</div>
+              <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Apriori 알고리즘 */}
+      <div style={S.secTitle}>Apriori 알고리즘 (핵심 출제)</div>
+      <div style={S.card(C.purple)}>
+        <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:12 }}>
+          가장 대표적인 연관규칙 탐색 알고리즘 — <span style={G(C.purple)}>작은 집합에서 큰 집합으로 확장</span>
+        </div>
+        {aprioriSteps.map((r, i) => (
+          <div key={i} style={{ display:"flex", gap:12, marginBottom:i<3?10:0, alignItems:"flex-start" }}>
+            <span style={{ fontSize:16, flexShrink:0 }}>{r.icon}</span>
+            <div>
+              <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.purple, marginBottom:3 }}>{r.title}</div>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{r.desc}</div>
+            </div>
+          </div>
+        ))}
+        <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:12, padding:"8px 10px", background:C.card2, borderRadius:7 }}>
+          📌 단조성 원리: 빈발 항목 집합의 부분 집합은 반드시 빈발 → 조기 가지치기로 효율화
+        </div>
+      </div>
+
+      {/* Apriori vs FP-Growth */}
+      <div style={S.secTitle}>Apriori vs FP-Growth</div>
+      <div style={{ borderRadius:11, border:`1px solid ${C.line}`, overflow:"hidden", marginBottom:14 }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr>
+              <th style={S.th(C.purple)}>알고리즘</th>
+              <th style={S.th()}>방식</th>
+              <th style={S.th()}>속도</th>
+              <th style={S.th()}> 특징</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["Apriori","후보 집합 생성 후 DB 스캔","느림 (DB 반복 스캔)","이해하기 쉬움, 소규모 데이터"],
+              ["FP-Growth","트리(FP-Tree) 구조 압축","빠름 (DB 2회만 스캔)","대규모 데이터에 적합"],
+            ].map(([k,m,s,f], i, arr) => (
+              <tr key={k}>
+                <td style={{ ...S.tdK, color:C.purple, borderBottom:i===arr.length-1?"none":undefined }}>{k}</td>
+                <td style={{ ...S.td, borderBottom:i===arr.length-1?"none":undefined }}>{m}</td>
+                <td style={{ ...S.td, color:i===0?C.coral:C.green, fontWeight:700, borderBottom:i===arr.length-1?"none":undefined }}>{s}</td>
+                <td style={{ ...S.td, fontSize:12, color:C.muted, borderBottom:i===arr.length-1?"none":undefined }}>{f}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 활용 사례 */}
+      <div style={{ ...S.box(), display:"flex", flexWrap:"wrap", gap:10 }}>
+        {[
+          { emoji:"🛒", col:C.yellow, title:"장바구니 분석", desc:"함께 사는 상품 추천" },
+          { emoji:"🎬", col:C.blue,   title:"추천 시스템",   desc:"OTT 콘텐츠 추천" },
+          { emoji:"💊", col:C.green,  title:"의료 분석",     desc:"증상-질병 연관 패턴" },
+          { emoji:"🌐", col:C.purple, title:"웹 로그 분석",  desc:"함께 방문하는 페이지" },
+        ].map(r => (
+          <div key={r.title} style={{ flex:"1 1 130px", background:C.card, borderRadius:9, padding:"12px 14px", border:`1px solid ${r.col}22` }}>
+            <div style={{ fontSize:20, marginBottom:6 }}>{r.emoji}</div>
+            <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:r.col, marginBottom:3 }}>{r.title}</div>
+            <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{r.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 시험 포인트 */}
+      <div style={S.examBox}>
+        <div style={S.examHdr}>🎯 시험 포인트</div>
+        <div style={{ padding:"16px 18px" }}>
+          {[
+            "연관분석 = 비지도학습 — 정답 레이블 불필요, 패턴 자동 탐색",
+            "Apriori 핵심 원리: 빈발 집합의 부분 집합은 반드시 빈발 (단조성)",
+            "최소 지지도·최소 신뢰도 기준을 모두 만족해야 유효한 연관규칙",
+            "향상도 > 1이어야 의미 있는 연관 — 우연보다 강한 관계",
+            "FP-Growth는 Apriori보다 빠르지만 복잡 — 대규모 데이터에 유리",
+          ].map((pt, i) => (
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:i<4?9:0, alignItems:"flex-start" }}>
+              <div style={S.dot}/>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{pt}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── 지지도·신뢰도·향상도 ─────────────────────────
