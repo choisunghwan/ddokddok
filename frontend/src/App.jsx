@@ -964,7 +964,9 @@ const COURSE_META = [
 
 function getLocalDone(courseId) {
   try {
-    const arr = JSON.parse(localStorage.getItem(`ddok_done_${courseId}`) || "[]");
+    let arr = JSON.parse(localStorage.getItem(`ddok_done_${courseId}`) || "[]");
+    // Migration: Python was previously stored under "python" key
+    if (!arr.length && courseId === "py") arr = JSON.parse(localStorage.getItem("ddok_done_python") || "[]");
     return Array.isArray(arr) ? arr.length : 0;
   } catch { return 0; }
 }
@@ -1698,14 +1700,14 @@ function AiConceptsScreen({ onBack }) {
 }
 
 const LANG_LIST = [
-  { id: "python", name: "Python",       icon: "🐍", color: C.blue,   available: true },
-  { id: "java",   name: "Java",         icon: "☕", color: C.coral,  available: true },
-  { id: "sql",    name: "SQL",          icon: "🗃️", color: C.green,  available: true },
-  { id: "aivis",  name: "AI 개념 시각화", icon: "🤖", color: C.purple, available: true, isAI: true },
+  { id: "py",    name: "Python",       icon: "🐍", color: C.blue,   available: true },
+  { id: "java",  name: "Java",         icon: "☕", color: C.coral,  available: true },
+  { id: "sql",   name: "SQL",          icon: "🗃️", color: C.green,  available: true },
+  { id: "aivis", name: "AI 개념 시각화", icon: "🤖", color: C.purple, available: true, isAI: true },
 ];
 
 const CHAPTERS = {
-  python: [
+  py: [
     { id: "basics",    title: "반복문·순회",       icon: "🔁", lessons: [PY_LESSONS[0]] },
     { id: "control",   title: "제어문",             icon: "🔀", lessons: [PY_LESSONS[2], PY_LESSONS[3]] },
     { id: "functions", title: "함수·컴프리헨션",   icon: "🧩", lessons: [PY_LESSONS[4], PY_LESSONS[7]] },
@@ -1823,11 +1825,17 @@ function LessonListScreen({ langId, chapterId, onSelect, onBack }) {
 
 // localStorage 완료 레슨 헬퍼
 function getCompletedSet(langId) {
-  try { return new Set(JSON.parse(localStorage.getItem(`ddok_done_${langId}`) || "[]")); }
-  catch { return new Set(); }
+  try {
+    let data = localStorage.getItem(`ddok_done_${langId}`);
+    // Migration: Python was previously stored under "python" key
+    if (!data && langId === "py") data = localStorage.getItem("ddok_done_python");
+    return new Set(JSON.parse(data || "[]"));
+  } catch { return new Set(); }
 }
 function saveCompletedSet(langId, set) {
   localStorage.setItem(`ddok_done_${langId}`, JSON.stringify([...set]));
+  // Remove old Python key after migration
+  if (langId === "py") localStorage.removeItem("ddok_done_python");
 }
 
 function LessonViewScreen({ lesson, langId, isGuest, onBack }) {

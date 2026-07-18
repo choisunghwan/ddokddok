@@ -12,10 +12,13 @@ DAYS_KR = ["월", "화", "수", "목", "금", "토", "일"]
 
 COURSE_TOTALS = {
     "py": 9,
+    "python": 9,  # legacy alias
     "java": 6,
     "aice": 50,
     "sql": 8,
 }
+
+COURSE_ID_ALIAS = {"python": "py"}
 
 
 def calc_streak(dates: list) -> int:
@@ -102,7 +105,7 @@ def get_stats(db: Session = Depends(get_db), current_user: User = Depends(get_cu
     ).all()
     course_progress = [
         {
-            "course_id": r.course_id,
+            "course_id": COURSE_ID_ALIAS.get(r.course_id, r.course_id),
             "completed_lessons": r.completed_lessons,
             "total_lessons": COURSE_TOTALS.get(r.course_id, 0),
         }
@@ -130,7 +133,7 @@ def record_session(
         user_id=current_user.id,
         date=date.today(),
         duration_minutes=duration_minutes,
-        course_id=course_id,
+        course_id=COURSE_ID_ALIAS.get(course_id, course_id),
     ))
     db.commit()
     return {"ok": True}
@@ -178,6 +181,7 @@ def update_progress(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    course_id = COURSE_ID_ALIAS.get(course_id, course_id)
     row = db.query(CourseProgress).filter(
         CourseProgress.user_id == current_user.id,
         CourseProgress.course_id == course_id,
