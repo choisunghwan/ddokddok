@@ -4698,6 +4698,141 @@ function createAmbientNode(ctx, type) {
   return { stop: () => { try { src.stop(); } catch(e){} gain.disconnect(); }, gain };
 }
 
+// ── 공부 타이머 ──────────────────────────────────
+function StudyTimer() {
+  const todayKey = () => new Date().toDateString();
+
+  const loadBase = () => {
+    try {
+      const d = JSON.parse(localStorage.getItem("study_today") || "{}");
+      return d.date === todayKey() ? (d.secs || 0) : 0;
+    } catch { return 0; }
+  };
+  const saveBase = (secs) => {
+    localStorage.setItem("study_today", JSON.stringify({ date: todayKey(), secs }));
+  };
+
+  const [open, setOpen]           = useState(false);
+  const [running, setRunning]     = useState(false);
+  const [sessionSecs, setSession] = useState(0);
+  const [baseToday, setBaseToday] = useState(loadBase);
+  const sessionRef  = useRef(0);
+  const intervalRef = useRef(null);
+
+  const fmt = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sc = s % 60;
+    return h > 0
+      ? `${h}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`
+      : `${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`;
+  };
+
+  const fmtHuman = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sc = s % 60;
+    if (h > 0 && m > 0) return `${h}시간 ${m}분`;
+    if (h > 0) return `${h}시간`;
+    if (m > 0) return `${m}분`;
+    return `${sc}초`;
+  };
+
+  const handleStart = () => {
+    intervalRef.current = setInterval(() => {
+      sessionRef.current += 1;
+      setSession(sessionRef.current);
+    }, 1000);
+    setRunning(true);
+  };
+
+  const handlePause = () => {
+    clearInterval(intervalRef.current);
+    setRunning(false);
+    saveBase(baseToday + sessionRef.current);
+  };
+
+  const handleReset = () => {
+    clearInterval(intervalRef.current);
+    setRunning(false);
+    saveBase(baseToday + sessionRef.current);
+    const newBase = loadBase();
+    setBaseToday(newBase);
+    sessionRef.current = 0;
+    setSession(0);
+  };
+
+  useEffect(() => () => clearInterval(intervalRef.current), []);
+
+  const todayTotal = baseToday + sessionSecs;
+
+  // 진행률 바 (오늘 목표 4시간 기준)
+  const goalSecs = 4 * 3600;
+  const pct = Math.min((todayTotal / goalSecs) * 100, 100);
+
+  return (
+    <div style={{ position:"fixed", bottom:24, left:24, zIndex:9998, display:"flex", flexDirection:"column", alignItems:"flex-start", gap:10 }}>
+      {open && (
+        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"20px 20px 16px", width:230, boxShadow:"0 8px 32px #0008" }}>
+
+          {/* 세션 타이머 */}
+          <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:6 }}>현재 세션</div>
+          <div style={{ fontFamily:MONO, fontSize:38, fontWeight:800, color: running ? C.blue : C.text, letterSpacing:"-.02em", lineHeight:1, marginBottom:16, transition:"color .3s" }}>
+            {fmt(sessionSecs)}
+          </div>
+
+          {/* 버튼 */}
+          <div style={{ display:"flex", gap:8, marginBottom:18 }}>
+            <button onClick={running ? handlePause : handleStart} style={{
+              flex:1, padding:"9px 0", borderRadius:10, border:"none", cursor:"pointer",
+              background: running ? C.coral+"22" : C.blue+"22",
+              color: running ? C.coral : C.blue,
+              fontFamily:SANS, fontSize:13, fontWeight:700, transition:"all .15s",
+            }}>
+              {running ? "⏸ 일시정지" : sessionSecs > 0 ? "▶ 재개" : "▶ 시작"}
+            </button>
+            <button onClick={handleReset} style={{
+              width:40, borderRadius:10, border:`1px solid ${C.line}`, cursor:"pointer",
+              background:C.card2, color:C.muted, fontFamily:SANS, fontSize:16,
+            }}>⟳</button>
+          </div>
+
+          {/* 오늘 누적 */}
+          <div style={{ borderTop:`1px solid ${C.line}`, paddingTop:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em" }}>오늘 총 공부</div>
+              <div style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color:C.green }}>{fmtHuman(todayTotal)}</div>
+            </div>
+            {/* 목표 진행률 바 */}
+            <div style={{ background:C.card2, borderRadius:99, height:5, overflow:"hidden" }}>
+              <div style={{ width:`${pct}%`, height:"100%", background: pct >= 100 ? C.yellow : C.green, borderRadius:99, transition:"width .5s" }} />
+            </div>
+            <div style={{ fontFamily:SANS, fontSize:10, color:C.muted, marginTop:5, textAlign:"right" }}>
+              목표 4시간 {pct >= 100 ? "🎉 달성!" : `${Math.round(pct)}%`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 플로팅 버튼 */}
+      <button onClick={() => setOpen(o => !o)} style={{
+        height:48, borderRadius:24, padding:"0 16px",
+        background: running ? C.blue+"22" : C.card2,
+        border:`1px solid ${running ? C.blue+"66" : C.line}`,
+        cursor:"pointer", display:"flex", alignItems:"center", gap:8,
+        boxShadow: running ? `0 0 14px ${C.blue}44` : "0 2px 12px #0006",
+        transition:"all .2s",
+      }}>
+        <span style={{ fontSize:16 }}>⏱</span>
+        {running
+          ? <span style={{ fontFamily:MONO, fontSize:14, fontWeight:700, color:C.blue }}>{fmt(sessionSecs)}</span>
+          : <span style={{ fontFamily:SANS, fontSize:13, color:C.muted }}>타이머</span>
+        }
+      </button>
+    </div>
+  );
+}
+
 function AmbientPlayer() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(null);
@@ -4828,6 +4963,7 @@ export default function App() {
       {showStudyModal && <StudyLoginModal onLogin={handleBackToLogin} onClose={() => setShowStudyModal(false)} />}
       {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
       <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} />
+      <StudyTimer />
       <AmbientPlayer />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
