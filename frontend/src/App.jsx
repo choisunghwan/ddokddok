@@ -4701,42 +4701,76 @@ function createAmbientNode(ctx, type) {
 // ── 공부 타이머 ──────────────────────────────────
 function StudyTimer() {
   const todayKey = () => new Date().toDateString();
+  const token = () => localStorage.getItem("token");
 
-  const loadBase = () => {
+  // localStorage fallback helpers
+  const lsLoad = () => {
     try {
       const d = JSON.parse(localStorage.getItem("study_today") || "{}");
       return d.date === todayKey() ? (d.secs || 0) : 0;
     } catch { return 0; }
   };
-  const saveBase = (secs) => {
+  const lsSave = (secs) => {
     localStorage.setItem("study_today", JSON.stringify({ date: todayKey(), secs }));
+  };
+
+  // DB sync helpers (no-op for guests)
+  const dbLoad = async () => {
+    const tok = token();
+    if (!tok) return null;
+    try {
+      const r = await fetch(`${API}/api/dashboard/timer-stat`, { headers: { Authorization: `Bearer ${tok}` } });
+      if (!r.ok) return null;
+      const data = await r.json();
+      return data.total_seconds ?? null;
+    } catch { return null; }
+  };
+  const dbSave = (secs) => {
+    const tok = token();
+    if (!tok) return;
+    fetch(`${API}/api/dashboard/timer-stat`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ total_seconds: secs }),
+    }).catch(() => {});
   };
 
   const [open, setOpen]           = useState(false);
   const [running, setRunning]     = useState(false);
   const [sessionSecs, setSession] = useState(0);
-  const [baseToday, setBaseToday] = useState(loadBase);
+  const [baseToday, setBaseToday] = useState(lsLoad);
+  const [synced, setSynced]       = useState(false);
   const sessionRef  = useRef(0);
   const intervalRef = useRef(null);
 
+  // 앱 로드 시 DB에서 오늘 누적 가져오기
+  useEffect(() => {
+    dbLoad().then(secs => {
+      if (secs !== null) {
+        const localSecs = lsLoad();
+        const best = Math.max(secs, localSecs);
+        setBaseToday(best);
+        lsSave(best);
+      }
+      setSynced(true);
+    });
+  }, []);
+
   const fmt = (s) => {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sc = s % 60;
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
     return h > 0
       ? `${h}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`
       : `${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`;
   };
-
   const fmtHuman = (s) => {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sc = s % 60;
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
     if (h > 0 && m > 0) return `${h}시간 ${m}분`;
     if (h > 0) return `${h}시간`;
     if (m > 0) return `${m}분`;
     return `${sc}초`;
   };
+
+  const persist = (total) => { lsSave(total); dbSave(total); };
 
   const handleStart = () => {
     intervalRef.current = setInterval(() => {
@@ -4749,15 +4783,15 @@ function StudyTimer() {
   const handlePause = () => {
     clearInterval(intervalRef.current);
     setRunning(false);
-    saveBase(baseToday + sessionRef.current);
+    persist(baseToday + sessionRef.current);
   };
 
   const handleReset = () => {
     clearInterval(intervalRef.current);
     setRunning(false);
-    saveBase(baseToday + sessionRef.current);
-    const newBase = loadBase();
-    setBaseToday(newBase);
+    const total = baseToday + sessionRef.current;
+    persist(total);
+    setBaseToday(total);
     sessionRef.current = 0;
     setSession(0);
   };
@@ -4765,8 +4799,6 @@ function StudyTimer() {
   useEffect(() => () => clearInterval(intervalRef.current), []);
 
   const todayTotal = baseToday + sessionSecs;
-
-  // 진행률 바 (오늘 목표 4시간 기준)
   const goalSecs = 4 * 3600;
   const pct = Math.min((todayTotal / goalSecs) * 100, 100);
 
@@ -4774,14 +4806,19 @@ function StudyTimer() {
     <div style={{ position:"fixed", bottom:24, left:24, zIndex:9998, display:"flex", flexDirection:"column", alignItems:"flex-start", gap:10 }}>
       {open && (
         <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"20px 20px 16px", width:230, boxShadow:"0 8px 32px #0008" }}>
-
-          {/* 세션 타이머 */}
-          <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:6 }}>현재 세션</div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+            <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em" }}>현재 세션</div>
+            {token() && (
+              <div style={{ fontFamily:SANS, fontSize:9, color: synced ? C.green : C.muted, display:"flex", alignItems:"center", gap:3 }}>
+                <div style={{ width:5, height:5, borderRadius:"50%", background: synced ? C.green : C.muted }} />
+                {synced ? "DB 연동됨" : "동기화 중…"}
+              </div>
+            )}
+          </div>
           <div style={{ fontFamily:MONO, fontSize:38, fontWeight:800, color: running ? C.blue : C.text, letterSpacing:"-.02em", lineHeight:1, marginBottom:16, transition:"color .3s" }}>
             {fmt(sessionSecs)}
           </div>
 
-          {/* 버튼 */}
           <div style={{ display:"flex", gap:8, marginBottom:18 }}>
             <button onClick={running ? handlePause : handleStart} style={{
               flex:1, padding:"9px 0", borderRadius:10, border:"none", cursor:"pointer",
@@ -4791,19 +4828,17 @@ function StudyTimer() {
             }}>
               {running ? "⏸ 일시정지" : sessionSecs > 0 ? "▶ 재개" : "▶ 시작"}
             </button>
-            <button onClick={handleReset} style={{
+            <button onClick={handleReset} title="세션 종료 & 저장" style={{
               width:40, borderRadius:10, border:`1px solid ${C.line}`, cursor:"pointer",
               background:C.card2, color:C.muted, fontFamily:SANS, fontSize:16,
             }}>⟳</button>
           </div>
 
-          {/* 오늘 누적 */}
           <div style={{ borderTop:`1px solid ${C.line}`, paddingTop:14 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
               <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em" }}>오늘 총 공부</div>
               <div style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color:C.green }}>{fmtHuman(todayTotal)}</div>
             </div>
-            {/* 목표 진행률 바 */}
             <div style={{ background:C.card2, borderRadius:99, height:5, overflow:"hidden" }}>
               <div style={{ width:`${pct}%`, height:"100%", background: pct >= 100 ? C.yellow : C.green, borderRadius:99, transition:"width .5s" }} />
             </div>
@@ -4814,7 +4849,6 @@ function StudyTimer() {
         </div>
       )}
 
-      {/* 플로팅 버튼 */}
       <button onClick={() => setOpen(o => !o)} style={{
         height:48, borderRadius:24, padding:"0 16px",
         background: running ? C.blue+"22" : C.card2,
