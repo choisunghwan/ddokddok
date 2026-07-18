@@ -1803,9 +1803,10 @@ function CodeScreen({ isGuest }) {
 
 // ── 자격증 목록 ──────────────────────────────────
 const CERT_LIST = [
-  { id: "aice", name: "AICE Associate", icon: "🏆", desc: "AI 역량 검증 자격증 · 14문항", color: C.purple, available: true },
-  { id: "sqld", name: "SQLD",           icon: "🗃️", desc: "SQL 개발자 자격증",            color: C.green,  available: false },
-  { id: "adsp", name: "ADsP",           icon: "📊", desc: "데이터 분석 준전문가 · 40문항", color: C.blue,   available: true  },
+  { id: "aice",     name: "AICE Associate", icon: "🏆", desc: "AI 역량 검증 자격증 · 14문항",       color: C.purple, available: true  },
+  { id: "sqld",     name: "SQLD",           icon: "🗃️", desc: "SQL 개발자 자격증",                  color: C.green,  available: false },
+  { id: "adsp",     name: "ADsP",           icon: "📊", desc: "데이터 분석 준전문가 · 기출문제",    color: C.blue,   available: true  },
+  { id: "concepts", name: "ADsP 개념 정리", icon: "📖", desc: "핵심 개념을 비유로 쉽게 · 시험 포인트", color: C.yellow, available: true  },
 ];
 
 function CertListScreen({ onSelect }) {
@@ -2433,12 +2434,238 @@ function AdspScreen({ round, onBack }) {
 }
 
 // ── 자격증 모의고사 ───────────────────────────────
+// ── ADsP 개념 정리 데이터 ─────────────────────────
+const ADSP_CONCEPTS = [
+  {
+    id: "para-nonpara",
+    title: "모수 vs 비모수 검정",
+    sub: "Parametric vs Non-parametric",
+    emoji: "📏",
+    color: C.blue,
+    tags: ["검정", "통계", "순위"],
+  },
+];
+
+function ConceptListScreen({ onSelect, onBack }) {
+  return (
+    <div style={{ padding:"32px 32px 60px" }}>
+      <button onClick={onBack} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 }}>
+        ← 자격증 목록
+      </button>
+      <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>ADsP 개념 정리</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>비유와 표로 핵심 개념을 빠르게 정리하세요</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {ADSP_CONCEPTS.map(c => (
+          <button key={c.id} onClick={() => onSelect(c.id)} style={{
+            display:"flex", alignItems:"center", gap:16, padding:"18px 20px",
+            borderRadius:13, border:`1px solid ${c.color}44`,
+            background: c.color+"0D", cursor:"pointer", textAlign:"left",
+          }}>
+            <div style={{ width:44, height:44, borderRadius:12, background:c.color+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{c.emoji}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:3 }}>{c.title}</div>
+              <div style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>{c.sub}</div>
+              <div style={{ marginTop:6, display:"flex", gap:6 }}>
+                {c.tags.map(t => (
+                  <span key={t} style={{ fontFamily:SANS, fontSize:10, fontWeight:700, background:c.color+"22", color:c.color, padding:"2px 7px", borderRadius:4 }}>{t}</span>
+                ))}
+              </div>
+            </div>
+            <span style={{ color:C.muted, fontSize:18 }}>›</span>
+          </button>
+        ))}
+        <div style={{ padding:"16px 20px", borderRadius:13, border:`1px dashed ${C.line}`, display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ width:44, height:44, borderRadius:12, background:C.card2, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0, color:C.muted }}>＋</div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.muted }}>회귀분석 · 군집분석 · 연관분석 등 추가 예정</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConceptDetailScreen({ conceptId, onBack }) {
+  if (conceptId === "para-nonpara") return <ConceptParaNonpara onBack={onBack} />;
+  return null;
+}
+
+function ConceptParaNonpara({ onBack }) {
+  const S = {
+    wrap:  { padding:"28px 32px 60px" },
+    back:  { background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 },
+    eyebrow: { fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", color:C.blue, marginBottom:6 },
+    title: { fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 },
+    sub:   { fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 },
+    row2:  { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 },
+    defCard: (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:12, padding:"16px 18px", borderTop:`3px solid ${col}` }),
+    defLabel: (col) => ({ fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".06em", color:col, marginBottom:8 }),
+    defText: { fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.7 },
+    kw: (col) => ({ color:col, fontWeight:700 }),
+    box: { background:C.card2, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 },
+    boxHeader: (col) => ({ fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", color:col, marginBottom:12, display:"flex", alignItems:"center", gap:6 }),
+    analogyTag: (col, bg) => ({ fontFamily:SANS, fontSize:10, fontWeight:700, background:bg, color:col, padding:"2px 8px", borderRadius:4, flexShrink:0, marginTop:2 }),
+    insightBox: { background:"#FBBF2408", border:`1px solid #FBBF2430`, borderRadius:12, padding:"16px 18px", marginBottom:14, display:"flex", gap:12 },
+    examBox: { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", marginBottom:14 },
+    examHeader: { background:"#F8717112", borderBottom:`1px solid ${C.line}`, padding:"10px 18px", fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", color:C.coral, textTransform:"uppercase", display:"flex", alignItems:"center", gap:7 },
+    table: { width:"100%", borderCollapse:"collapse" },
+    th: (col) => ({ fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".04em", padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}`, color: col || C.muted }),
+    td: { fontFamily:SANS, fontSize:13, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.text },
+    tdK: { fontFamily:SANS, fontSize:12, fontWeight:700, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.muted, background:C.card2 },
+    testGrid: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 },
+    testCard: (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:11, padding:"16px 18px" }),
+    sectionTitle: { fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:12 },
+  };
+
+  return (
+    <div style={S.wrap}>
+      <button onClick={onBack} style={S.back}>← 개념 목록</button>
+      <div style={S.eyebrow}>ADsP 핵심 개념 01</div>
+      <div style={S.title}>모수 vs 비모수 검정</div>
+      <div style={S.sub}>Parametric vs Non-parametric Test</div>
+
+      {/* 한 줄 정의 */}
+      <div style={S.sectionTitle}>한 줄 정의</div>
+      <div style={S.row2}>
+        <div style={S.defCard(C.blue)}>
+          <div style={S.defLabel(C.blue)}>모수 검정</div>
+          <div style={S.defText}>데이터를 <span style={S.kw(C.blue)}>자로 재서</span> 비교<br/><span style={{ color:C.muted, fontSize:12 }}>실제 숫자(평균·분산)로 판단</span></div>
+        </div>
+        <div style={S.defCard(C.coral)}>
+          <div style={S.defLabel(C.coral)}>비모수 검정</div>
+          <div style={S.defText}>데이터를 <span style={S.kw(C.coral)}>줄 세워서</span> 비교<br/><span style={{ color:C.muted, fontSize:12 }}>등수·순위로만 판단</span></div>
+        </div>
+      </div>
+
+      {/* 비유 */}
+      <div style={S.sectionTitle}>핵심 비유 — 두 반 키 비교</div>
+      <div style={S.box}>
+        <div style={S.boxHeader(C.yellow)}>💡 두 반 키 비교</div>
+        {[
+          { tag:"모수", tagCol:C.blue, tagBg:C.blue+"22", text:"한 명씩 cm로 재서 평균 내고 비교", sub:'→ "1반 155cm, 2반 160cm" — 실제 숫자 사용' },
+          { tag:"비모수", tagCol:C.coral, tagBg:C.coral+"22", text:"키 순서대로 줄 세우고 등수 합으로 비교", sub:"→ 실제 cm는 안 씀, 순위만 씀" },
+        ].map(r => (
+          <div key={r.tag} style={{ display:"flex", gap:10, marginBottom:10, alignItems:"flex-start" }}>
+            <span style={S.analogyTag(r.tagCol, r.tagBg)}>{r.tag}</span>
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>
+              {r.text}<br/><span style={{ color:C.muted, fontSize:12 }}>{r.sub}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 인사이트 */}
+      <div style={S.insightBox}>
+        <div style={{ fontSize:20, flexShrink:0 }}>🏀</div>
+        <div>
+          <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.yellow, marginBottom:5 }}>왜 비모수를 쓰나?</div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.7 }}>
+            평균은 <span style={{ color:C.yellow, fontWeight:700 }}>튀는 값 하나에 잘 속는다.</span><br/>
+            210cm 농구선수 한 명이 반 평균을 확 올려버림.<br/>
+            등수로 보면 210cm든 165cm든 그냥 <span style={{ color:C.yellow, fontWeight:700 }}>"1등"</span>이라 이상치에 안 흔들림.
+          </div>
+        </div>
+      </div>
+
+      {/* 언제 쓰나 */}
+      <div style={S.sectionTitle}>언제 무엇을 쓰나</div>
+      <div style={S.row2}>
+        {[
+          { col:C.blue, label:"모수 검정을 쓸 때", items:["데이터가 많고", "정규분포 (종 모양)", "이상치 없음"], note:"→ 더 정확하고 검정력 강함" },
+          { col:C.coral, label:"비모수 검정을 쓸 때", items:["데이터가 적거나", "분포를 모를 때", "이상치 있음"], note:"→ 더 안전, 분포 가정 불필요" },
+        ].map(b => (
+          <div key={b.label} style={S.defCard(b.col)}>
+            <div style={S.defLabel(b.col)}>{b.label}</div>
+            <div style={{ fontFamily:SANS, fontSize:12, color:C.text, lineHeight:1.8 }}>
+              {b.items.map(i => <div key={i}>✓ <span style={S.kw(b.col)}>{i}</span></div>)}
+              <div style={{ color:C.muted, marginTop:4 }}>{b.note}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 비교 표 */}
+      <div style={S.sectionTitle}>비교 표</div>
+      <div style={{ borderRadius:11, border:`1px solid ${C.line}`, overflow:"hidden", marginBottom:14 }}>
+        <table style={S.table}>
+          <thead>
+            <tr>
+              <th style={S.th()}>구분</th>
+              <th style={S.th(C.blue)}>모수 검정</th>
+              <th style={S.th(C.coral)}>비모수 검정</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["사용 대상","실제 값 (평균·분산)","순위 (등수)"],
+              ["분포 가정","정규분포 가정 ✓","가정 없음 ✓"],
+              ["데이터 양","많을 때 유리","적어도 OK"],
+              ["이상치","약함 (잘 속음) ⚠️","강함 (안 속음) ✓"],
+              ["검정력","강함","상대적으로 약함"],
+            ].map(([k,v1,v2], i) => (
+              <tr key={k} style={{ background: i%2===0 ? "transparent" : C.card2+"44" }}>
+                <td style={S.tdK}>{k}</td>
+                <td style={{ ...S.td, color:C.blue }}>{v1}</td>
+                <td style={{ ...S.td, color:C.coral, borderBottom: i===4 ? "none":undefined }}>{v2}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 검정 종류 */}
+      <div style={S.sectionTitle}>실제 검정 종류</div>
+      <div style={S.testGrid}>
+        {[
+          { col:C.blue, label:"모수 검정", tests:[["t-검정","두 집단 평균 비교"],["분산분석 (ANOVA)","세 집단 이상 평균 비교"],["피어슨 상관계수","두 연속형 변수 선형 관계"]] },
+          { col:C.coral, label:"비모수 검정", tests:[["부호검정 / 윌콕슨","t-검정 대체"],["크루스칼-왈리스","ANOVA 대체"],["스피어만 상관계수","순위형·비선형 관계"]] },
+        ].map(b => (
+          <div key={b.label} style={S.testCard(b.col)}>
+            <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", color:b.col, marginBottom:10 }}>{b.label}</div>
+            {b.tests.map(([name, when]) => (
+              <div key={name} style={{ display:"flex", gap:8, marginBottom:8, alignItems:"flex-start" }}>
+                <div style={{ width:5, height:5, borderRadius:"50%", background:b.col, flexShrink:0, marginTop:7 }}/>
+                <div style={{ fontFamily:SANS, fontSize:12, color:C.text, lineHeight:1.55 }}>
+                  <span style={{ fontWeight:700 }}>{name}</span><br/>
+                  <span style={{ color:C.muted, fontSize:11 }}>{when}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* 시험 포인트 */}
+      <div style={S.examBox}>
+        <div style={S.examHeader}>🎯 시험 포인트</div>
+        <div style={{ padding:"16px 18px" }}>
+          {[
+            "비모수 검정은 정규분포 가정이 불필요하다 — 자주 나오는 선지",
+            "이상치에 강한 것은 비모수, 검정력이 강한 것은 모수",
+            "스피어만 상관계수 = 비모수 / 피어슨 상관계수 = 모수",
+            "크루스칼-왈리스 = 비모수판 ANOVA (세 집단 이상 순위 비교)",
+          ].map((pt, i) => (
+            <div key={i} style={{ display:"flex", gap:10, marginBottom: i<3 ? 10 : 0, alignItems:"flex-start" }}>
+              <div style={{ width:5, height:5, borderRadius:"50%", background:C.coral, flexShrink:0, marginTop:7 }}/>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }} dangerouslySetInnerHTML={{ __html: pt.replace(/(비모수|모수|스피어만|피어슨|크루스칼-왈리스|ANOVA)/g, '<strong>$1</strong>') }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CertScreen() {
   const [activeCert, setActiveCert] = useState(null);
   const [activeRound, setActiveRound] = useState(null);
   const [adspRound, setAdspRound] = useState(null);
+  const [conceptId, setConceptId] = useState(null);
 
-  if (!activeCert) return <CertListScreen onSelect={c => { setActiveCert(c); setActiveRound(null); setAdspRound(null); }} />;
+  if (!activeCert) return <CertListScreen onSelect={c => { setActiveCert(c); setActiveRound(null); setAdspRound(null); setConceptId(null); }} />;
+
+  if (activeCert === "concepts") {
+    if (!conceptId) return <ConceptListScreen onSelect={setConceptId} onBack={() => setActiveCert(null)} />;
+    return <ConceptDetailScreen conceptId={conceptId} onBack={() => setConceptId(null)} />;
+  }
 
   if (activeCert === "adsp") {
     if (!adspRound) return <AdspExamListScreen onSelect={setAdspRound} onBack={() => setActiveCert(null)} />;
