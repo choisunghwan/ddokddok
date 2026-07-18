@@ -2444,6 +2444,14 @@ const ADSP_CONCEPTS = [
     color: C.blue,
     tags: ["검정", "통계", "순위"],
   },
+  {
+    id: "population-sample",
+    title: "모집단 · 표본 · 모수 · 통계량",
+    sub: "Population, Sample, Parameter, Statistic",
+    emoji: "🎯",
+    color: C.green,
+    tags: ["모집단", "표본", "추론통계"],
+  },
 ];
 
 function ConceptListScreen({ onSelect, onBack }) {
@@ -2484,8 +2492,156 @@ function ConceptListScreen({ onSelect, onBack }) {
 }
 
 function ConceptDetailScreen({ conceptId, onBack }) {
-  if (conceptId === "para-nonpara") return <ConceptParaNonpara onBack={onBack} />;
+  if (conceptId === "para-nonpara")       return <ConceptParaNonpara onBack={onBack} />;
+  if (conceptId === "population-sample")  return <ConceptPopulationSample onBack={onBack} />;
   return null;
+}
+
+function ConceptPopulationSample({ onBack }) {
+  const S = {
+    wrap:    { padding:"28px 32px 60px" },
+    back:    { background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 },
+    eyebrow: { fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", color:C.green, marginBottom:6 },
+    title:   { fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 },
+    sub:     { fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 },
+    secTitle:{ fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:12 },
+    card:    { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 },
+    box:     { background:C.card2, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 },
+    row2:    { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 },
+    defCard: (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:12, padding:"16px 18px", borderTop:`3px solid ${col}` }),
+    label:   (col) => ({ fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".06em", color:col, marginBottom:8 }),
+    text:    { fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.75 },
+    muted:   { fontFamily:SANS, fontSize:12, color:C.muted, lineHeight:1.65 },
+    kw:      (col) => ({ color:col, fontWeight:700 }),
+    flow:    { display:"flex", alignItems:"center", gap:0, marginBottom:14, overflowX:"auto" },
+    flowBox: (col) => ({ background:col+"18", border:`1px solid ${col}44`, borderRadius:10, padding:"10px 14px", textAlign:"center", flexShrink:0 }),
+    flowArrow:{ fontFamily:SANS, fontSize:18, color:C.muted, margin:"0 6px", flexShrink:0 },
+    table:   { width:"100%", borderCollapse:"collapse" },
+    th:      (col) => ({ fontFamily:SANS, fontSize:11, fontWeight:700, padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}`, color:col||C.muted, textAlign:"left" }),
+    td:      { fontFamily:SANS, fontSize:13, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.text, lineHeight:1.55 },
+    tdK:     { fontFamily:SANS, fontSize:12, fontWeight:700, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.muted, background:C.card2 },
+    examBox: { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", marginBottom:14 },
+    examHeader: { background:"#F8717112", borderBottom:`1px solid ${C.line}`, padding:"10px 18px", fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", color:C.coral, textTransform:"uppercase", display:"flex", alignItems:"center", gap:7 },
+  };
+
+  return (
+    <div style={S.wrap}>
+      <button onClick={onBack} style={S.back}>← 개념 목록</button>
+      <div style={S.eyebrow}>ADsP 핵심 개념 02</div>
+      <div style={S.title}>모집단 · 표본 · 모수 · 통계량</div>
+      <div style={S.sub}>Population · Sample · Parameter · Statistic</div>
+
+      {/* 핵심 비유 */}
+      <div style={S.secTitle}>핵심 비유 — 초등학생 키</div>
+      <div style={S.box}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.85, marginBottom:14 }}>
+          <span style={S.kw(C.green)}>"우리나라 초등학생 키가 평균 얼마일까?"</span>가 궁금하다고 해봐요.<br/>
+          → 우리나라 초등학생 <span style={S.kw(C.green)}>전부가 모집단</span>이에요. 수백만 명이죠.<br/>
+          → 다 재는 건 불가능하니까 그중 <span style={S.kw(C.yellow)}>1000명만 골라서</span> 재요. 이 1000명이 <span style={S.kw(C.yellow)}>표본</span>이에요.<br/>
+          → 표본 평균 140cm → <span style={S.kw(C.blue)}>"전체도 대충 140cm겠구나"</span> 하고 추측하는 게 통계의 기본 원리예요.
+        </div>
+        {/* 시각적 흐름 */}
+        <div style={S.flow}>
+          <div style={S.flowBox(C.green)}>
+            <div style={{ fontFamily:SANS, fontSize:18, marginBottom:4 }}>👨‍👩‍👧‍👦</div>
+            <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.green }}>모집단</div>
+            <div style={{ fontFamily:SANS, fontSize:10, color:C.muted }}>수백만 명</div>
+          </div>
+          <div style={S.flowArrow}>→</div>
+          <div style={S.flowBox(C.yellow)}>
+            <div style={{ fontFamily:SANS, fontSize:18, marginBottom:4 }}>🔍</div>
+            <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.yellow }}>표본 추출</div>
+            <div style={{ fontFamily:SANS, fontSize:10, color:C.muted }}>1000명 선택</div>
+          </div>
+          <div style={S.flowArrow}>→</div>
+          <div style={S.flowBox(C.blue)}>
+            <div style={{ fontFamily:SANS, fontSize:18, marginBottom:4 }}>📊</div>
+            <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.blue }}>통계량 계산</div>
+            <div style={{ fontFamily:SANS, fontSize:10, color:C.muted }}>표본 평균 140cm</div>
+          </div>
+          <div style={S.flowArrow}>→</div>
+          <div style={S.flowBox(C.purple)}>
+            <div style={{ fontFamily:SANS, fontSize:18, marginBottom:4 }}>🎯</div>
+            <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.purple }}>모수 추론</div>
+            <div style={{ fontFamily:SANS, fontSize:10, color:C.muted }}>전체 평균 추측</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 용어 4개 */}
+      <div style={S.secTitle}>용어 정리</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+        {[
+          { col:C.green,  emoji:"👨‍👩‍👧‍👦", term:"모집단 (Population)",  def:"알고 싶은 전체 집단",         ex:"우리나라 초등학생 전부" },
+          { col:C.yellow, emoji:"🔍",       term:"표본 (Sample)",         def:"모집단에서 뽑은 일부",         ex:"뽑은 1000명" },
+          { col:C.coral,  emoji:"❓",       term:"모수 (Parameter)",      def:"모집단의 진짜 값 — 알고 싶지만 직접은 모름", ex:"실제 전체 평균키 (모름)" },
+          { col:C.blue,   emoji:"📊",       term:"통계량 (Statistic)",    def:"표본에서 계산한 값 — 모수를 추측하는 데 씀", ex:"표본 평균 140cm (앎)" },
+        ].map(item => (
+          <div key={item.term} style={S.defCard(item.col)}>
+            <div style={S.label(item.col)}>{item.emoji} {item.term}</div>
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65, marginBottom:6 }}>{item.def}</div>
+            <div style={{ fontFamily:SANS, fontSize:11, color:item.col, background:item.col+"15", borderRadius:6, padding:"4px 8px" }}>예) {item.ex}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 중심극한정리 연결 */}
+      <div style={{ ...S.card, borderLeft:`3px solid ${C.purple}`, background:C.purple+"08" }}>
+        <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.purple, marginBottom:8 }}>🔗 중심극한정리와 연결</div>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          "표본을 많이 뽑아서 평균을 내면 <span style={S.kw(C.purple)}>종 모양(정규분포)이 된다</span>"<br/>
+          → 여기서 <span style={S.kw(C.yellow)}>표본</span>은 뽑은 일부, 진짜 궁금한 건 <span style={S.kw(C.green)}>모집단</span><br/>
+          → 표본 평균 여러 개를 모으면 <span style={S.kw(C.blue)}>모집단의 진짜 평균 근처</span>에서 종 모양으로 퍼짐
+        </div>
+      </div>
+
+      {/* 비교 표 */}
+      <div style={S.secTitle}>모수 vs 통계량 비교</div>
+      <div style={{ borderRadius:11, border:`1px solid ${C.line}`, overflow:"hidden", marginBottom:14 }}>
+        <table style={S.table}>
+          <thead>
+            <tr>
+              <th style={S.th()}>구분</th>
+              <th style={S.th(C.coral)}>모수 (Parameter)</th>
+              <th style={S.th(C.blue)}>통계량 (Statistic)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["대상",     "모집단 전체",         "표본 일부"],
+              ["알 수 있나", "직접 알기 어려움 ❌",  "계산해서 알 수 있음 ✓"],
+              ["예시",     "모집단 평균 μ(뮤)",   "표본 평균 x̄(엑스바)"],
+              ["역할",     "알고 싶은 진짜 값",    "모수를 추측하는 데 씀"],
+            ].map(([k,v1,v2], i) => (
+              <tr key={k}>
+                <td style={S.tdK}>{k}</td>
+                <td style={{ ...S.td, color:C.coral, borderBottom: i===3?"none":undefined }}>{v1}</td>
+                <td style={{ ...S.td, color:C.blue, borderBottom: i===3?"none":undefined }}>{v2}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 시험 포인트 */}
+      <div style={S.examBox}>
+        <div style={S.examHeader}>🎯 시험 포인트</div>
+        <div style={{ padding:"16px 18px" }}>
+          {[
+            "모수 검정이라는 이름 = 모집단이 정규분포라 가정하고 모집단의 값(모수)을 다루는 검정",
+            "모수(Parameter) ≠ 모수 검정의 모수 — 같은 단어지만 의미 연결을 이해할 것",
+            "표본 평균(통계량)으로 모집단 평균(모수)을 추정하는 것 = 추론통계",
+            "표본 크기가 클수록 통계량이 모수에 가까워짐 (대수의 법칙)",
+          ].map((pt, i) => (
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:i<3?10:0, alignItems:"flex-start" }}>
+              <div style={{ width:5, height:5, borderRadius:"50%", background:C.coral, flexShrink:0, marginTop:7 }}/>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{pt}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ConceptParaNonpara({ onBack }) {
