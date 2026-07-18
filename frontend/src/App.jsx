@@ -2460,6 +2460,22 @@ const ADSP_CONCEPTS = [
     color: C.purple,
     tags: ["시계열", "ARIMA", "정상성", "차분"],
   },
+  {
+    id: "association",
+    title: "지지도 · 신뢰도 · 향상도",
+    sub: "Support · Confidence · Lift",
+    emoji: "🛒",
+    color: C.yellow,
+    tags: ["연관분석", "계산", "장바구니"],
+  },
+  {
+    id: "pvalue",
+    title: "P-value (유의확률)",
+    sub: "P-value · 가설검정 · 유의수준",
+    emoji: "🔬",
+    color: C.coral,
+    tags: ["가설검정", "유의수준", "통계"],
+  },
 ];
 
 function ConceptListScreen({ onSelect, onBack }) {
@@ -2503,7 +2519,308 @@ function ConceptDetailScreen({ conceptId, onBack }) {
   if (conceptId === "para-nonpara")       return <ConceptParaNonpara onBack={onBack} />;
   if (conceptId === "population-sample")  return <ConceptPopulationSample onBack={onBack} />;
   if (conceptId === "timeseries")         return <ConceptTimeSeries onBack={onBack} />;
+  if (conceptId === "association")        return <ConceptAssociation onBack={onBack} />;
+  if (conceptId === "pvalue")             return <ConceptPValue onBack={onBack} />;
   return null;
+}
+
+// ── 지지도·신뢰도·향상도 ─────────────────────────
+function ConceptAssociation({ onBack }) {
+  const G = (col) => ({ color:col, fontWeight:700 });
+  const S = {
+    wrap: { padding:"28px 32px 60px" },
+    back: { background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 },
+    eyebrow: { fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", color:C.yellow, marginBottom:6 },
+    title: { fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 },
+    sub: { fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 },
+    secTitle: { fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:12 },
+    box: { background:C.card2, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 },
+    card: (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:12, padding:"16px 18px", borderTop:`3px solid ${col}`, marginBottom:12 }),
+    formula: { fontFamily:MONO, fontSize:13, background:C.card2, borderRadius:8, padding:"10px 14px", color:C.green, marginTop:8, overflowX:"auto" },
+    th: (col) => ({ fontFamily:SANS, fontSize:11, fontWeight:700, padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}`, color:col||C.muted, textAlign:"center" }),
+    td: { fontFamily:SANS, fontSize:13, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.text, textAlign:"center" },
+    tdL: { fontFamily:SANS, fontSize:13, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.text, textAlign:"left" },
+    tdK: { fontFamily:SANS, fontSize:12, fontWeight:700, padding:"10px 14px", background:C.card2, color:C.muted, textAlign:"left" },
+    examBox: { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", marginBottom:14 },
+    examHdr: { background:"#F8717112", borderBottom:`1px solid ${C.line}`, padding:"10px 18px", fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", color:C.coral, textTransform:"uppercase", display:"flex", alignItems:"center", gap:7 },
+    dot: (col) => ({ width:5, height:5, borderRadius:"50%", background:col, flexShrink:0, marginTop:7 }),
+  };
+
+  return (
+    <div style={S.wrap}>
+      <button onClick={onBack} style={S.back}>← 개념 목록</button>
+      <div style={S.eyebrow}>ADsP 핵심 개념 04</div>
+      <div style={S.title}>지지도 · 신뢰도 · 향상도</div>
+      <div style={S.sub}>연관규칙 분석 (Association Rule) 핵심 지표</div>
+
+      {/* 배경 */}
+      <div style={{ ...S.box, borderLeft:`3px solid ${C.yellow}` }}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          <span style={G(C.yellow)}>장바구니 분석</span>이라고도 해요.<br/>
+          "기저귀를 산 사람은 맥주도 함께 산다"처럼 <span style={G(C.yellow)}>함께 자주 구매되는 상품 조합</span>을 찾는 분석이에요.<br/>
+          이 규칙을 평가하는 3가지 지표가 <span style={G(C.yellow)}>지지도 · 신뢰도 · 향상도</span>입니다.
+        </div>
+      </div>
+
+      {/* 예제 데이터 */}
+      <div style={S.secTitle}>📋 예제 데이터 (100건의 거래)</div>
+      <div style={{ borderRadius:11, border:`1px solid ${C.line}`, overflow:"hidden", marginBottom:6 }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr>
+              <th style={S.th()}>항목</th>
+              <th style={S.th(C.yellow)}>기저귀 포함 거래</th>
+              <th style={S.th(C.blue)}>맥주 포함 거래</th>
+              <th style={S.th(C.green)}>기저귀+맥주 동시</th>
+              <th style={S.th()}>전체 거래</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={S.tdK}>거래 수</td>
+              <td style={{ ...S.td, color:C.yellow, fontWeight:700, borderBottom:"none" }}>40건</td>
+              <td style={{ ...S.td, color:C.blue, fontWeight:700, borderBottom:"none" }}>50건</td>
+              <td style={{ ...S.td, color:C.green, fontWeight:700, borderBottom:"none" }}>30건</td>
+              <td style={{ ...S.td, borderBottom:"none" }}>100건</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginBottom:14, paddingLeft:4 }}>→ 아래 세 지표를 이 데이터로 직접 계산해볼게요</div>
+
+      {/* 지지도 */}
+      <div style={S.secTitle}>① 지지도 (Support)</div>
+      <div style={S.card(C.yellow)}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          전체 거래 중 <span style={G(C.yellow)}>A와 B가 함께 등장하는 비율</span><br/>
+          <span style={{ color:C.muted, fontSize:12 }}>→ 이 규칙이 얼마나 자주 발생하는지</span>
+        </div>
+        <div style={S.formula}>Support(기저귀→맥주) = 30 / 100 = <span style={{ color:C.yellow, fontWeight:700 }}>0.3 (30%)</span></div>
+        <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginTop:8 }}>📌 지지도가 너무 낮으면 의미 없는 규칙일 수 있어요</div>
+      </div>
+
+      {/* 신뢰도 */}
+      <div style={S.secTitle}>② 신뢰도 (Confidence)</div>
+      <div style={S.card(C.blue)}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          A를 산 거래 중 <span style={G(C.blue)}>B도 함께 산 비율</span><br/>
+          <span style={{ color:C.muted, fontSize:12 }}>→ A를 샀을 때 B도 살 확률</span>
+        </div>
+        <div style={S.formula}>
+          Confidence(기저귀→맥주) = 30 / 40 = <span style={{ color:C.blue, fontWeight:700 }}>0.75 (75%)</span><br/>
+          <span style={{ color:C.muted, fontSize:11 }}>= Support(A∩B) / Support(A)</span>
+        </div>
+        <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginTop:8 }}>📌 기저귀를 산 사람의 75%가 맥주도 샀다</div>
+      </div>
+
+      {/* 향상도 */}
+      <div style={S.secTitle}>③ 향상도 (Lift)</div>
+      <div style={S.card(C.green)}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          <span style={G(C.green)}>우연히 함께 살 확률 대비 실제로 함께 사는 비율</span><br/>
+          <span style={{ color:C.muted, fontSize:12 }}>→ 연관성이 우연인지 아닌지 판단하는 핵심 지표</span>
+        </div>
+        <div style={S.formula}>
+          Lift(기저귀→맥주) = 0.75 / (50/100) = 0.75 / 0.5 = <span style={{ color:C.green, fontWeight:700 }}>1.5</span><br/>
+          <span style={{ color:C.muted, fontSize:11 }}>= Confidence(A→B) / Support(B)</span>
+        </div>
+        <div style={{ marginTop:12, display:"flex", flexDirection:"column", gap:7 }}>
+          {[
+            { cond:"향상도 > 1", col:C.green,  icon:"✅", desc:"양의 연관성 — 우연보다 더 많이 함께 구매 (의미 있는 규칙)" },
+            { cond:"향상도 = 1", col:C.muted,  icon:"➡️", desc:"독립 — 우연과 같음 (A와 B는 무관)" },
+            { cond:"향상도 < 1", col:C.coral,  icon:"❌", desc:"음의 연관성 — 함께 사지 않는 경향" },
+          ].map(r => (
+            <div key={r.cond} style={{ display:"flex", gap:10, alignItems:"center", background:r.col+"14", borderRadius:8, padding:"8px 12px" }}>
+              <span style={{ fontSize:14 }}>{r.icon}</span>
+              <span style={{ fontFamily:MONO, fontSize:12, color:r.col, fontWeight:700, flexShrink:0, minWidth:90 }}>{r.cond}</span>
+              <span style={{ fontFamily:SANS, fontSize:12, color:C.text }}>{r.desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 3가지 요약 표 */}
+      <div style={S.secTitle}>한눈에 비교</div>
+      <div style={{ borderRadius:11, border:`1px solid ${C.line}`, overflow:"hidden", marginBottom:14 }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr>
+              <th style={{ ...S.th(), textAlign:"left" }}>지표</th>
+              <th style={{ ...S.th(), textAlign:"left" }}>의미</th>
+              <th style={{ ...S.th(), textAlign:"left" }}>공식</th>
+              <th style={{ ...S.th(C.green) }}>예제 결과</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["지지도","함께 등장 빈도","P(A∩B)","0.3"],
+              ["신뢰도","A 샀을 때 B 살 확률","P(A∩B)/P(A)","0.75"],
+              ["향상도","연관성이 우연 이상인지","신뢰도/P(B)","1.5 ✅"],
+            ].map(([k,m,f,r], i) => (
+              <tr key={k}>
+                <td style={{ ...S.tdK, borderBottom:i===2?"none":undefined }}>{k}</td>
+                <td style={{ ...S.tdL, borderBottom:i===2?"none":undefined }}>{m}</td>
+                <td style={{ ...S.tdL, fontFamily:MONO, fontSize:11, color:C.purple, borderBottom:i===2?"none":undefined }}>{f}</td>
+                <td style={{ ...S.td, fontWeight:700, color:i===2?C.green:C.text, borderBottom:i===2?"none":undefined }}>{r}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 시험 포인트 */}
+      <div style={S.examBox}>
+        <div style={S.examHdr}>🎯 시험 포인트 (계산 문제 자주 출제!)</div>
+        <div style={{ padding:"16px 18px" }}>
+          {[
+            "지지도 = (A∩B 거래 수) ÷ 전체 거래 수",
+            "신뢰도 = (A∩B 거래 수) ÷ (A 포함 거래 수) — A→B와 B→A의 신뢰도는 다름!",
+            "향상도 = 신뢰도(A→B) ÷ 지지도(B) — 1보다 크면 의미 있는 연관규칙",
+            "향상도 1.5 = 기저귀 구매자가 맥주를 살 확률이 일반인보다 1.5배 높음",
+            "최소 지지도·최소 신뢰도 기준을 넘는 규칙만 선별 → Apriori 알고리즘",
+          ].map((pt, i) => (
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:i<4?9:0, alignItems:"flex-start" }}>
+              <div style={S.dot(C.coral)}/>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{pt}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── P-value ─────────────────────────────────────
+function ConceptPValue({ onBack }) {
+  const G = (col) => ({ color:col, fontWeight:700 });
+  const S = {
+    wrap: { padding:"28px 32px 60px" },
+    back: { background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 },
+    eyebrow: { fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", color:C.coral, marginBottom:6 },
+    title: { fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 },
+    sub: { fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 },
+    secTitle: { fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:12 },
+    box: { background:C.card2, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 },
+    card: (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:12, padding:"16px 18px", borderTop:`3px solid ${col}`, marginBottom:12 }),
+    examBox: { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", marginBottom:14 },
+    examHdr: { background:"#F8717112", borderBottom:`1px solid ${C.line}`, padding:"10px 18px", fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", color:C.coral, textTransform:"uppercase", display:"flex", alignItems:"center", gap:7 },
+    dot: (col) => ({ width:5, height:5, borderRadius:"50%", background:col, flexShrink:0, marginTop:7 }),
+    row2: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 },
+  };
+
+  return (
+    <div style={S.wrap}>
+      <button onClick={onBack} style={S.back}>← 개념 목록</button>
+      <div style={S.eyebrow}>ADsP 핵심 개념 05</div>
+      <div style={S.title}>P-value (유의확률)</div>
+      <div style={S.sub}>가설검정의 핵심 — 결과가 우연일 확률</div>
+
+      {/* 한 줄 정의 */}
+      <div style={{ ...S.box, borderLeft:`3px solid ${C.coral}` }}>
+        <div style={{ fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:8 }}>
+          P-value = <span style={G(C.coral)}>"귀무가설이 맞다고 가정했을 때, 지금 이 결과(또는 더 극단적인 값)가 나올 확률"</span>
+        </div>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, lineHeight:1.75 }}>
+          p-value가 <span style={G(C.coral)}>작을수록</span> → 귀무가설이 맞다면 이런 결과는 거의 안 나온다 → <span style={G(C.coral)}>귀무가설 기각</span>
+        </div>
+      </div>
+
+      {/* 동전 비유 */}
+      <div style={S.secTitle}>🪙 동전 비유로 이해하기</div>
+      <div style={S.box}>
+        {[
+          { step:"상황", icon:"🪙", text:"동전을 10번 던졌더니 10번 모두 앞면이 나왔어요" },
+          { step:"귀무가설(H₀)", icon:"⚖️", text:'"이 동전은 공정하다" → 앞면 확률 = 0.5' },
+          { step:"P-value 계산", icon:"🧮", text:"공정한 동전으로 10번 모두 앞면이 나올 확률 = (0.5)¹⁰ ≈ 0.001" },
+          { step:"결론", icon:"🔨", text:"0.001 < 0.05 → 귀무가설 기각 → \"이 동전은 불공정하다\"" },
+        ].map((r, i) => (
+          <div key={i} style={{ display:"flex", gap:12, marginBottom:i<3?12:0, alignItems:"flex-start" }}>
+            <div style={{ width:28, height:28, borderRadius:8, background:C.coral+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{r.icon}</div>
+            <div>
+              <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.coral, letterSpacing:".06em", marginBottom:3 }}>{r.step}</div>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{r.text}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 가설 용어 */}
+      <div style={S.secTitle}>가설검정 용어 정리</div>
+      <div style={S.row2}>
+        {[
+          { col:C.blue,  emoji:"⚖️", term:"귀무가설 (H₀)",  def:"차이 없다 · 효과 없다",      ex:'"두 약의 효과는 같다"' },
+          { col:C.coral, emoji:"🔬", term:"대립가설 (H₁)",  def:"차이 있다 · 효과 있다",      ex:'"A약이 B약보다 효과적이다"' },
+          { col:C.yellow,emoji:"📏", term:"유의수준 (α)",   def:"기각 기준선 — 보통 0.05",    ex:"α = 0.05 (5%)" },
+          { col:C.green, emoji:"📊", term:"P-value",         def:"귀무가설 하에서 결과가 나올 확률", ex:"p = 0.03 → 기각" },
+        ].map(item => (
+          <div key={item.term} style={S.card(item.col)}>
+            <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:item.col, letterSpacing:".06em", marginBottom:8 }}>{item.emoji} {item.term}</div>
+            <div style={{ fontFamily:SANS, fontSize:12, color:C.text, lineHeight:1.65, marginBottom:6 }}>{item.def}</div>
+            <div style={{ fontFamily:SANS, fontSize:11, color:item.col, background:item.col+"15", borderRadius:6, padding:"3px 8px" }}>예) {item.ex}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 판단 기준 */}
+      <div style={S.secTitle}>판단 기준 (α = 0.05 기준)</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
+        <div style={{ display:"flex", gap:12, alignItems:"center", background:C.coral+"14", border:`1px solid ${C.coral}33`, borderRadius:11, padding:"14px 16px" }}>
+          <div style={{ fontFamily:MONO, fontSize:20, fontWeight:800, color:C.coral, flexShrink:0, minWidth:120 }}>p &lt; 0.05</div>
+          <div>
+            <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.coral, marginBottom:3 }}>귀무가설 기각 → 통계적으로 유의함</div>
+            <div style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>이런 결과는 우연으로 보기 어렵다 → 실제 차이/효과가 있다고 판단</div>
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:12, alignItems:"center", background:C.muted+"18", border:`1px solid ${C.line}`, borderRadius:11, padding:"14px 16px" }}>
+          <div style={{ fontFamily:MONO, fontSize:20, fontWeight:800, color:C.muted, flexShrink:0, minWidth:120 }}>p ≥ 0.05</div>
+          <div>
+            <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.muted, marginBottom:3 }}>귀무가설 기각 못함 → 통계적으로 유의하지 않음</div>
+            <div style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>이 결과는 우연일 수 있다 → 차이가 있다고 단정할 수 없음</div>
+          </div>
+        </div>
+      </div>
+
+      {/* p-value 오해 */}
+      <div style={{ ...S.box, background:C.yellow+"0A", border:`1px solid ${C.yellow}33` }}>
+        <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.yellow, marginBottom:10 }}>⚠️ 자주 하는 오해</div>
+        {[
+          { wrong:"p-value = 내 가설이 맞을 확률", right:"귀무가설이 참일 때 이 결과가 나올 확률" },
+          { wrong:"p < 0.05면 효과가 크다는 뜻", right:"통계적으로 유의할 뿐, 효과 크기와는 다른 개념" },
+          { wrong:"p ≥ 0.05면 귀무가설이 참이다", right:"증거가 부족할 뿐, 귀무가설이 맞다는 게 아님" },
+        ].map((r, i) => (
+          <div key={i} style={{ marginBottom:i<2?10:0 }}>
+            <div style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:3 }}>
+              <span style={{ color:C.coral, fontWeight:700, fontSize:12, flexShrink:0 }}>✗</span>
+              <span style={{ fontFamily:SANS, fontSize:12, color:C.coral }}>{r.wrong}</span>
+            </div>
+            <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+              <span style={{ color:C.green, fontWeight:700, fontSize:12, flexShrink:0 }}>✓</span>
+              <span style={{ fontFamily:SANS, fontSize:12, color:C.text }}>{r.right}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 시험 포인트 */}
+      <div style={S.examBox}>
+        <div style={S.examHdr}>🎯 시험 포인트</div>
+        <div style={{ padding:"16px 18px" }}>
+          {[
+            "p-value < α(0.05) → 귀무가설 기각 → 통계적으로 유의 — 이게 핵심!",
+            "p-value는 작을수록 귀무가설에 불리한 증거가 강하다는 뜻",
+            "유의수준 α = 0.05가 기본, 더 엄격하면 α = 0.01 사용",
+            "1종 오류(α): 귀무가설이 참인데 기각 / 2종 오류(β): 귀무가설이 거짓인데 채택",
+            "양측검정: 방향 관계없이 차이 검정 / 단측검정: 방향 지정해서 검정",
+          ].map((pt, i) => (
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:i<4?9:0, alignItems:"flex-start" }}>
+              <div style={S.dot(C.coral)}/>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{pt}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ConceptTimeSeries({ onBack }) {
