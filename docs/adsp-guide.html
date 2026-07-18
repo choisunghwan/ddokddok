@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ADsP 개념 정리 — StudyAI</title>
+<style>
+:root {
+  --bg:      #0B0F1A;
+  --surface: #131929;
+  --card:    #1A2035;
+  --card2:   #1F2840;
+  --border:  #253050;
+  --text:    #E4E8FF;
+  --muted:   #6B7490;
+  --blue:    #4F8EF7;
+  --coral:   #F87171;
+  --green:   #34D399;
+  --yellow:  #FBBF24;
+  --purple:  #A78BFA;
+  --radius:  14px;
+}
+:root[data-theme="light"] {
+  --bg:      #F3F5FB;
+  --surface: #FFFFFF;
+  --card:    #FFFFFF;
+  --card2:   #EEF1FA;
+  --border:  #DDE2F0;
+  --text:    #1A1F35;
+  --muted:   #6B7490;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.75;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── 상단 헤더 ── */
+.top-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.logo { font-size: 15px; font-weight: 800; color: var(--text); }
+.logo span { color: var(--blue); }
+.top-divider { width: 1px; height: 18px; background: var(--border); }
+.top-title { font-size: 13px; font-weight: 600; color: var(--muted); }
+.top-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  background: #4F8EF722;
+  color: var(--blue);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.theme-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.theme-btn:hover { color: var(--text); border-color: var(--blue); }
+
+/* ── 레이아웃 ── */
+.layout {
+  display: flex;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── 사이드 TOC ── */
+.toc {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 32px 16px 40px 0;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+}
+.toc-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.toc a {
+  display: block;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background .15s, color .15s;
+  margin-bottom: 2px;
+}
+.toc a:hover, .toc a.active {
+  background: #4F8EF718;
+  color: var(--blue);
+}
+.toc-soon {
+  font-size: 11px;
+  color: var(--border);
+  padding: 5px 8px;
+  font-style: italic;
+}
+
+/* ── 메인 ── */
+.main {
+  flex: 1;
+  padding: 40px 0 100px 40px;
+  min-width: 0;
+}
+
+/* ── 페이지 헤더 ── */
+.page-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 8px;
+}
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  text-wrap: balance;
+  margin-bottom: 10px;
+}
+.page-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 36px;
+  max-width: 480px;
+}
+
+/* ── 섹션 ── */
+.concept {
+  margin-bottom: 64px;
+  scroll-margin-top: 72px;
+}
+.concept-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.concept-num {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: var(--blue);
+  background: #4F8EF718;
+  border: 1px solid #4F8EF730;
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.concept-titles { flex: 1; }
+.concept-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.concept-sub { font-size: 12px; color: var(--muted); }
+
+/* ── 한 줄 정의 ── */
+.def-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.def-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.def-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.def-card.blue::before  { background: var(--blue); }
+.def-card.coral::before { background: var(--coral); }
+.def-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  margin-bottom: 8px;
+}
+.def-card.blue  .def-label { color: var(--blue); }
+.def-card.coral .def-label { color: var(--coral); }
+.def-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.65;
+}
+.def-keyword {
+  font-weight: 700;
+}
+.def-card.blue  .def-keyword { color: var(--blue); }
+.def-card.coral .def-keyword { color: var(--coral); }
+
+/* ── 비유 박스 ── */
+.analogy {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.analogy-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--yellow);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+.analogy-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: flex-start;
+}
+.analogy-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.tag-blue  { background: #4F8EF722; color: var(--blue); }
+.tag-coral { background: #F8717122; color: var(--coral); }
+.analogy-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.65;
+}
+.analogy-text em {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ── 인사이트 박스 ── */
+.insight {
+  background: linear-gradient(135deg, #FBBF2408, #4F8EF708);
+  border: 1px solid #FBBF2430;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+}
+.insight-icon { font-size: 18px; flex-shrink: 0; }
+.insight-body { flex: 1; }
+.insight-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--yellow);
+  margin-bottom: 5px;
+}
+.insight-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.7;
+}
+.insight-text strong { color: var(--yellow); }
+
+/* ── 비교 테이블 ── */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.compare-table th {
+  padding: 11px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  text-align: center;
+}
+.compare-table th:first-child { text-align: left; color: var(--muted); }
+.compare-table th.blue-h  { color: var(--blue); }
+.compare-table th.coral-h { color: var(--coral); }
+.compare-table td {
+  padding: 11px 16px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--card);
+  vertical-align: top;
+  line-height: 1.6;
+}
+.compare-table td:first-child {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--card2);
+  white-space: nowrap;
+}
+.compare-table td.blue-cell  { color: var(--blue); }
+.compare-table td.coral-cell { color: var(--coral); }
+.compare-table tr:last-child td { border-bottom: 1px solid var(--border); }
+
+/* ── 시험 포인트 ── */
+.exam-point {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.exam-point-header {
+  background: #F8717115;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--coral);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.exam-point-body { padding: 16px 18px; }
+.exam-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.exam-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.exam-bullet {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--coral);
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+/* ── 검정 종류 카드 ── */
+.test-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.test-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 16px 18px;
+}
+.test-card-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.test-card.blue-c  .test-card-label { color: var(--blue); }
+.test-card.coral-c .test-card-label { color: var(--coral); }
+.test-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.55;
+}
+.test-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+.blue-c .test-dot  { background: var(--blue); }
+.coral-c .test-dot { background: var(--coral); }
+.test-name { font-weight: 700; }
+.test-when { color: var(--muted); font-size: 11px; }
+
+/* ── 구분선 ── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 40px 0;
+}
+
+/* ── 더 보기 예고 ── */
+.coming {
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.coming strong { color: var(--text); display: block; margin-bottom: 6px; font-size: 15px; }
+
+@media (max-width: 700px) {
+  .toc { display: none; }
+  .main { padding: 28px 0 60px; }
+  .def-row, .test-grid { grid-template-columns: 1fr; }
+  .top-bar { padding: 0 16px; }
+  .layout { padding: 0 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- 상단 바 -->
+<div class="top-bar">
+  <div class="logo"><span>Study</span>AI</div>
+  <div class="top-divider"></div>
+  <div class="top-title">ADsP 개념 정리</div>
+  <div class="top-badge">시험 대비</div>
+  <button class="theme-btn" onclick="toggleTheme()">🌓 테마</button>
+</div>
+
+<div class="layout">
+
+  <!-- TOC -->
+  <nav class="toc">
+    <div class="toc-label">목차</div>
+    <a href="#para-nonpara" class="active">모수 vs 비모수 검정</a>
+    <div class="toc-soon">— 추가 예정 —</div>
+    <a href="#" style="color:var(--border);pointer-events:none;font-size:11px">회귀분석</a>
+    <a href="#" style="color:var(--border);pointer-events:none;font-size:11px">군집분석</a>
+    <a href="#" style="color:var(--border);pointer-events:none;font-size:11px">연관분석</a>
+    <a href="#" style="color:var(--border);pointer-events:none;font-size:11px">시계열 분석</a>
+    <a href="#" style="color:var(--border);pointer-events:none;font-size:11px">차원 축소</a>
+  </nav>
+
+  <!-- 메인 -->
+  <main class="main">
+
+    <div class="page-eyebrow">ADsP 핵심 개념</div>
+    <h1 class="page-title">시험에 나오는 것만<br>제대로 정리</h1>
+    <p class="page-desc">비유와 표로 한 번에 이해하고, 시험 포인트까지 짚어드려요.</p>
+
+    <!-- ── 개념 01: 모수 vs 비모수 ── -->
+    <section class="concept" id="para-nonpara">
+      <div class="concept-header">
+        <div class="concept-num">01</div>
+        <div class="concept-titles">
+          <div class="concept-title">모수 vs 비모수 검정</div>
+          <div class="concept-sub">Parametric vs Non-parametric Test</div>
+        </div>
+      </div>
+
+      <!-- 한 줄 정의 -->
+      <div class="def-row">
+        <div class="def-card blue">
+          <div class="def-label">모수 검정</div>
+          <div class="def-text">
+            데이터를 <span class="def-keyword">자로 재서</span> 비교<br>
+            <span style="color:var(--muted);font-size:12px">실제 숫자(평균·분산)로 판단</span>
+          </div>
+        </div>
+        <div class="def-card coral">
+          <div class="def-label">비모수 검정</div>
+          <div class="def-text">
+            데이터를 <span class="def-keyword">줄 세워서</span> 비교<br>
+            <span style="color:var(--muted);font-size:12px">등수·순위로만 판단</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 비유 -->
+      <div class="analogy">
+        <div class="analogy-header">💡 두 반 키 비교 비유</div>
+        <div class="analogy-row">
+          <div class="analogy-tag tag-blue">모수</div>
+          <div class="analogy-text">
+            한 명씩 cm로 재서 평균 내고 비교<br>
+            <em>→ "1반 155cm, 2반 160cm" — 실제 숫자 사용</em>
+          </div>
+        </div>
+        <div class="analogy-row">
+          <div class="analogy-tag tag-coral">비모수</div>
+          <div class="analogy-text">
+            키 순서대로 줄 세우고 등수 합으로 비교<br>
+            <em>→ 실제 cm는 안 씀, 순위만 씀</em>
+          </div>
+        </div>
+      </div>
+
+      <!-- 인사이트 -->
+      <div class="insight">
+        <div class="insight-icon">🏀</div>
+        <div class="insight-body">
+          <div class="insight-title">왜 비모수를 쓰나?</div>
+          <div class="insight-text">
+            평균은 <strong>튀는 값 하나에 잘 속는다.</strong><br>
+            210cm 농구선수 한 명이 반 평균을 확 올려버림.<br>
+            등수로 보면 210cm든 165cm든 그냥 <strong>"1등"</strong>이라 이상치에 안 흔들림.
+          </div>
+        </div>
+      </div>
+
+      <!-- 언제 쓰나 -->
+      <div class="def-row" style="margin-bottom:16px">
+        <div class="def-card blue" style="padding:16px 18px">
+          <div class="def-label">모수 검정을 쓸 때</div>
+          <div class="def-text" style="font-size:12px;line-height:1.7">
+            ✓ 데이터가 <span class="def-keyword">많고</span><br>
+            ✓ <span class="def-keyword">정규분포</span> (종 모양)<br>
+            ✓ 이상치 없음<br>
+            <span style="color:var(--muted)">→ 더 정확하고 검정력 강함</span>
+          </div>
+        </div>
+        <div class="def-card coral" style="padding:16px 18px">
+          <div class="def-label">비모수 검정을 쓸 때</div>
+          <div class="def-text" style="font-size:12px;line-height:1.7">
+            ✓ 데이터가 <span class="def-keyword">적거나</span><br>
+            ✓ 분포를 <span class="def-keyword">모를 때</span><br>
+            ✓ 이상치 있음<br>
+            <span style="color:var(--muted)">→ 더 안전, 분포 가정 불필요</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 비교 표 -->
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th class="blue-h">모수 검정</th>
+            <th class="coral-h">비모수 검정</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>사용 대상</td>
+            <td class="blue-cell">실제 값 (평균·분산)</td>
+            <td class="coral-cell">순위 (등수)</td>
+          </tr>
+          <tr>
+            <td>분포 가정</td>
+            <td class="blue-cell">정규분포 가정 ✓</td>
+            <td class="coral-cell">가정 없음 ✓</td>
+          </tr>
+          <tr>
+            <td>데이터 양</td>
+            <td class="blue-cell">많을 때 유리</td>
+            <td class="coral-cell">적어도 OK</td>
+          </tr>
+          <tr>
+            <td>이상치</td>
+            <td class="blue-cell">약함 (잘 속음) ⚠️</td>
+            <td class="coral-cell">강함 (안 속음) ✓</td>
+          </tr>
+          <tr>
+            <td>검정력</td>
+            <td class="blue-cell">강함</td>
+            <td class="coral-cell">상대적으로 약함</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 실제 검정 종류 -->
+      <div class="test-grid">
+        <div class="test-card blue-c">
+          <div class="test-card-label">모수 검정 종류</div>
+          <div class="test-item"><div class="test-dot"></div><div><span class="test-name">t-검정</span><br><span class="test-when">두 집단 평균 비교</span></div></div>
+          <div class="test-item"><div class="test-dot"></div><div><span class="test-name">분산분석 (ANOVA)</span><br><span class="test-when">세 집단 이상 평균 비교</span></div></div>
+          <div class="test-item"><div class="test-dot"></div><div><span class="test-name">피어슨 상관계수</span><br><span class="test-when">두 연속형 변수 선형 관계</span></div></div>
+        </div>
+        <div class="test-card coral-c">
+          <div class="test-card-label">비모수 검정 종류</div>
+          <div class="test-item"><div class="test-dot"></div><div><span class="test-name">부호검정 / 윌콕슨</span><br><span class="test-when">t-검정 대체</span></div></div>
+          <div class="test-item"><div class="test-dot"></div><div><span class="test-name">크루스칼-왈리스</span><br><span class="test-when">ANOVA 대체</span></div></div>
+          <div class="test-item"><div class="test-dot"></div><div><span class="test-name">스피어만 상관계수</span><br><span class="test-when">순위형·비선형 관계</span></div></div>
+        </div>
+      </div>
+
+      <!-- 시험 포인트 -->
+      <div class="exam-point">
+        <div class="exam-point-header">🎯 시험 포인트</div>
+        <div class="exam-point-body">
+          <ul class="exam-list">
+            <li><div class="exam-bullet"></div>비모수 검정은 <strong>정규분포 가정이 불필요</strong>하다 — 자주 나오는 선지</li>
+            <li><div class="exam-bullet"></div>이상치에 강한 것은 <strong>비모수</strong>, 검정력이 강한 것은 <strong>모수</strong></li>
+            <li><div class="exam-bullet"></div>스피어만 상관계수 = 비모수 / 피어슨 상관계수 = 모수</li>
+            <li><div class="exam-bullet"></div>크루스칼-왈리스 = 비모수판 ANOVA (세 집단 이상 순위 비교)</li>
+          </ul>
+        </div>
+      </div>
+
+    </section>
+
+    <hr class="divider" />
+
+    <!-- 다음 개념 예고 -->
+    <div class="coming">
+      <strong>다음 개념도 추가할 예정이에요</strong>
+      회귀분석 · 군집분석 · 연관분석 · 시계열 분석 · 차원 축소 (PCA) 등
+    </div>
+
+  </main>
+</div>
+
+<script>
+function toggleTheme() {
+  const r = document.documentElement;
+  r.setAttribute('data-theme', r.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+const links = document.querySelectorAll('.toc a[href^="#"]');
+const obs = new IntersectionObserver(e => {
+  e.forEach(en => {
+    if (en.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const l = document.querySelector(`.toc a[href="#${en.target.id}"]`);
+      if (l) l.classList.add('active');
+    }
+  });
+}, { rootMargin: '-15% 0px -80% 0px' });
+document.querySelectorAll('section[id]').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
