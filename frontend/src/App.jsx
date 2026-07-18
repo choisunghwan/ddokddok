@@ -2452,6 +2452,14 @@ const ADSP_CONCEPTS = [
     color: C.green,
     tags: ["모집단", "표본", "추론통계"],
   },
+  {
+    id: "timeseries",
+    title: "시계열 분석",
+    sub: "Time Series Analysis · ARIMA",
+    emoji: "📈",
+    color: C.purple,
+    tags: ["시계열", "ARIMA", "정상성", "차분"],
+  },
 ];
 
 function ConceptListScreen({ onSelect, onBack }) {
@@ -2494,7 +2502,206 @@ function ConceptListScreen({ onSelect, onBack }) {
 function ConceptDetailScreen({ conceptId, onBack }) {
   if (conceptId === "para-nonpara")       return <ConceptParaNonpara onBack={onBack} />;
   if (conceptId === "population-sample")  return <ConceptPopulationSample onBack={onBack} />;
+  if (conceptId === "timeseries")         return <ConceptTimeSeries onBack={onBack} />;
   return null;
+}
+
+function ConceptTimeSeries({ onBack }) {
+  const S = {
+    wrap:     { padding:"28px 32px 60px" },
+    back:     { background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer", marginBottom:16, padding:0 },
+    eyebrow:  { fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".1em", textTransform:"uppercase", color:C.purple, marginBottom:6 },
+    title:    { fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 },
+    sub:      { fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 },
+    secTitle: { fontFamily:SANS, fontSize:14, fontWeight:700, color:C.text, marginBottom:12 },
+    card:     { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 },
+    box:      { background:C.card2, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:14 },
+    defCard:  (col) => ({ background:C.card, border:`1px solid ${col}33`, borderRadius:12, padding:"16px 18px", borderTop:`3px solid ${col}` }),
+    label:    (col) => ({ fontFamily:SANS, fontSize:10, fontWeight:700, letterSpacing:".06em", color:col, marginBottom:8 }),
+    kw:       (col) => ({ color:col, fontWeight:700 }),
+    text:     { fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.75 },
+    table:    { width:"100%", borderCollapse:"collapse" },
+    th:       (col) => ({ fontFamily:SANS, fontSize:11, fontWeight:700, padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}`, color:col||C.muted, textAlign:"left" }),
+    td:       { fontFamily:SANS, fontSize:13, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.text, lineHeight:1.55 },
+    tdK:      { fontFamily:SANS, fontSize:12, fontWeight:700, padding:"10px 14px", borderBottom:`1px solid ${C.line}`, color:C.muted, background:C.card2, whiteSpace:"nowrap" },
+    examBox:  { background:C.card, border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", marginBottom:14 },
+    examHdr:  { background:"#F8717112", borderBottom:`1px solid ${C.line}`, padding:"10px 18px", fontFamily:SANS, fontSize:11, fontWeight:700, letterSpacing:".08em", color:C.coral, textTransform:"uppercase", display:"flex", alignItems:"center", gap:7 },
+    dot:      (col) => ({ width:5, height:5, borderRadius:"50%", background:col, flexShrink:0, marginTop:7 }),
+    row2:     { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 },
+  };
+
+  return (
+    <div style={S.wrap}>
+      <button onClick={onBack} style={S.back}>← 개념 목록</button>
+      <div style={S.eyebrow}>ADsP 핵심 개념 03</div>
+      <div style={S.title}>시계열 분석</div>
+      <div style={S.sub}>Time Series Analysis · ARIMA</div>
+
+      {/* 한 줄 정의 */}
+      <div style={{ ...S.card, borderLeft:`3px solid ${C.purple}` }}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8 }}>
+          <span style={S.kw(C.purple)}>시간 순서대로 수집된 데이터</span>에서 패턴을 찾아 미래를 예측하는 분석.<br/>
+          <span style={{ color:C.muted, fontSize:12 }}>예) 월별 매출, 일별 주가, 시간별 기온, 연도별 인구</span>
+        </div>
+      </div>
+
+      {/* 4가지 구성 요소 */}
+      <div style={S.secTitle}>시계열 분해 — 4가지 구성 요소</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
+        {[
+          { col:C.blue,   emoji:"📈", name:"추세 (Trend)",       def:"장기적으로 증가하거나 감소하는 방향",        ex:"매년 스마트폰 판매량 증가" },
+          { col:C.yellow, emoji:"🔄", name:"계절성 (Seasonality)", def:"일정 주기로 반복되는 패턴 (월·분기·요일)", ex:"여름마다 에어컨 판매 폭증" },
+          { col:C.green,  emoji:"〰️", name:"순환 (Cycle)",        def:"경기 사이클처럼 수년에 걸친 긴 파동",       ex:"경제 호황·불황 반복 (비정기)" },
+          { col:C.muted,  emoji:"🎲", name:"불규칙 (Irregular)",  def:"예측 불가한 랜덤 노이즈·오차",             ex:"갑작스러운 사건으로 인한 이상값" },
+        ].map(item => (
+          <div key={item.name} style={S.defCard(item.col)}>
+            <div style={S.label(item.col)}>{item.emoji} {item.name}</div>
+            <div style={{ fontFamily:SANS, fontSize:12, color:C.text, lineHeight:1.65, marginBottom:6 }}>{item.def}</div>
+            <div style={{ fontFamily:SANS, fontSize:11, color:item.col, background:item.col+"15", borderRadius:6, padding:"3px 8px" }}>예) {item.ex}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 정상성 */}
+      <div style={S.secTitle}>정상성 (Stationarity)</div>
+      <div style={S.box}>
+        <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8, marginBottom:12 }}>
+          시계열 모델(ARIMA 등)은 <span style={S.kw(C.purple)}>정상 시계열</span>을 전제로 해요.<br/>
+          정상 시계열 = <span style={S.kw(C.yellow)}>평균·분산이 시간에 따라 변하지 않는</span> 시계열
+        </div>
+        <div style={S.row2}>
+          <div style={{ background:C.green+"12", border:`1px solid ${C.green}33`, borderRadius:10, padding:"12px 14px" }}>
+            <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.green, marginBottom:8 }}>✓ 정상 시계열</div>
+            {["평균이 일정 (추세 없음)","분산이 일정","공분산이 시간에 무관"].map(t => (
+              <div key={t} style={{ display:"flex", gap:7, marginBottom:5, alignItems:"flex-start" }}>
+                <div style={S.dot(C.green)}/>
+                <div style={{ fontFamily:SANS, fontSize:12, color:C.text }}>{t}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background:C.coral+"12", border:`1px solid ${C.coral}33`, borderRadius:10, padding:"12px 14px" }}>
+            <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.coral, marginBottom:8 }}>✗ 비정상 시계열</div>
+            {["평균이 증가/감소 (추세 있음)","시간에 따라 분산 변함","계절성·순환 패턴 있음"].map(t => (
+              <div key={t} style={{ display:"flex", gap:7, marginBottom:5, alignItems:"flex-start" }}>
+                <div style={S.dot(C.coral)}/>
+                <div style={{ fontFamily:SANS, fontSize:12, color:C.text }}>{t}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ fontFamily:SANS, fontSize:12, color:C.yellow, background:C.yellow+"12", borderRadius:8, padding:"10px 12px", marginTop:4 }}>
+          💡 비정상 → 정상으로 만들기: <span style={{ fontWeight:700 }}>차분</span>(추세 제거) · <span style={{ fontWeight:700 }}>로그변환</span>(분산 안정화)
+        </div>
+      </div>
+
+      {/* 차분 */}
+      <div style={S.secTitle}>차분 (Differencing)</div>
+      <div style={{ ...S.card, display:"flex", gap:16, alignItems:"flex-start" }}>
+        <div style={{ fontSize:28, flexShrink:0 }}>✂️</div>
+        <div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.8, marginBottom:8 }}>
+            <span style={S.kw(C.purple)}>현시점 값 − 전시점 값</span>으로 추세를 제거하는 방법<br/>
+            <span style={{ color:C.muted, fontSize:12 }}>1차 차분으로 안 되면 2차 차분 (한 번 더 빼기)</span>
+          </div>
+          <div style={{ fontFamily:MONO, fontSize:12, background:C.card2, borderRadius:8, padding:"10px 12px", color:C.green }}>
+            Y't = Yt − Yt-1 &nbsp;&nbsp;<span style={{ color:C.muted }}>// 1차 차분</span><br/>
+            Y''t = Y't − Y't-1 &nbsp;<span style={{ color:C.muted }}>// 2차 차분</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ARIMA 모델 */}
+      <div style={S.secTitle}>주요 모델</div>
+      <div style={{ borderRadius:11, border:`1px solid ${C.line}`, overflow:"hidden", marginBottom:14 }}>
+        <table style={S.table}>
+          <thead>
+            <tr>
+              <th style={S.th(C.purple)}>모델</th>
+              <th style={S.th()}>풀이</th>
+              <th style={S.th()}>핵심</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["AR(p)",     "자기회귀",               "과거 자신의 값 p개로 현재 예측"],
+              ["MA(q)",     "이동평균",                "과거 오차 q개로 현재 예측"],
+              ["ARMA(p,q)", "자기회귀 + 이동평균",    "AR과 MA를 결합 (정상 시계열에만)"],
+              ["ARIMA(p,d,q)", "비정상 → 차분 d번 → ARMA", "비정상 시계열도 처리 가능 ★"],
+            ].map(([model, full, core], i) => (
+              <tr key={model}>
+                <td style={{ ...S.tdK, color:C.purple, background:C.purple+"0F", borderBottom:i===3?"none":undefined }}>{model}</td>
+                <td style={{ ...S.td, borderBottom:i===3?"none":undefined }}>{full}</td>
+                <td style={{ ...S.td, borderBottom:i===3?"none":undefined, color:i===3?C.yellow:C.text }}>{core}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ARIMA(p,d,q) 해석 */}
+      <div style={{ ...S.box, display:"flex", gap:0, padding:0, overflow:"hidden" }}>
+        <div style={{ flex:1, padding:"16px 18px", borderRight:`1px solid ${C.line}`, textAlign:"center" }}>
+          <div style={{ fontFamily:MONO, fontSize:28, fontWeight:800, color:C.purple, marginBottom:6 }}>p</div>
+          <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.text }}>AR 차수</div>
+          <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:3 }}>몇 개의 과거 값을 쓰나</div>
+        </div>
+        <div style={{ flex:1, padding:"16px 18px", borderRight:`1px solid ${C.line}`, textAlign:"center" }}>
+          <div style={{ fontFamily:MONO, fontSize:28, fontWeight:800, color:C.yellow, marginBottom:6 }}>d</div>
+          <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.text }}>차분 횟수</div>
+          <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:3 }}>정상화를 위해 몇 번 차분</div>
+        </div>
+        <div style={{ flex:1, padding:"16px 18px", textAlign:"center" }}>
+          <div style={{ fontFamily:MONO, fontSize:28, fontWeight:800, color:C.coral, marginBottom:6 }}>q</div>
+          <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.text }}>MA 차수</div>
+          <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:3 }}>몇 개의 과거 오차를 쓰나</div>
+        </div>
+      </div>
+      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, textAlign:"center", marginBottom:14, marginTop:-8 }}>
+        예) ARIMA(<span style={{ color:C.purple, fontWeight:700 }}>1</span>, <span style={{ color:C.yellow, fontWeight:700 }}>2</span>, <span style={{ color:C.coral, fontWeight:700 }}>3</span>) = AR 1개 · 2번 차분 · MA 3개
+      </div>
+
+      {/* ACF / PACF */}
+      <div style={S.secTitle}>ACF vs PACF — 차수 결정</div>
+      <div style={S.row2}>
+        <div style={S.defCard(C.blue)}>
+          <div style={S.label(C.blue)}>ACF (자기상관함수)</div>
+          <div style={{ fontFamily:SANS, fontSize:12, color:C.text, lineHeight:1.7 }}>
+            현재와 과거 값의 상관관계<br/>
+            <span style={{ color:C.blue, fontWeight:700 }}>MA 차수 q 결정</span>에 사용<br/>
+            <span style={{ color:C.muted }}>ACF가 q번째 이후 급격히 0</span>
+          </div>
+        </div>
+        <div style={S.defCard(C.coral)}>
+          <div style={S.label(C.coral)}>PACF (편자기상관함수)</div>
+          <div style={{ fontFamily:SANS, fontSize:12, color:C.text, lineHeight:1.7 }}>
+            중간 시차 영향을 제거한 상관<br/>
+            <span style={{ color:C.coral, fontWeight:700 }}>AR 차수 p 결정</span>에 사용<br/>
+            <span style={{ color:C.muted }}>PACF가 p번째 이후 급격히 0</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 시험 포인트 */}
+      <div style={S.examBox}>
+        <div style={S.examHdr}>🎯 시험 포인트</div>
+        <div style={{ padding:"16px 18px" }}>
+          {[
+            "ARIMA(p,d,q)에서 d=0이면 ARMA — 이미 정상 시계열이라는 뜻",
+            "정상성 조건 3가지: 평균 일정 · 분산 일정 · 공분산이 시간에 무관",
+            "추세 제거 → 차분 / 분산 안정화 → 로그변환",
+            "ACF → MA 차수(q) 결정 / PACF → AR 차수(p) 결정",
+            "백색잡음(White Noise) = 완전한 정상 시계열 (평균 0, 일정 분산, 자기상관 없음)",
+            "계절성(Seasonality) vs 순환(Cycle): 계절성은 주기 고정 / 순환은 비정기적",
+          ].map((pt, i) => (
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:i<5?9:0, alignItems:"flex-start" }}>
+              <div style={S.dot(C.coral)}/>
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.text, lineHeight:1.65 }}>{pt}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ConceptPopulationSample({ onBack }) {
