@@ -4924,7 +4924,7 @@ function StudyTimer() {
   const pct = Math.min((todayTotal / goalSecs) * 100, 100);
 
   return (
-    <div style={{ position:"fixed", bottom:24, left:24, zIndex:9998, display:"flex", flexDirection:"column", alignItems:"flex-start", gap:10 }}>
+    <div style={{ position:"fixed", bottom:24, right:24, zIndex:9998, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
       {open && (
         <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"20px 20px 16px", width:230, boxShadow:"0 8px 32px #0008" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
