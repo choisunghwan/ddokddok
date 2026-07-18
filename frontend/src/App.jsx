@@ -981,12 +981,32 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
       .catch(() => { setError(true); setLoading(false); });
   };
 
-  useEffect(() => { fetchStats(); }, [isGuest]);
+  useEffect(() => {
+    fetchStats();
+    // 타이머 저장 이벤트 수신 시 갱신
+    const onTimerSaved = () => fetchStats();
+    window.addEventListener("timer-saved", onTimerSaved);
+    // 탭 포커스 복귀 시 갱신
+    const onVisible = () => { if (!document.hidden) fetchStats(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("timer-saved", onTimerSaved);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isGuest]);
+
+  // 오늘 공부 시간: DB값과 localStorage 타이머값 중 큰 값 사용
+  const getLocalTimer = () => {
+    try {
+      const d = JSON.parse(localStorage.getItem("study_today") || "{}");
+      return d.date === new Date().toDateString() ? (d.secs || 0) : 0;
+    } catch { return 0; }
+  };
 
   const streak   = stats?.streak ?? 0;
   const weekly   = stats?.weekly_minutes ?? 0;
   const solved   = stats?.completed_problems ?? 0;
-  const todaySec = stats?.today_seconds ?? 0;
+  const todaySec = Math.max(stats?.today_seconds ?? 0, getLocalTimer());
   const chart    = stats?.weekly_chart ?? [
     { day:"월", min:0 }, { day:"화", min:0 }, { day:"수", min:0 },
     { day:"목", min:0 }, { day:"금", min:0 }, { day:"토", min:0 }, { day:"일", min:0 },
@@ -4810,7 +4830,11 @@ function StudyTimer() {
     return `${sc}초`;
   };
 
-  const persist = (total) => { lsSave(total); dbSave(total); };
+  const persist = (total) => {
+    lsSave(total);
+    dbSave(total);
+    window.dispatchEvent(new CustomEvent("timer-saved", { detail: { total } }));
+  };
 
   const handleStart = () => {
     intervalRef.current = setInterval(() => {
