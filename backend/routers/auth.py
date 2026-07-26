@@ -63,7 +63,12 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user)):
-    return {"id": current_user.id, "email": current_user.email, "nickname": current_user.nickname}
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "nickname": current_user.nickname,
+        "kakao_linked": bool(current_user.kakao_id),
+    }
 
 
 class PasswordChangeRequest(BaseModel):
@@ -103,43 +108,73 @@ class KakaoLoginRequest(BaseModel):
     code: str
     redirect_uri: str
 
-@router.post("/kakao", response_model=TokenResponse)
-def kakao_login(body: KakaoLoginRequest, db: Session = Depends(get_db)):
-    # 1. 인가 코드 → 액세스 토큰
+
+def _kakao_exchange(code: str, redirect_uri: str):
     with httpx.Client() as c:
         token_res = c.post(
             "https://kauth.kakao.com/oauth/token",
             data={
                 "grant_type": "authorization_code",
                 "client_id": KAKAO_REST_KEY,
-                "redirect_uri": body.redirect_uri,
-                "code": body.code,
+                "redirect_uri": redirect_uri,
+                "code": code,
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
     token_data = token_res.json()
     if "access_token" not in token_data:
         raise HTTPException(status_code=400, detail=f"카카오 인증 실패: {token_data.get('error_description','')}")
-
-    # 2. 사용자 정보 조회
     with httpx.Client() as c:
         info_res = c.get(
             "https://kapi.kakao.com/v2/user/me",
             headers={"Authorization": f"Bearer {token_data['access_token']}"},
         )
     info = info_res.json()
-    kakao_id  = info["id"]
-    nickname  = (info.get("kakao_account") or {}).get("profile", {}).get("nickname") or f"카카오유저{str(kakao_id)[-4:]}"
-    email     = f"kakao_{kakao_id}@kakao.local"
+    kakao_id = str(info["id"])
+    nickname = (info.get("kakao_account") or {}).get("profile", {}).get("nickname") or f"카카오유저{kakao_id[-4:]}"
+    return kakao_id, nickname
 
-    # 3. 유저 생성 or 조회
-    user = db.query(User).filter(User.email == email).first()
+
+@router.post("/kakao", response_model=TokenResponse)
+def kakao_login(body: KakaoLoginRequest, db: Session = Depends(get_db)):
+    kakao_id, nickname = _kakao_exchange(body.code, body.redirect_uri)
+    email = f"kakao_{kakao_id}@kakao.local"
+
+    user = db.query(User).filter(User.kakao_id == kakao_id).first()
     if not user:
-        user = User(email=email, nickname=nickname,
+        # 기존 이메일 방식으로 생성된 계정 마이그레이션
+        user = db.query(User).filter(User.email == email).first()
+        if user and not user.kakao_id:
+            user.kakao_id = kakao_id
+            db.commit()
+    if not user:
+        user = User(email=email, nickname=nickname, kakao_id=kakao_id,
                     password_hash=pwd_context.hash(f"kakao_{kakao_id}"))
         db.add(user); db.commit(); db.refresh(user)
 
     return TokenResponse(access_token=create_token(user.id), nickname=user.nickname)
+
+
+@router.post("/kakao/link")
+def kakao_link(body: KakaoLoginRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    kakao_id, _ = _kakao_exchange(body.code, body.redirect_uri)
+
+    existing = db.query(User).filter(User.kakao_id == kakao_id).first()
+    if existing and existing.id != current_user.id:
+        raise HTTPException(status_code=400, detail="이미 다른 계정에 연결된 카카오 계정입니다")
+
+    current_user.kakao_id = kakao_id
+    db.commit()
+    return {"ok": True, "kakao_linked": True}
+
+
+@router.delete("/kakao/link")
+def kakao_unlink(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.kakao_id:
+        raise HTTPException(status_code=400, detail="연결된 카카오 계정이 없습니다")
+    current_user.kakao_id = None
+    db.commit()
+    return {"ok": True, "kakao_linked": False}
 
 
 @router.delete("/me")

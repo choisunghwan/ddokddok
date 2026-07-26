@@ -703,7 +703,7 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const KAKAO_CLIENT_ID = "9aad41410f9e3fd11ebd4caef0a6a761";
 const KAKAO_REDIRECT_URI = () => window.location.origin + "/";
 
-function SettingsModal({ nickname, onClose, onNicknameChange, onLogout }) {
+function SettingsModal({ nickname, onClose, onNicknameChange, onLogout, kakaoLinked, onKakaoLink, onKakaoUnlink }) {
   const [tab, setTab] = useState("password");
   const [pwForm, setPwForm] = useState({ current:"", next:"", confirm:"" });
   const [nickForm, setNickForm] = useState(nickname || "");
@@ -775,13 +775,13 @@ function SettingsModal({ nickname, onClose, onNicknameChange, onLogout }) {
           <button onClick={onClose} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer" }}><X size={18}/></button>
         </div>
 
-        <div style={{ display:"flex", gap:6, marginBottom:20 }}>
-          {[["password","비밀번호 변경"],["nickname","닉네임 변경"],["delete","회원탈퇴"]].map(([k,l]) => (
+        <div style={{ display:"flex", gap:6, marginBottom:20, flexWrap:"wrap" }}>
+          {[["password","비밀번호 변경"],["nickname","닉네임 변경"],["kakao","카카오 연결"],["delete","회원탈퇴"]].map(([k,l]) => (
             <button key={k} onClick={() => { setTab(k); setMsg({ text:"", ok:true }); }} style={{
               flex:1, padding:"7px 0", borderRadius:7, border:`1px solid ${tab===k?(k==="delete"?C.coral:C.blue):C.line}`,
               background: tab===k?(k==="delete"?C.coral+"22":C.blue+"22"):"transparent",
               color: tab===k?(k==="delete"?C.coral:C.blue):C.muted,
-              fontFamily:SANS, fontSize:11, fontWeight:700, cursor:"pointer",
+              fontFamily:SANS, fontSize:11, fontWeight:700, cursor:"pointer", minWidth:70,
             }}>{l}</button>
           ))}
         </div>
@@ -797,6 +797,43 @@ function SettingsModal({ nickname, onClose, onNicknameChange, onLogout }) {
           {inp("새 닉네임", nickForm, e => setNickForm(e.target.value))}
           <button onClick={changeNickname} disabled={loading} style={{ width:"100%", padding:"11px 0", borderRadius:8, border:"none", background:C.blue, color:C.white, fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer" }}>변경하기</button>
         </>)}
+
+        {tab === "kakao" && (
+          <div>
+            <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px", borderRadius:10, background:C.card2, border:`1px solid ${C.line}`, marginBottom:14 }}>
+              <span style={{ fontSize:22 }}>💬</span>
+              <div>
+                <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>카카오 계정</div>
+                <div style={{ fontFamily:SANS, fontSize:11, color: kakaoLinked ? C.green : C.muted, marginTop:2 }}>
+                  {kakaoLinked ? "연결됨" : "연결 안 됨"}
+                </div>
+              </div>
+            </div>
+            {kakaoLinked ? (
+              <button onClick={async () => {
+                setLoading(true); setMsg({ text:"", ok:true });
+                try {
+                  const res = await fetch(`${API}/api/auth/kakao/link`, { method:"DELETE", headers: authHeader() });
+                  const d = await res.json();
+                  if (!res.ok) { setMsg({ text: d.detail || "오류가 발생했습니다", ok:false }); return; }
+                  onKakaoUnlink();
+                  setMsg({ text:"카카오 연결이 해제되었습니다", ok:true });
+                } catch { setMsg({ text:"서버에 연결할 수 없습니다", ok:false }); }
+                finally { setLoading(false); }
+              }} disabled={loading} style={{ width:"100%", padding:"11px 0", borderRadius:8, border:`1px solid ${C.line}`, background:"transparent", color:C.muted, fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                연결 해제
+              </button>
+            ) : (
+              <button onClick={() => { onClose(); onKakaoLink(); }} style={{ width:"100%", padding:"11px 0", borderRadius:8, border:"none", background:"#FEE500", color:"#191600", fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#191600" d="M9 1.5C4.86 1.5 1.5 4.16 1.5 7.44c0 2.1 1.38 3.94 3.46 5.01l-.88 3.27c-.08.28.23.5.47.34L8.1 13.5c.29.03.59.05.9.05 4.14 0 7.5-2.66 7.5-5.94S13.14 1.5 9 1.5z"/></svg>
+                카카오 계정 연결하기
+              </button>
+            )}
+            <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:10, lineHeight:1.6 }}>
+              연결하면 카카오로 로그인할 때 이 계정으로 접속됩니다.
+            </div>
+          </div>
+        )}
 
         {tab === "delete" && (
           <div>
@@ -5670,7 +5707,18 @@ export default function App() {
   const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, notes:0, arch:0, study:0 });
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("ddok_theme") !== "light");
   const [kakaoLoading, setKakaoLoading] = useState(false);
+  const [kakaoLinked, setKakaoLinked] = useState(false);
   const isMobile = useIsMobile();
+
+  // 로그인 후 카카오 연결 상태 조회
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setKakaoLinked(!!d.kakao_linked); })
+      .catch(() => {});
+  }, [nickname]);
 
   // 카카오 OAuth 콜백 처리
   useEffect(() => {
@@ -5678,26 +5726,49 @@ export default function App() {
     const code = params.get("code");
     if (!code) return;
     window.history.replaceState({}, "", "/");
+    const intent = sessionStorage.getItem("kakao_intent");
+    sessionStorage.removeItem("kakao_intent");
     setKakaoLoading(true);
-    fetch(`${API}/api/auth/kakao`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, redirect_uri: KAKAO_REDIRECT_URI() }),
-    })
-      .then(r => r.json())
-      .then(d => {
-        if (d.access_token) {
-          localStorage.setItem("token", d.access_token);
-          localStorage.setItem("nickname", d.nickname);
-          setNickname(d.nickname);
-          setIsGuest(false);
-        }
+
+    if (intent === "link") {
+      // 기존 계정에 카카오 연결
+      fetch(`${API}/api/auth/kakao/link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ code, redirect_uri: KAKAO_REDIRECT_URI() }),
       })
-      .catch(() => {})
-      .finally(() => setKakaoLoading(false));
+        .then(r => r.json())
+        .then(d => { if (d.ok) setKakaoLinked(true); })
+        .catch(() => {})
+        .finally(() => setKakaoLoading(false));
+    } else {
+      // 카카오 로그인
+      fetch(`${API}/api/auth/kakao`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, redirect_uri: KAKAO_REDIRECT_URI() }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.access_token) {
+            localStorage.setItem("token", d.access_token);
+            localStorage.setItem("nickname", d.nickname);
+            setNickname(d.nickname);
+            setIsGuest(false);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setKakaoLoading(false));
+    }
   }, []);
 
   const handleKakaoLogin = () => {
+    const url = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI())}&response_type=code`;
+    window.location.href = url;
+  };
+
+  const handleKakaoLink = () => {
+    sessionStorage.setItem("kakao_intent", "link");
     const url = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI())}&response_type=code`;
     window.location.href = url;
   };
@@ -5758,7 +5829,7 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
       {showBanner && <GuestBanner onLogin={handleBackToLogin} onDismiss={() => setBannerDismissed(true)} />}
       {showStudyModal && <StudyLoginModal onLogin={handleBackToLogin} onClose={() => setShowStudyModal(false)} />}
-      {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
+      {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} kakaoLinked={kakaoLinked} onKakaoLink={handleKakaoLink} onKakaoUnlink={() => setKakaoLinked(false)} />}
       <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} darkMode={darkMode} onToggleTheme={toggleTheme} />
       <StudyTimer />
       <AmbientPlayer />
