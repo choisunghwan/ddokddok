@@ -10,12 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tiptap/extension-color": "2.11.7",
-    "@tiptap/extension-text-style": "2.11.7",
-    "@tiptap/extension-underline": "2.11.7",
-    "@tiptap/pm": "2.11.7",
-    "@tiptap/react": "2.11.7",
-    "@tiptap/starter-kit": "2.11.7",
     "lucide-react": "^1.22.0",
     "marked": "^18.0.7",
     "react": "^19.2.7",

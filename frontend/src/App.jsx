@@ -2,11 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut, PenLine, Trash2, ArrowLeft, Tag, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, ResponsiveContainer } from "recharts";
 import { marked } from "marked";
-import { useEditor, EditorContent } from "@tiptap/react";
-import { StarterKit } from "@tiptap/starter-kit";
-import { Color } from "@tiptap/extension-color";
-import { TextStyle } from "@tiptap/extension-text-style";
-import { Underline } from "@tiptap/extension-underline";
 
 // ── 디자인 토큰 ──────────────────────────────────
 const C = {
@@ -5018,83 +5013,61 @@ const EDITOR_COLORS = [
 ];
 
 function RichEditor({ value, onChange }) {
-  const { editor } = useEditor({
-    extensions: [
-      StarterKit,
-      TextStyle,
-      Color,
-      Underline,
-    ],
-    content: value || "",
-    onUpdate: ({ editor }) => onChange(editor.getHTML()),
-    editorProps: {
-      attributes: { class: "tiptap-editor" },
-    },
-  });
+  const ref = useRef(null);
 
-  if (!editor) return null;
+  useEffect(() => {
+    if (ref.current) ref.current.innerHTML = value || "";
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const Btn = ({ onClick, active, title, children }) => (
-    <button onMouseDown={e => { e.preventDefault(); onClick(); }} title={title} style={{
-      padding:"4px 9px", borderRadius:6, border:"none",
-      background: active ? C.blue+"33" : "transparent",
-      color: active ? C.blue : C.muted,
-      cursor:"pointer", fontFamily:SANS, fontSize:13, lineHeight:1,
-    }}>{children}</button>
-  );
+  const exec = (cmd, val) => {
+    ref.current?.focus();
+    document.execCommand(cmd, false, val ?? null);
+    setTimeout(() => onChange(ref.current?.innerHTML || ""), 0);
+  };
 
+  const bs = { padding:"4px 9px", borderRadius:6, border:"none", background:"transparent", color:C.muted, cursor:"pointer", fontFamily:SANS, fontSize:13, lineHeight:1 };
   const Divider = () => <div style={{ width:1, height:16, background:C.line, margin:"0 3px", alignSelf:"center" }} />;
 
   return (
     <div style={{ border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden" }}>
       <style>{`
-        .tiptap-editor { min-height:420px; padding:16px 20px; font-family:${SANS}; font-size:14px; color:${C.text}; outline:none; line-height:1.8; background:${C.card}; }
-        .tiptap-editor h1 { font-size:22px; font-weight:800; margin:16px 0 8px; color:${C.text}; }
-        .tiptap-editor h2 { font-size:18px; font-weight:700; margin:14px 0 6px; color:${C.text}; }
-        .tiptap-editor h3 { font-size:15px; font-weight:700; margin:12px 0 4px; color:${C.text}; }
-        .tiptap-editor ul, .tiptap-editor ol { padding-left:24px; margin:8px 0; }
-        .tiptap-editor li { margin:2px 0; }
-        .tiptap-editor code { background:${C.card2}; padding:2px 6px; border-radius:4px; font-family:${MONO}; font-size:12px; color:${C.yellow}; }
-        .tiptap-editor pre { background:${C.card2}; padding:14px 16px; border-radius:8px; margin:10px 0; overflow-x:auto; }
-        .tiptap-editor pre code { background:none; padding:0; color:${C.green}; font-size:13px; }
-        .tiptap-editor blockquote { border-left:3px solid ${C.blue}; margin:10px 0; padding:4px 0 4px 16px; color:${C.muted}; }
-        .tiptap-editor p { margin:4px 0; }
-        .tiptap-editor p.is-editor-empty:first-child::before { content:attr(data-placeholder); color:${C.muted}; pointer-events:none; float:left; height:0; }
+        .rich-editor { min-height:420px; padding:16px 20px; font-family:${SANS}; font-size:14px; color:${C.text}; outline:none; line-height:1.8; background:${C.card}; }
+        .rich-editor h1 { font-size:22px; font-weight:800; margin:16px 0 8px; }
+        .rich-editor h2 { font-size:18px; font-weight:700; margin:14px 0 6px; }
+        .rich-editor ul, .rich-editor ol { padding-left:24px; margin:8px 0; }
+        .rich-editor li { margin:2px 0; }
+        .rich-editor code { background:${C.card2}; padding:2px 6px; border-radius:4px; font-family:${MONO}; font-size:12px; color:${C.yellow}; }
+        .rich-editor blockquote { border-left:3px solid ${C.blue}; margin:10px 0; padding:4px 0 4px 16px; color:${C.muted}; }
+        .rich-editor p { margin:4px 0; }
       `}</style>
 
-      {/* 툴바 */}
       <div style={{ display:"flex", gap:1, padding:"7px 10px", background:C.card2, borderBottom:`1px solid ${C.line}`, flexWrap:"wrap", alignItems:"center" }}>
-        <Btn onClick={() => editor.chain().focus().toggleBold().run()}      active={editor.isActive("bold")}             title="굵게 (Ctrl+B)"      ><b>B</b></Btn>
-        <Btn onClick={() => editor.chain().focus().toggleItalic().run()}    active={editor.isActive("italic")}           title="기울임 (Ctrl+I)"    ><i>I</i></Btn>
-        <Btn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")}        title="밑줄 (Ctrl+U)"      ><u>U</u></Btn>
-        <Btn onClick={() => editor.chain().focus().toggleStrike().run()}    active={editor.isActive("strike")}           title="취소선"             ><s>S</s></Btn>
+        <button onMouseDown={e=>{e.preventDefault();exec("bold")}}          style={bs} title="굵게 (Ctrl+B)"><b>B</b></button>
+        <button onMouseDown={e=>{e.preventDefault();exec("italic")}}        style={bs} title="기울임 (Ctrl+I)"><i>I</i></button>
+        <button onMouseDown={e=>{e.preventDefault();exec("underline")}}     style={bs} title="밑줄 (Ctrl+U)"><u>U</u></button>
+        <button onMouseDown={e=>{e.preventDefault();exec("strikeThrough")}} style={bs} title="취소선"><s>S</s></button>
         <Divider />
-        <Btn onClick={() => editor.chain().focus().toggleHeading({level:1}).run()} active={editor.isActive("heading",{level:1})} title="제목 1">H1</Btn>
-        <Btn onClick={() => editor.chain().focus().toggleHeading({level:2}).run()} active={editor.isActive("heading",{level:2})} title="제목 2">H2</Btn>
+        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","H1")}} style={bs} title="제목 1">H1</button>
+        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","H2")}} style={bs} title="제목 2">H2</button>
         <Divider />
-        <Btn onClick={() => editor.chain().focus().toggleBulletList().run()}  active={editor.isActive("bulletList")}  title="목록">•</Btn>
-        <Btn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="번호 목록">1.</Btn>
-        <Btn onClick={() => editor.chain().focus().toggleBlockquote().run()}  active={editor.isActive("blockquote")}  title="인용">❝</Btn>
-        <Btn onClick={() => editor.chain().focus().toggleCode().run()}        active={editor.isActive("code")}        title="인라인 코드">`</Btn>
-        <Btn onClick={() => editor.chain().focus().toggleCodeBlock().run()}   active={editor.isActive("codeBlock")}   title="코드블록">```</Btn>
+        <button onMouseDown={e=>{e.preventDefault();exec("insertUnorderedList")}}       style={bs} title="목록">•</button>
+        <button onMouseDown={e=>{e.preventDefault();exec("insertOrderedList")}}         style={bs} title="번호 목록">1.</button>
+        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","BLOCKQUOTE")}}  style={bs} title="인용">❝</button>
         <Divider />
-        {/* 색상 팔레트 */}
-        {EDITOR_COLORS.map(({ color, label }) => (
-          <button key={color} onMouseDown={e => { e.preventDefault(); editor.chain().focus().setColor(color).run(); }}
-            title={label} style={{
-              width:16, height:16, borderRadius:"50%", background:color, padding:0, cursor:"pointer",
-              border: editor.isActive("textStyle", { color }) ? `2px solid ${C.white}` : `2px solid transparent`,
-              outline: editor.isActive("textStyle", { color }) ? `2px solid ${color}` : "none",
-              transition:"transform .1s", flexShrink:0,
-            }} />
+        {EDITOR_COLORS.map(({color,label}) => (
+          <button key={color} onMouseDown={e=>{e.preventDefault();exec("foreColor",color)}} title={label}
+            style={{width:16,height:16,borderRadius:"50%",background:color,padding:0,cursor:"pointer",border:"2px solid transparent",flexShrink:0}} />
         ))}
-        <Btn onClick={() => editor.chain().focus().unsetColor().run()} title="색상 제거">✕</Btn>
-        <Divider />
-        <Btn onClick={() => editor.chain().focus().undo().run()} title="실행 취소 (Ctrl+Z)">↩</Btn>
-        <Btn onClick={() => editor.chain().focus().redo().run()} title="다시 실행 (Ctrl+Y)">↪</Btn>
+        <button onMouseDown={e=>{e.preventDefault();exec("removeFormat")}} style={bs} title="서식 제거">✕</button>
       </div>
 
-      <EditorContent editor={editor} />
+      <div
+        ref={ref}
+        className="rich-editor"
+        contentEditable
+        suppressContentEditableWarning
+        onInput={e => onChange(e.currentTarget.innerHTML)}
+      />
     </div>
   );
 }
