@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut } from "lucide-react";
+import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut, PenLine, Trash2, ArrowLeft, Tag, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, ResponsiveContainer } from "recharts";
+import { marked } from "marked";
 
 // ── 디자인 토큰 ──────────────────────────────────
 const C = {
@@ -601,6 +602,7 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest }) {
     { key:"home",   icon: Home,    label:"홈"        },
     { key:"code",   icon: Code2,   label:"코딩 학습" },
     { key:"cert",   icon: BookOpen,label:"자격증"    },
+    { key:"notes",  icon: PenLine, label:"노트"      },
     { key:"arch",   icon: Network, label:"아키텍처"  },
     { key:"study",  icon: Users,   label:"스터디"    },
   ];
@@ -4988,6 +4990,223 @@ function StudyTimer() {
   );
 }
 
+// ── 마크다운 설정 ────────────────────────────────
+marked.setOptions({ breaks: true, gfm: true });
+
+function MarkdownView({ content }) {
+  const html = marked(content || "");
+  return (
+    <div
+      dangerouslySetInnerHTML={{ __html: html }}
+      style={{ fontFamily: SANS, fontSize: 14, color: C.text, lineHeight: 1.8 }}
+    />
+  );
+}
+
+// ── 노트 화면 ────────────────────────────────────
+function NoteScreen({ isGuest, onLogin }) {
+  const [notes, setNotes]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [view, setView]         = useState("list"); // list | edit | read
+  const [current, setCurrent]   = useState(null);   // 선택된 노트
+  const [form, setForm]         = useState({ title: "", content: "", tags: "" });
+  const [saving, setSaving]     = useState(false);
+  const [preview, setPreview]   = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+
+  const h = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` });
+
+  const load = () => {
+    setLoading(true);
+    fetch(`${API}/api/notes`, { headers: h() })
+      .then(r => r.json()).then(d => { setNotes(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { if (!isGuest) load(); }, [isGuest]);
+
+  const openNew = () => { setForm({ title: "", content: "", tags: "" }); setCurrent(null); setPreview(false); setView("edit"); };
+  const openEdit = (n) => { setForm({ title: n.title, content: n.content, tags: n.tags }); setCurrent(n); setPreview(false); setView("edit"); };
+  const openRead = (n) => { setCurrent(n); setView("read"); };
+
+  const save = async () => {
+    if (!form.title.trim()) return;
+    setSaving(true);
+    const url    = current ? `${API}/api/notes/${current.id}` : `${API}/api/notes`;
+    const method = current ? "PUT" : "POST";
+    const r = await fetch(url, { method, headers: h(), body: JSON.stringify(form) }).catch(() => null);
+    setSaving(false);
+    if (!r?.ok) return;
+    const saved = await r.json();
+    if (current) {
+      setNotes(ns => ns.map(n => n.id === saved.id ? saved : n));
+      setCurrent(saved);
+      setView("read");
+    } else {
+      setNotes(ns => [saved, ...ns]);
+      setView("list");
+    }
+  };
+
+  const remove = async (id) => {
+    await fetch(`${API}/api/notes/${id}`, { method: "DELETE", headers: h() });
+    setNotes(ns => ns.filter(n => n.id !== id));
+    setDeleteId(null);
+    if (view !== "list") setView("list");
+  };
+
+  const fmtDate = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+  };
+
+  if (isGuest) return (
+    <div style={{ padding:"80px 32px", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+      <div style={{ fontSize:40 }}>📝</div>
+      <div style={{ fontFamily:SANS, fontSize:16, fontWeight:700, color:C.text }}>로그인이 필요해요</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted }}>나만의 학습 노트를 작성하려면 로그인하세요</div>
+      <button onClick={onLogin} style={{ marginTop:8, padding:"10px 28px", borderRadius:10, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer" }}>로그인</button>
+    </div>
+  );
+
+  /* ── 읽기 뷰 ── */
+  if (view === "read" && current) return (
+    <div style={{ padding:"28px 32px 60px" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+        <button onClick={() => setView("list")} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontFamily:SANS, fontSize:13, padding:0 }}>
+          <ArrowLeft size={15} /> 목록
+        </button>
+        <div style={{ flex:1 }} />
+        <button onClick={() => openEdit(current)} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.line}`, background:C.card2, color:C.text, fontFamily:SANS, fontSize:13, cursor:"pointer" }}>
+          <PenLine size={14} /> 수정
+        </button>
+        <button onClick={() => setDeleteId(current.id)} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.coral}44`, background:C.coral+"11", color:C.coral, fontFamily:SANS, fontSize:13, cursor:"pointer" }}>
+          <Trash2 size={14} /> 삭제
+        </button>
+      </div>
+      <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:8 }}>{current.title}</div>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+        <span style={{ fontFamily:MONO, fontSize:11, color:C.muted }}>{fmtDate(current.updated_at)}</span>
+        {current.tags && current.tags.split(",").filter(Boolean).map(tag => (
+          <span key={tag.trim()} style={{ fontFamily:MONO, fontSize:10, color:C.blue, background:C.blue+"18", padding:"2px 8px", borderRadius:99 }}>#{tag.trim()}</span>
+        ))}
+      </div>
+      <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"24px 28px", minHeight:200 }}>
+        <MarkdownView content={current.content} />
+      </div>
+      {deleteId && (
+        <div style={{ position:"fixed", inset:0, background:"#00000088", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:C.card, borderRadius:16, padding:"28px 32px", width:320, textAlign:"center" }}>
+            <div style={{ fontFamily:SANS, fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>노트를 삭제할까요?</div>
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>삭제한 노트는 복구할 수 없어요</div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setDeleteId(null)} style={{ flex:1, padding:"10px 0", borderRadius:10, border:`1px solid ${C.line}`, background:"none", color:C.muted, fontFamily:SANS, fontSize:14, cursor:"pointer" }}>취소</button>
+              <button onClick={() => remove(deleteId)} style={{ flex:1, padding:"10px 0", borderRadius:10, border:"none", background:C.coral, color:"#fff", fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer" }}>삭제</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  /* ── 편집 뷰 ── */
+  if (view === "edit") return (
+    <div style={{ padding:"28px 32px 60px" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+        <button onClick={() => setView(current ? "read" : "list")} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontFamily:SANS, fontSize:13, padding:0 }}>
+          <ArrowLeft size={15} /> {current ? "뒤로" : "목록"}
+        </button>
+        <div style={{ flex:1 }} />
+        <button onClick={() => setPreview(p => !p)} style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${preview ? C.blue+"66" : C.line}`, background: preview ? C.blue+"18" : C.card2, color: preview ? C.blue : C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer" }}>
+          {preview ? "편집" : "미리보기"}
+        </button>
+        <button onClick={save} disabled={saving || !form.title.trim()} style={{ padding:"7px 20px", borderRadius:8, border:"none", background: form.title.trim() ? C.blue : C.line, color:"#fff", fontFamily:SANS, fontSize:13, fontWeight:700, cursor: form.title.trim() ? "pointer" : "not-allowed", opacity: saving ? 0.6 : 1 }}>
+          {saving ? "저장 중…" : "저장"}
+        </button>
+      </div>
+
+      <input
+        value={form.title}
+        onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+        placeholder="제목"
+        style={{ width:"100%", background:C.card, border:`1px solid ${C.line}`, borderRadius:10, padding:"12px 16px", fontFamily:SANS, fontSize:18, fontWeight:700, color:C.text, outline:"none", boxSizing:"border-box", marginBottom:10 }}
+      />
+      <input
+        value={form.tags}
+        onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+        placeholder="태그 (쉼표로 구분: 파이썬, 알고리즘)"
+        style={{ width:"100%", background:C.card, border:`1px solid ${C.line}`, borderRadius:10, padding:"9px 16px", fontFamily:MONO, fontSize:12, color:C.muted, outline:"none", boxSizing:"border-box", marginBottom:10 }}
+      />
+
+      {preview ? (
+        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"20px 24px", minHeight:400 }}>
+          <MarkdownView content={form.content} />
+        </div>
+      ) : (
+        <textarea
+          value={form.content}
+          onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+          placeholder={"# 마크다운 지원\n\n**굵게**, *기울임*, `코드`, ```코드블록```\n\n오늘 공부한 내용을 자유롭게 적어보세요."}
+          style={{ width:"100%", minHeight:440, background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"16px 20px", fontFamily:MONO, fontSize:13, color:C.text, outline:"none", resize:"vertical", lineHeight:1.7, boxSizing:"border-box" }}
+        />
+      )}
+    </div>
+  );
+
+  /* ── 목록 뷰 ── */
+  return (
+    <div style={{ padding:"28px 32px 60px" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
+        <div>
+          <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text }}>학습 노트</div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginTop:2 }}>공부한 내용을 자유롭게 기록하세요</div>
+        </div>
+        <button onClick={openNew} style={{ display:"flex", alignItems:"center", gap:7, padding:"10px 18px", borderRadius:10, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+          <Plus size={16} /> 새 노트
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign:"center", color:C.muted, fontFamily:SANS, fontSize:14, padding:"60px 0" }}>불러오는 중…</div>
+      ) : notes.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"80px 0" }}>
+          <div style={{ fontSize:48, marginBottom:16 }}>📝</div>
+          <div style={{ fontFamily:SANS, fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>첫 번째 노트를 작성해보세요</div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>마크다운으로 공부 내용을 정리할 수 있어요</div>
+          <button onClick={openNew} style={{ padding:"10px 28px", borderRadius:10, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer" }}>노트 작성하기</button>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {notes.map(n => (
+            <div key={n.id} onClick={() => openRead(n)} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"18px 20px", cursor:"pointer", transition:"border-color .15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = C.blue+"66"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = C.line}
+            >
+              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
+                  <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {n.content.replace(/[#*`]/g, "").slice(0, 80) || "내용 없음"}
+                  </div>
+                </div>
+                <span style={{ fontFamily:MONO, fontSize:11, color:C.muted, whiteSpace:"nowrap", flexShrink:0 }}>{fmtDate(n.updated_at)}</span>
+              </div>
+              {n.tags && (
+                <div style={{ display:"flex", gap:6, marginTop:10, flexWrap:"wrap" }}>
+                  {n.tags.split(",").filter(Boolean).map(tag => (
+                    <span key={tag.trim()} style={{ fontFamily:MONO, fontSize:10, color:C.blue, background:C.blue+"18", padding:"2px 8px", borderRadius:99 }}>#{tag.trim()}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AmbientPlayer() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(null);
@@ -5071,7 +5290,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showStudyModal, setShowStudyModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, arch:0, study:0 });
+  const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, notes:0, arch:0, study:0 });
   const isMobile = useIsMobile();
 
   const BANNER_H = 36;
@@ -5124,6 +5343,7 @@ export default function App() {
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
         {tab === "code"  && <CodeScreen key={screenKeys.code} isGuest={isGuest} />}
         {tab === "cert"  && <CertScreen key={screenKeys.cert} />}
+        {tab === "notes" && <NoteScreen key={screenKeys.notes} isGuest={isGuest} onLogin={handleBackToLogin} />}
         {tab === "arch"  && <ArchScreen key={screenKeys.arch} />}
         {tab === "study" && !isGuest && <StudyScreen key={screenKeys.study} />}
       </div>

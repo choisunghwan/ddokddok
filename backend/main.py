@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 import models
-from routers import aice, auth, dashboard, study
+from routers import aice, auth, dashboard, study, notes
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -25,6 +25,7 @@ app.include_router(auth.router)
 app.include_router(aice.router)
 app.include_router(dashboard.router)
 app.include_router(study.router)
+app.include_router(notes.router)
 
 
 @app.get("/health")
