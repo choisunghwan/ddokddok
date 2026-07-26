@@ -923,22 +923,18 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
   const [remember, setRemember] = useState(!!localStorage.getItem("savedEmail"));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const submit = async () => {
-    setError("");
-    setLoading(true);
+    setError(""); setLoading(true);
     try {
       const url = mode === "login" ? `${API}/api/auth/login` : `${API}/api/auth/signup`;
       const body = mode === "login"
         ? { email: form.email, password: form.password }
         : { email: form.email, password: form.password, nickname: form.nickname };
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const res = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { setError(data.detail || "오류가 발생했습니다"); return; }
       if (remember) localStorage.setItem("savedEmail", form.email);
@@ -946,97 +942,148 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("nickname", data.nickname);
       onAuth(data.nickname);
-    } catch {
-      setError("서버에 연결할 수 없습니다");
-    } finally {
-      setLoading(false);
-    }
+    } catch { setError("서버에 연결할 수 없습니다"); }
+    finally { setLoading(false); }
   };
 
-  const input = (placeholder, key, type = "text") => (
-    <input
-      type={type} placeholder={placeholder} value={form[key]} onChange={set(key)}
-      onKeyDown={(e) => e.key === "Enter" && submit()}
+  const inp = (placeholder, key, type="text") => (
+    <input type={type} placeholder={placeholder} value={form[key]} onChange={set(key)}
+      onKeyDown={e => e.key === "Enter" && submit()}
       style={{
-        width:"100%", padding:"11px 14px", borderRadius:9, border:`1px solid ${C.line}`,
-        background:C.card2, color:C.text, fontFamily:SANS, fontSize:13, outline:"none",
-        boxSizing:"border-box", marginBottom:10,
+        width:"100%", padding:"12px 16px", borderRadius:10,
+        border:`1.5px solid ${C.line}`, background:C.card2,
+        color:C.text, fontFamily:SANS, fontSize:14, outline:"none",
+        boxSizing:"border-box", marginBottom:10, transition:"border-color 0.15s",
       }}
     />
   );
 
+  const FEATURES = [
+    ["📚", "코딩 · 자격증 학습", "Python, Java, SQL, AICE, ADsP"],
+    ["📝", "나만의 학습 노트",   "서식 에디터로 깔끔하게 정리"],
+    ["👥", "스터디 그룹",        "함께 공부하며 연속 학습일 유지"],
+  ];
+
   return (
-    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <div style={{ width:360, background:C.card, borderRadius:16, padding:"36px 32px", border:`1px solid ${C.line}` }}>
-        <div style={{ fontFamily:SANS, fontWeight:800, fontSize:22, color:C.text, marginBottom:4 }}>
-          <span style={{ color:C.blue }}>똑</span>똑
-        </div>
-        <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>
-          {mode === "login" ? "학습을 이어가세요" : "지금 시작하세요"}
-        </div>
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", padding: isMobile ? 0 : 24 }}>
+      <div style={{
+        display:"flex", width: isMobile ? "100%" : 860, maxWidth:"100%",
+        borderRadius: isMobile ? 0 : 22, overflow:"hidden",
+        boxShadow: isMobile ? "none" : "0 32px 80px rgba(0,0,0,0.45)",
+        minHeight: isMobile ? "100vh" : "auto",
+      }}>
 
-        <div style={{ display:"flex", gap:8, marginBottom:24 }}>
-          {["login","signup"].map(m => (
-            <button key={m} onClick={() => { setMode(m); setError(""); }} style={{
-              flex:1, padding:"8px 0", borderRadius:8,
-              border:`1px solid ${mode===m ? C.blue : C.line}`,
-              background: mode===m ? C.blue+"22" : "transparent",
-              color: mode===m ? C.blue : C.muted,
-              fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer",
-            }}>{m === "login" ? "로그인" : "회원가입"}</button>
-          ))}
-        </div>
+        {/* ── 왼쪽: 브랜드 패널 ── */}
+        {!isMobile && (
+          <div style={{ width:360, background:GRAD, padding:"52px 44px", display:"flex", flexDirection:"column", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
+            {/* 장식 원 */}
+            <div style={{ position:"absolute", top:-80, right:-80, width:240, height:240, borderRadius:"50%", background:"rgba(255,255,255,0.06)", pointerEvents:"none" }}/>
+            <div style={{ position:"absolute", bottom:-60, left:-60, width:200, height:200, borderRadius:"50%", background:"rgba(255,255,255,0.06)", pointerEvents:"none" }}/>
+            <div style={{ position:"absolute", top:"40%", right:-30, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.04)", pointerEvents:"none" }}/>
 
-        {mode === "signup" && input("닉네임", "nickname")}
-        {input("이메일", "email", "email")}
-        {input("비밀번호", "password", "password")}
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:44 }}>
+                <img src="/favicon.svg" width={46} height={46} style={{ borderRadius:13, boxShadow:"0 4px 16px rgba(0,0,0,0.3)" }}/>
+                <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:26, color:"#fff", letterSpacing:"-.02em" }}>똑똑</span>
+              </div>
+              <div style={{ fontFamily:SANS, fontSize:28, fontWeight:800, color:"#fff", lineHeight:1.25, marginBottom:14, letterSpacing:"-.02em" }}>
+                스마트한<br/>IT 학습의 시작
+              </div>
+              <div style={{ fontFamily:SANS, fontSize:14, color:"rgba(255,255,255,0.65)", lineHeight:1.85 }}>
+                자격증부터 코딩까지,<br/>목표에 맞는 학습을 시작하세요.
+              </div>
+            </div>
 
-        {mode === "login" && (
-          <label style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, cursor:"pointer" }}>
-            <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
-              style={{ width:15, height:15, accentColor:C.blue, cursor:"pointer" }}/>
-            <span style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>아이디 저장</span>
-          </label>
+            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+              {FEATURES.map(([icon, title, sub]) => (
+                <div key={title} style={{ display:"flex", alignItems:"center", gap:14 }}>
+                  <div style={{ width:40, height:40, borderRadius:12, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{icon}</div>
+                  <div>
+                    <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:"#fff" }}>{title}</div>
+                    <div style={{ fontFamily:SANS, fontSize:11, color:"rgba(255,255,255,0.55)", marginTop:1 }}>{sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
-        {error && (
-          <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10 }}>{error}</div>
-        )}
+        {/* ── 오른쪽: 폼 패널 ── */}
+        <div style={{ flex:1, background:C.card, padding: isMobile ? "48px 28px 40px" : "52px 44px", display:"flex", flexDirection:"column", justifyContent:"center" }}>
 
-        <button onClick={submit} disabled={loading} style={{
-          width:"100%", padding:"12px 0", borderRadius:9, border:"none",
-          background: loading ? C.line : GRAD, color:C.white,
-          fontFamily:SANS, fontSize:14, fontWeight:700, cursor: loading ? "not-allowed" : "pointer",
-        }}>{loading ? "처리 중…" : mode === "login" ? "로그인" : "회원가입"}</button>
+          {/* 모바일 헤더 */}
+          {isMobile && (
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:32 }}>
+              <img src="/favicon.svg" width={38} height={38} style={{ borderRadius:11 }}/>
+              <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:24, backgroundImage:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>똑똑</span>
+            </div>
+          )}
 
-        {/* 구분선 */}
-        <div style={{ display:"flex", alignItems:"center", gap:10, margin:"16px 0" }}>
-          <div style={{ flex:1, height:1, background:C.line }} />
-          <span style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>또는</span>
-          <div style={{ flex:1, height:1, background:C.line }} />
-        </div>
+          <div style={{ fontFamily:SANS, fontWeight:800, fontSize:22, color:C.text, marginBottom:4 }}>
+            {mode === "login" ? "다시 오셨군요 👋" : "함께 시작해요 🚀"}
+          </div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>
+            {mode === "login" ? "계정에 로그인하세요" : "새 계정을 만들어보세요"}
+          </div>
 
-        {/* 카카오 로그인 */}
-        <button onClick={onKakaoLogin} style={{
-          width:"100%", padding:"12px 0", borderRadius:9, border:"none",
-          background:"#FEE500", color:"rgba(0,0,0,0.85)",
-          fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer",
-          display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-        }}>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M9 1.5C4.86 1.5 1.5 4.16 1.5 7.44c0 2.1 1.38 3.93 3.45 4.98L4.1 15.3a.27.27 0 00.4.3l3.9-2.6c.19.02.4.03.6.03 4.14 0 7.5-2.66 7.5-5.59C16.5 4.16 13.14 1.5 9 1.5z" fill="rgba(0,0,0,0.85)"/>
-          </svg>
-          카카오로 로그인
-        </button>
-        <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, textAlign:"center", marginTop:8, lineHeight:1.6 }}>
-          이메일로 가입한 계정이 있다면 이메일 로그인 후<br/>설정에서 카카오를 연결해 주세요.
-        </div>
+          {/* 탭 */}
+          <div style={{ display:"flex", gap:6, marginBottom:22, background:C.card2, borderRadius:10, padding:4 }}>
+            {["login","signup"].map(m => (
+              <button key={m} onClick={() => { setMode(m); setError(""); }} style={{
+                flex:1, padding:"8px 0", borderRadius:8, border:"none",
+                background: mode===m ? GRAD : "transparent",
+                color: mode===m ? "#fff" : C.muted,
+                fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer", transition:"all 0.15s",
+              }}>{m === "login" ? "로그인" : "회원가입"}</button>
+            ))}
+          </div>
 
-        <div style={{ marginTop:14, textAlign:"center" }}>
-          <button onClick={onGuest} style={{
-            background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:12,
-            cursor:"pointer", textDecoration:"underline", textUnderlineOffset:3,
-          }}>로그인 없이 둘러보기 →</button>
+          {mode === "signup" && inp("닉네임", "nickname")}
+          {inp("이메일", "email", "email")}
+          {inp("비밀번호", "password", "password")}
+
+          {mode === "login" && (
+            <label style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, cursor:"pointer" }}>
+              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width:15, height:15, accentColor:"#5B21B6", cursor:"pointer" }}/>
+              <span style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>아이디 저장</span>
+            </label>
+          )}
+
+          {error && <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10, padding:"8px 12px", background:C.coral+"11", borderRadius:8 }}>{error}</div>}
+
+          <button onClick={submit} disabled={loading} style={{
+            width:"100%", padding:"13px 0", borderRadius:10, border:"none",
+            background: loading ? C.line : GRAD, color:"#fff",
+            fontFamily:SANS, fontSize:14, fontWeight:700, cursor: loading ? "not-allowed" : "pointer",
+            boxShadow: loading ? "none" : "0 4px 16px rgba(37,99,235,0.35)",
+          }}>{loading ? "처리 중…" : mode === "login" ? "로그인" : "회원가입"}</button>
+
+          <div style={{ display:"flex", alignItems:"center", gap:10, margin:"18px 0" }}>
+            <div style={{ flex:1, height:1, background:C.line }}/>
+            <span style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>또는</span>
+            <div style={{ flex:1, height:1, background:C.line }}/>
+          </div>
+
+          <button onClick={onKakaoLogin} style={{
+            width:"100%", padding:"13px 0", borderRadius:10, border:"none",
+            background:"#FEE500", color:"rgba(0,0,0,0.85)",
+            fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+          }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 1.5C4.86 1.5 1.5 4.16 1.5 7.44c0 2.1 1.38 3.93 3.45 4.98L4.1 15.3a.27.27 0 00.4.3l3.9-2.6c.19.02.4.03.6.03 4.14 0 7.5-2.66 7.5-5.59C16.5 4.16 13.14 1.5 9 1.5z" fill="rgba(0,0,0,0.85)"/>
+            </svg>
+            카카오로 로그인
+          </button>
+          <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, textAlign:"center", marginTop:8, lineHeight:1.6 }}>
+            이메일로 가입한 계정이 있다면 이메일 로그인 후<br/>설정에서 카카오를 연결해 주세요.
+          </div>
+
+          <div style={{ marginTop:16, textAlign:"center" }}>
+            <button onClick={onGuest} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:12, cursor:"pointer", textDecoration:"underline", textUnderlineOffset:3 }}>
+              로그인 없이 둘러보기 →
+            </button>
+          </div>
         </div>
       </div>
     </div>
