@@ -5004,16 +5004,20 @@ function MarkdownView({ content }) {
 }
 
 // ── 노트 화면 ────────────────────────────────────
+const NOTE_CATEGORIES = ["Python", "Java", "SQL", "AICE", "ADsP", "기타"];
+const CAT_COLOR = { Python:C.blue, Java:C.coral, SQL:C.green, AICE:C.purple, ADsP:C.yellow, "기타":C.muted };
+
 function NoteScreen({ isGuest, onLogin }) {
-  const [notes, setNotes]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [view, setView]         = useState("list"); // list | edit | read
-  const [current, setCurrent]   = useState(null);   // 선택된 노트
-  const [form, setForm]         = useState({ title: "", content: "", tags: "" });
-  const [saving, setSaving]     = useState(false);
+  const [notes, setNotes]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [view, setView]           = useState("list"); // list | edit | read
+  const [current, setCurrent]     = useState(null);
+  const [form, setForm]           = useState({ title: "", content: "", tags: "", category: "" });
+  const [saving, setSaving]       = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [preview, setPreview]   = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
+  const [preview, setPreview]     = useState(false);
+  const [deleteId, setDeleteId]   = useState(null);
+  const [filterCat, setFilterCat] = useState("");  // 목록 필터
 
   const h = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` });
 
@@ -5026,8 +5030,8 @@ function NoteScreen({ isGuest, onLogin }) {
 
   useEffect(() => { if (!isGuest) load(); }, [isGuest]);
 
-  const openNew = () => { setForm({ title: "", content: "", tags: "" }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
-  const openEdit = (n) => { setForm({ title: n.title, content: n.content, tags: n.tags }); setCurrent(n); setPreview(false); setSaveError(""); setView("edit"); };
+  const openNew = () => { setForm({ title: "", content: "", tags: "", category: "" }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
+  const openEdit = (n) => { setForm({ title: n.title, content: n.content, tags: n.tags, category: n.category || "" }); setCurrent(n); setPreview(false); setSaveError(""); setView("edit"); };
   const openRead = (n) => { setCurrent(n); setView("read"); };
 
   const save = async () => {
@@ -5092,6 +5096,9 @@ function NoteScreen({ isGuest, onLogin }) {
       <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:8 }}>{current.title}</div>
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
         <span style={{ fontFamily:MONO, fontSize:11, color:C.muted }}>{fmtDate(current.updated_at)}</span>
+        {current.category && (
+          <span style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color: CAT_COLOR[current.category] || C.muted, background:(CAT_COLOR[current.category]||C.muted)+"22", padding:"2px 10px", borderRadius:99 }}>{current.category}</span>
+        )}
         {current.tags && current.tags.split(",").filter(Boolean).map(tag => (
           <span key={tag.trim()} style={{ fontFamily:MONO, fontSize:10, color:C.blue, background:C.blue+"18", padding:"2px 8px", borderRadius:99 }}>#{tag.trim()}</span>
         ))}
@@ -5141,12 +5148,22 @@ function NoteScreen({ isGuest, onLogin }) {
         placeholder="제목"
         style={{ width:"100%", background:C.card, border:`1px solid ${C.line}`, borderRadius:10, padding:"12px 16px", fontFamily:SANS, fontSize:18, fontWeight:700, color:C.text, outline:"none", boxSizing:"border-box", marginBottom:10 }}
       />
-      <input
-        value={form.tags}
-        onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
-        placeholder="태그 (쉼표로 구분: 파이썬, 알고리즘)"
-        style={{ width:"100%", background:C.card, border:`1px solid ${C.line}`, borderRadius:10, padding:"9px 16px", fontFamily:MONO, fontSize:12, color:C.muted, outline:"none", boxSizing:"border-box", marginBottom:10 }}
-      />
+      <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+        <select
+          value={form.category}
+          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+          style={{ flex:"0 0 140px", background:C.card, border:`1px solid ${form.category ? (CAT_COLOR[form.category]+"66") : C.line}`, borderRadius:10, padding:"9px 12px", fontFamily:SANS, fontSize:13, color: form.category ? CAT_COLOR[form.category] : C.muted, outline:"none", cursor:"pointer" }}
+        >
+          <option value="">분류 선택</option>
+          {NOTE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <input
+          value={form.tags}
+          onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+          placeholder="태그 (쉼표로 구분: 알고리즘, 정렬)"
+          style={{ flex:1, background:C.card, border:`1px solid ${C.line}`, borderRadius:10, padding:"9px 16px", fontFamily:MONO, fontSize:12, color:C.muted, outline:"none" }}
+        />
+      </div>
 
       {preview ? (
         <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"20px 24px", minHeight:400 }}>
@@ -5176,42 +5193,70 @@ function NoteScreen({ isGuest, onLogin }) {
         </button>
       </div>
 
+      {/* 카테고리 필터 탭 */}
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:18 }}>
+        {["전체", ...NOTE_CATEGORIES].map(cat => {
+          const active = cat === "전체" ? filterCat === "" : filterCat === cat;
+          const col = cat === "전체" ? C.blue : (CAT_COLOR[cat] || C.muted);
+          return (
+            <button key={cat} onClick={() => setFilterCat(cat === "전체" ? "" : cat)} style={{
+              padding:"5px 14px", borderRadius:99, border:`1px solid ${active ? col : C.line}`,
+              background: active ? col+"22" : "transparent",
+              color: active ? col : C.muted,
+              fontFamily:SANS, fontSize:12, fontWeight: active ? 700 : 400, cursor:"pointer",
+            }}>{cat}</button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div style={{ textAlign:"center", color:C.muted, fontFamily:SANS, fontSize:14, padding:"60px 0" }}>불러오는 중…</div>
-      ) : notes.length === 0 ? (
-        <div style={{ textAlign:"center", padding:"80px 0" }}>
-          <div style={{ fontSize:48, marginBottom:16 }}>📝</div>
-          <div style={{ fontFamily:SANS, fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>첫 번째 노트를 작성해보세요</div>
-          <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>마크다운으로 공부 내용을 정리할 수 있어요</div>
-          <button onClick={openNew} style={{ padding:"10px 28px", borderRadius:10, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer" }}>노트 작성하기</button>
-        </div>
-      ) : (
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {notes.map(n => (
-            <div key={n.id} onClick={() => openRead(n)} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"18px 20px", cursor:"pointer", transition:"border-color .15s" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = C.blue+"66"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = C.line}
-            >
-              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
-                  <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                    {n.content.replace(/[#*`]/g, "").slice(0, 80) || "내용 없음"}
-                  </div>
-                </div>
-                <span style={{ fontFamily:MONO, fontSize:11, color:C.muted, whiteSpace:"nowrap", flexShrink:0 }}>{fmtDate(n.updated_at)}</span>
-              </div>
-              {n.tags && (
-                <div style={{ display:"flex", gap:6, marginTop:10, flexWrap:"wrap" }}>
-                  {n.tags.split(",").filter(Boolean).map(tag => (
-                    <span key={tag.trim()} style={{ fontFamily:MONO, fontSize:10, color:C.blue, background:C.blue+"18", padding:"2px 8px", borderRadius:99 }}>#{tag.trim()}</span>
-                  ))}
-                </div>
-              )}
+      ) : (() => {
+        const filtered = filterCat ? notes.filter(n => n.category === filterCat) : notes;
+        if (filtered.length === 0) return (
+          <div style={{ textAlign:"center", padding:"80px 0" }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>📝</div>
+            <div style={{ fontFamily:SANS, fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>
+              {filterCat ? `${filterCat} 노트가 없어요` : "첫 번째 노트를 작성해보세요"}
             </div>
-          ))}
-        </div>
-      )}
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>마크다운으로 공부 내용을 정리할 수 있어요</div>
+            <button onClick={openNew} style={{ padding:"10px 28px", borderRadius:10, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer" }}>노트 작성하기</button>
+          </div>
+        );
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {filtered.map(n => {
+              const catColor = CAT_COLOR[n.category] || null;
+              return (
+                <div key={n.id} onClick={() => openRead(n)} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"18px 20px", cursor:"pointer", transition:"border-color .15s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = (catColor||C.blue)+"66"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = C.line}
+                >
+                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                        {n.category && <span style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:catColor, background:catColor+"22", padding:"1px 8px", borderRadius:99, flexShrink:0 }}>{n.category}</span>}
+                        <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
+                      </div>
+                      <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {n.content.replace(/[#*`]/g, "").slice(0, 80) || "내용 없음"}
+                      </div>
+                    </div>
+                    <span style={{ fontFamily:MONO, fontSize:11, color:C.muted, whiteSpace:"nowrap", flexShrink:0 }}>{fmtDate(n.updated_at)}</span>
+                  </div>
+                  {n.tags && (
+                    <div style={{ display:"flex", gap:6, marginTop:10, flexWrap:"wrap" }}>
+                      {n.tags.split(",").filter(Boolean).map(tag => (
+                        <span key={tag.trim()} style={{ fontFamily:MONO, fontSize:10, color:C.blue, background:C.blue+"18", padding:"2px 8px", borderRadius:99 }}>#{tag.trim()}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 }

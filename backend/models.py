@@ -99,5 +99,6 @@ class StudyNote(Base):
     title = Column(String(200), nullable=False)
     content = Column(Text, default="")
     tags = Column(String(300), default="")
+    category = Column(String(50), default="")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -1,23 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from typing import Optional
 from database import get_db
 from models import StudyNote, User
 from deps import get_current_user
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
+CATEGORIES = ["Python", "Java", "SQL", "AICE", "ADsP", "기타"]
+
 
 class NoteCreate(BaseModel):
     title: str
     content: str = ""
     tags: str = ""
+    category: str = ""
 
 
 class NoteUpdate(BaseModel):
     title: str
     content: str = ""
     tags: str = ""
+    category: str = ""
 
 
 def _serialize(note: StudyNote):
@@ -26,6 +31,7 @@ def _serialize(note: StudyNote):
         "title": note.title,
         "content": note.content,
         "tags": note.tags,
+        "category": note.category or "",
         "created_at": note.created_at.isoformat() if note.created_at else None,
         "updated_at": note.updated_at.isoformat() if note.updated_at else None,
     }
@@ -33,15 +39,14 @@ def _serialize(note: StudyNote):
 
 @router.get("")
 def list_notes(
+    category: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    notes = (
-        db.query(StudyNote)
-        .filter(StudyNote.user_id == current_user.id)
-        .order_by(StudyNote.updated_at.desc())
-        .all()
-    )
+    q = db.query(StudyNote).filter(StudyNote.user_id == current_user.id)
+    if category:
+        q = q.filter(StudyNote.category == category)
+    notes = q.order_by(StudyNote.updated_at.desc()).all()
     return [_serialize(n) for n in notes]
 
 
@@ -71,6 +76,7 @@ def create_note(
         title=body.title,
         content=body.content,
         tags=body.tags,
+        category=body.category,
     )
     db.add(note)
     db.commit()
@@ -94,6 +100,7 @@ def update_note(
     note.title = body.title
     note.content = body.content
     note.tags = body.tags
+    note.category = body.category
     db.commit()
     db.refresh(note)
     return _serialize(note)
