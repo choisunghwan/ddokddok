@@ -5238,6 +5238,14 @@ function RichEditor({ value, onChange }) {
     onChange(e.currentTarget.innerHTML);
   };
 
+  // 한글 IME 확정 시 q 업데이트
+  const handleCompositionEnd = (e) => {
+    if (!slashRef.current) return;
+    const text = window.getSelection()?.anchorNode?.textContent || "";
+    const m = text.match(/\/([^/]*)$/);
+    if (m) { _setSlash({ ...slashRef.current, q: m[1].toLowerCase() }); _setSlashSel(0); }
+  };
+
   const handleKeyDown = (e) => {
     /* 슬래시 메뉴 키 조작 — ref로 동기 접근 */
     const curSlash = slashRef.current;
@@ -5356,6 +5364,7 @@ function RichEditor({ value, onChange }) {
           background:"#1C2033", border:"1px solid #2E3350",
           borderRadius:12, padding:"6px", minWidth:240,
           boxShadow:"0 8px 32px rgba(0,0,0,0.5)",
+          maxHeight:320, overflowY:"auto",
         }}>
           <div style={{fontFamily:SANS,fontSize:10,color:"#6B7280",padding:"4px 8px 6px",letterSpacing:".06em",fontWeight:700,textTransform:"uppercase"}}>블록 추가</div>
           {filteredSlash.map((c,i)=>{
@@ -5385,6 +5394,7 @@ function RichEditor({ value, onChange }) {
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onCompositionEnd={handleCompositionEnd}
       />
 
       <div style={{padding:"7px 20px",background:C.card2,borderTop:`1px solid ${C.line}`,display:"flex",gap:16,flexWrap:"wrap"}}>
