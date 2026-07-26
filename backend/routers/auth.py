@@ -7,13 +7,14 @@ from datetime import datetime, timedelta
 from database import get_db
 from models import User, AiceSubmission, StudySession, CourseProgress, StudyMember, StudyCheckin
 from deps import get_current_user
-import os
+import os, httpx
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_DAYS = 7
+KAKAO_REST_KEY = os.getenv("KAKAO_REST_API_KEY", "")
 
 
 def create_token(user_id: int) -> str:
@@ -96,6 +97,49 @@ def change_nickname(
     current_user.nickname = body.nickname
     db.commit()
     return {"ok": True, "nickname": current_user.nickname}
+
+
+class KakaoLoginRequest(BaseModel):
+    code: str
+    redirect_uri: str
+
+@router.post("/kakao", response_model=TokenResponse)
+def kakao_login(body: KakaoLoginRequest, db: Session = Depends(get_db)):
+    # 1. 인가 코드 → 액세스 토큰
+    with httpx.Client() as c:
+        token_res = c.post(
+            "https://kauth.kakao.com/oauth/token",
+            data={
+                "grant_type": "authorization_code",
+                "client_id": KAKAO_REST_KEY,
+                "redirect_uri": body.redirect_uri,
+                "code": body.code,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+    token_data = token_res.json()
+    if "access_token" not in token_data:
+        raise HTTPException(status_code=400, detail=f"카카오 인증 실패: {token_data.get('error_description','')}")
+
+    # 2. 사용자 정보 조회
+    with httpx.Client() as c:
+        info_res = c.get(
+            "https://kapi.kakao.com/v2/user/me",
+            headers={"Authorization": f"Bearer {token_data['access_token']}"},
+        )
+    info = info_res.json()
+    kakao_id  = info["id"]
+    nickname  = (info.get("kakao_account") or {}).get("profile", {}).get("nickname") or f"카카오유저{str(kakao_id)[-4:]}"
+    email     = f"kakao_{kakao_id}@kakao.local"
+
+    # 3. 유저 생성 or 조회
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, nickname=nickname,
+                    password_hash=pwd_context.hash(f"kakao_{kakao_id}"))
+        db.add(user); db.commit(); db.refresh(user)
+
+    return TokenResponse(access_token=create_token(user.id), nickname=user.nickname)
 
 
 @router.delete("/me")

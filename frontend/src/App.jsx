@@ -700,6 +700,8 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
 
 // ── 계정 설정 모달 ───────────────────────────────
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const KAKAO_CLIENT_ID = "9aad41410f9e3fd11ebd4caef0a6a761";
+const KAKAO_REDIRECT_URI = () => window.location.origin + "/";
 
 function SettingsModal({ nickname, onClose, onNicknameChange, onLogout }) {
   const [tab, setTab] = useState("password");
@@ -872,7 +874,7 @@ function StudyLoginModal({ onLogin, onClose }) {
 
 // ── 로그인 / 회원가입 ────────────────────────────
 
-function AuthScreen({ onAuth, onGuest }) {
+function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ email: localStorage.getItem("savedEmail") || "", password:"", nickname:"" });
   const [remember, setRemember] = useState(!!localStorage.getItem("savedEmail"));
@@ -964,7 +966,27 @@ function AuthScreen({ onAuth, onGuest }) {
           fontFamily:SANS, fontSize:14, fontWeight:700, cursor: loading ? "not-allowed" : "pointer",
         }}>{loading ? "처리 중…" : mode === "login" ? "로그인" : "회원가입"}</button>
 
-        <div style={{ marginTop:16, textAlign:"center" }}>
+        {/* 구분선 */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, margin:"16px 0" }}>
+          <div style={{ flex:1, height:1, background:C.line }} />
+          <span style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>또는</span>
+          <div style={{ flex:1, height:1, background:C.line }} />
+        </div>
+
+        {/* 카카오 로그인 */}
+        <button onClick={onKakaoLogin} style={{
+          width:"100%", padding:"12px 0", borderRadius:9, border:"none",
+          background:"#FEE500", color:"rgba(0,0,0,0.85)",
+          fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+        }}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 1.5C4.86 1.5 1.5 4.16 1.5 7.44c0 2.1 1.38 3.93 3.45 4.98L4.1 15.3a.27.27 0 00.4.3l3.9-2.6c.19.02.4.03.6.03 4.14 0 7.5-2.66 7.5-5.59C16.5 4.16 13.14 1.5 9 1.5z" fill="rgba(0,0,0,0.85)"/>
+          </svg>
+          카카오로 로그인
+        </button>
+
+        <div style={{ marginTop:14, textAlign:"center" }}>
           <button onClick={onGuest} style={{
             background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:12,
             cursor:"pointer", textDecoration:"underline", textUnderlineOffset:3,
@@ -5647,7 +5669,38 @@ export default function App() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, notes:0, arch:0, study:0 });
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("ddok_theme") !== "light");
+  const [kakaoLoading, setKakaoLoading] = useState(false);
   const isMobile = useIsMobile();
+
+  // 카카오 OAuth 콜백 처리
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (!code) return;
+    window.history.replaceState({}, "", "/");
+    setKakaoLoading(true);
+    fetch(`${API}/api/auth/kakao`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, redirect_uri: KAKAO_REDIRECT_URI() }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.access_token) {
+          localStorage.setItem("token", d.access_token);
+          localStorage.setItem("nickname", d.nickname);
+          setNickname(d.nickname);
+          setIsGuest(false);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setKakaoLoading(false));
+  }, []);
+
+  const handleKakaoLogin = () => {
+    const url = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI())}&response_type=code`;
+    window.location.href = url;
+  };
 
   const toggleTheme = () => {
     const newDark = !darkMode;
@@ -5689,7 +5742,13 @@ export default function App() {
     setTab(t);
   };
 
-  if (!nickname && !isGuest) return <AuthScreen onAuth={handleAuth} onGuest={handleGuest} />;
+  if (kakaoLoading) return (
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
+      <div style={{ fontFamily:SANS, fontSize:15, color:C.text }}>카카오 로그인 중…</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted }}>잠시만 기다려주세요</div>
+    </div>
+  );
+  if (!nickname && !isGuest) return <AuthScreen onAuth={handleAuth} onGuest={handleGuest} onKakaoLogin={handleKakaoLogin} />;
 
   const showBanner = isGuest && !bannerDismissed;
 
