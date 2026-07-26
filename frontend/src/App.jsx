@@ -4996,10 +4996,10 @@ function StudyTimer() {
 }
 
 // ── 마크다운 설정 ────────────────────────────────
-marked.setOptions({ breaks: true, gfm: true });
+const MD_OPTS = { breaks: true, gfm: true };
 
 function MarkdownView({ content }) {
-  const html = marked(content || "");
+  const html = marked.parse(content || "", MD_OPTS);
   return (
     <div dangerouslySetInnerHTML={{ __html: html }}
       style={{ fontFamily:SANS, fontSize:14, color:C.text, lineHeight:1.8 }} />
@@ -5129,7 +5129,7 @@ function NoteScreen({ isGuest, onLogin }) {
 
   const openNew = () => { setForm({ title: "", content: "", tags: "", category: "" }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
   const openEdit = (n) => {
-    const content = isHtml(n.content) ? n.content : marked(n.content || "");
+    const content = isHtml(n.content) ? n.content : marked.parse(n.content || "", MD_OPTS);
     setForm({ title: n.title, content, tags: n.tags, category: n.category || "" });
     setCurrent(n); setPreview(false); setSaveError(""); setView("edit");
   };
@@ -5205,7 +5205,7 @@ function NoteScreen({ isGuest, onLogin }) {
         ))}
       </div>
       <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"24px 28px", minHeight:200 }}>
-        <div dangerouslySetInnerHTML={{ __html: isHtml(current.content) ? current.content : marked(current.content||"") }}
+        <div dangerouslySetInnerHTML={{ __html: isHtml(current.content) ? current.content : marked.parse(current.content||"", MD_OPTS) }}
           style={{ fontFamily:SANS, fontSize:14, color:C.text, lineHeight:1.8 }} />
       </div>
       {deleteId && (
