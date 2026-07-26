@@ -1022,6 +1022,9 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
           </svg>
           카카오로 로그인
         </button>
+        <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, textAlign:"center", marginTop:8, lineHeight:1.6 }}>
+          이메일로 가입한 계정이 있다면 이메일 로그인 후<br/>설정에서 카카오를 연결해 주세요.
+        </div>
 
         <div style={{ marginTop:14, textAlign:"center" }}>
           <button onClick={onGuest} style={{
