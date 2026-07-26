@@ -5412,12 +5412,14 @@ function NoteScreen({ isGuest, onLogin, nickname }) {
           <ArrowLeft size={15} /> 목록
         </button>
         <div style={{ flex:1 }} />
-        <button onClick={() => openEdit(current)} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.line}`, background:C.card2, color:C.text, fontFamily:SANS, fontSize:13, cursor:"pointer" }}>
-          <PenLine size={14} /> 수정
-        </button>
-        <button onClick={() => setDeleteId(current.id)} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.coral}44`, background:C.coral+"11", color:C.coral, fontFamily:SANS, fontSize:13, cursor:"pointer" }}>
-          <Trash2 size={14} /> 삭제
-        </button>
+        {current.is_mine && <>
+          <button onClick={() => openEdit(current)} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.line}`, background:C.card2, color:C.text, fontFamily:SANS, fontSize:13, cursor:"pointer" }}>
+            <PenLine size={14} /> 수정
+          </button>
+          <button onClick={() => setDeleteId(current.id)} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.coral}44`, background:C.coral+"11", color:C.coral, fontFamily:SANS, fontSize:13, cursor:"pointer" }}>
+            <Trash2 size={14} /> 삭제
+          </button>
+        </>}
       </div>
       <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:8 }}>{current.title}</div>
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
