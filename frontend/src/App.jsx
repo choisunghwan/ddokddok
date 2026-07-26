@@ -5180,9 +5180,10 @@ function RichEditor({ value, onChange }) {
     /* 슬래시 메뉴 키 조작 */
     if (slash) {
       const list = SLASH_CMDS.filter(c => !slash.q || c.label.includes(slash.q) || c.key.startsWith(slash.q));
+      const sel  = Math.min(slashSel, list.length - 1);
       if (e.key === "ArrowDown") { e.preventDefault(); setSlashSel(i => (i+1) % list.length); return; }
       if (e.key === "ArrowUp")   { e.preventDefault(); setSlashSel(i => (i-1+list.length) % list.length); return; }
-      if (e.key === "Enter")     { e.preventDefault(); applySlash(list[slashSel]); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); applySlash(list[sel]); return; }
       if (e.key === "Escape")    { setSlash(null); return; }
     }
 
@@ -5283,25 +5284,28 @@ function RichEditor({ value, onChange }) {
       {slash && filteredSlash.length > 0 && (
         <div style={{
           position:"absolute", top:slash.top, left:slash.left, zIndex:300,
-          background:C.card, border:`1px solid ${C.line}`,
-          borderRadius:12, padding:"6px", minWidth:220,
-          boxShadow:"0 8px 32px #0009",
+          background:"#1C2033", border:"1px solid #2E3350",
+          borderRadius:12, padding:"6px", minWidth:240,
+          boxShadow:"0 8px 32px rgba(0,0,0,0.5)",
         }}>
-          <div style={{fontFamily:SANS,fontSize:10,color:C.muted,padding:"4px 8px 6px",letterSpacing:".06em",fontWeight:700}}>블록 추가</div>
-          {filteredSlash.map((c,i)=>(
-            <button key={c.key} onMouseDown={e=>{e.preventDefault();applySlash(c)}} style={{
-              display:"flex",alignItems:"center",gap:10,width:"100%",
-              padding:"7px 8px",borderRadius:8,border:"none",
-              background: i===slashSel ? C.blue+"22" : "transparent",
-              cursor:"pointer",textAlign:"left",
-            }}>
-              <div style={{width:30,height:30,borderRadius:7,background:C.card2,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontSize:12,color:C.text,fontWeight:700,flexShrink:0}}>{c.icon}</div>
-              <div>
-                <div style={{fontFamily:SANS,fontSize:13,color:C.text,fontWeight:600}}>{c.label}</div>
-                {c.desc && <div style={{fontFamily:SANS,fontSize:11,color:C.muted}}>{c.desc}</div>}
-              </div>
-            </button>
-          ))}
+          <div style={{fontFamily:SANS,fontSize:10,color:"#6B7280",padding:"4px 8px 6px",letterSpacing:".06em",fontWeight:700,textTransform:"uppercase"}}>블록 추가</div>
+          {filteredSlash.map((c,i)=>{
+            const isSelected = i === Math.min(slashSel, filteredSlash.length-1);
+            return (
+              <button key={c.key} onMouseDown={e=>{e.preventDefault();applySlash(c)}} style={{
+                display:"flex",alignItems:"center",gap:10,width:"100%",
+                padding:"7px 8px",borderRadius:8,border:"none",
+                background: isSelected ? "linear-gradient(135deg,rgba(37,99,235,0.3),rgba(109,40,217,0.3))" : "transparent",
+                cursor:"pointer",textAlign:"left",
+              }}>
+                <div style={{width:30,height:30,borderRadius:7,background:isSelected?"rgba(37,99,235,0.25)":"#22263A",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontSize:12,color:isSelected?"#93C5FD":"#9CA3AF",fontWeight:700,flexShrink:0}}>{c.icon}</div>
+                <div>
+                  <div style={{fontFamily:SANS,fontSize:13,color:isSelected?"#E8EAFF":"#CBD5E1",fontWeight:600}}>{c.label}</div>
+                  {c.desc && <div style={{fontFamily:SANS,fontSize:11,color:"#6B7280"}}>{c.desc}</div>}
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
 
