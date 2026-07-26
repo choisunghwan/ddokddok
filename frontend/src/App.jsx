@@ -4857,6 +4857,15 @@ function StudyTimer() {
   const baseTodayRef = useRef(lsLoad());
   const intervalRef  = useRef(null);
   const autoSaveRef  = useRef(null);
+  const wrapperRef   = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (open && wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   // 앱 로드 시 DB에서 오늘 누적 가져오기
   useEffect(() => {
@@ -4945,7 +4954,7 @@ function StudyTimer() {
   const pct = Math.min((todayTotal / goalSecs) * 100, 100);
 
   return (
-    <div style={{ position:"fixed", bottom:24, right:90, zIndex:9998, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
+    <div ref={wrapperRef} style={{ position:"fixed", bottom:24, right:90, zIndex:9998, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
       {open && (
         <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"20px 20px 16px", width:230, boxShadow:"0 8px 32px #0008" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
@@ -5395,6 +5404,15 @@ function AmbientPlayer() {
   const [vol, setVol] = useState(0.6);
   const nodeRef = useRef(null);
   const ctxRef = useRef(null);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (open && wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   const play = (id) => {
     if (nodeRef.current) { nodeRef.current.stop(); nodeRef.current = null; }
@@ -5419,7 +5437,7 @@ function AmbientPlayer() {
   const cur = SOUNDS.find(s => s.id === active);
 
   return (
-    <div style={{ position:"fixed", bottom:24, right:24, zIndex:9999, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
+    <div ref={wrapperRef} style={{ position:"fixed", bottom:24, right:24, zIndex:9999, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
       {open && (
         <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"16px 18px", width:220, boxShadow:"0 8px 32px #0008" }}>
           <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:12 }}>집중 사운드</div>
