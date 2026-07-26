@@ -2,6 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut, PenLine, Trash2, ArrowLeft, Tag, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, ResponsiveContainer } from "recharts";
 import { marked } from "marked";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { Color } from "@tiptap/extension-color";
+import TextStyle from "@tiptap/extension-text-style";
+import Underline from "@tiptap/extension-underline";
 
 // ── 디자인 토큰 ──────────────────────────────────
 const C = {
@@ -4996,14 +5001,106 @@ marked.setOptions({ breaks: true, gfm: true });
 function MarkdownView({ content }) {
   const html = marked(content || "");
   return (
-    <div
-      dangerouslySetInnerHTML={{ __html: html }}
-      style={{ fontFamily: SANS, fontSize: 14, color: C.text, lineHeight: 1.8 }}
-    />
+    <div dangerouslySetInnerHTML={{ __html: html }}
+      style={{ fontFamily:SANS, fontSize:14, color:C.text, lineHeight:1.8 }} />
+  );
+}
+
+const EDITOR_COLORS = [
+  { color:"#E8EAFF", label:"흰색"   },
+  { color:"#F87171", label:"빨강"   },
+  { color:"#FB923C", label:"주황"   },
+  { color:"#FBBF24", label:"노랑"   },
+  { color:"#34D399", label:"초록"   },
+  { color:"#4F8EF7", label:"파랑"   },
+  { color:"#A78BFA", label:"보라"   },
+  { color:"#F472B6", label:"분홍"   },
+];
+
+function RichEditor({ value, onChange }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color,
+      Underline,
+    ],
+    content: value || "",
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    editorProps: {
+      attributes: { class: "tiptap-editor" },
+    },
+  });
+
+  if (!editor) return null;
+
+  const Btn = ({ onClick, active, title, children }) => (
+    <button onMouseDown={e => { e.preventDefault(); onClick(); }} title={title} style={{
+      padding:"4px 9px", borderRadius:6, border:"none",
+      background: active ? C.blue+"33" : "transparent",
+      color: active ? C.blue : C.muted,
+      cursor:"pointer", fontFamily:SANS, fontSize:13, lineHeight:1,
+    }}>{children}</button>
+  );
+
+  const Divider = () => <div style={{ width:1, height:16, background:C.line, margin:"0 3px", alignSelf:"center" }} />;
+
+  return (
+    <div style={{ border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden" }}>
+      <style>{`
+        .tiptap-editor { min-height:420px; padding:16px 20px; font-family:${SANS}; font-size:14px; color:${C.text}; outline:none; line-height:1.8; background:${C.card}; }
+        .tiptap-editor h1 { font-size:22px; font-weight:800; margin:16px 0 8px; color:${C.text}; }
+        .tiptap-editor h2 { font-size:18px; font-weight:700; margin:14px 0 6px; color:${C.text}; }
+        .tiptap-editor h3 { font-size:15px; font-weight:700; margin:12px 0 4px; color:${C.text}; }
+        .tiptap-editor ul, .tiptap-editor ol { padding-left:24px; margin:8px 0; }
+        .tiptap-editor li { margin:2px 0; }
+        .tiptap-editor code { background:${C.card2}; padding:2px 6px; border-radius:4px; font-family:${MONO}; font-size:12px; color:${C.yellow}; }
+        .tiptap-editor pre { background:${C.card2}; padding:14px 16px; border-radius:8px; margin:10px 0; overflow-x:auto; }
+        .tiptap-editor pre code { background:none; padding:0; color:${C.green}; font-size:13px; }
+        .tiptap-editor blockquote { border-left:3px solid ${C.blue}; margin:10px 0; padding:4px 0 4px 16px; color:${C.muted}; }
+        .tiptap-editor p { margin:4px 0; }
+        .tiptap-editor p.is-editor-empty:first-child::before { content:attr(data-placeholder); color:${C.muted}; pointer-events:none; float:left; height:0; }
+      `}</style>
+
+      {/* 툴바 */}
+      <div style={{ display:"flex", gap:1, padding:"7px 10px", background:C.card2, borderBottom:`1px solid ${C.line}`, flexWrap:"wrap", alignItems:"center" }}>
+        <Btn onClick={() => editor.chain().focus().toggleBold().run()}      active={editor.isActive("bold")}             title="굵게 (Ctrl+B)"      ><b>B</b></Btn>
+        <Btn onClick={() => editor.chain().focus().toggleItalic().run()}    active={editor.isActive("italic")}           title="기울임 (Ctrl+I)"    ><i>I</i></Btn>
+        <Btn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")}        title="밑줄 (Ctrl+U)"      ><u>U</u></Btn>
+        <Btn onClick={() => editor.chain().focus().toggleStrike().run()}    active={editor.isActive("strike")}           title="취소선"             ><s>S</s></Btn>
+        <Divider />
+        <Btn onClick={() => editor.chain().focus().toggleHeading({level:1}).run()} active={editor.isActive("heading",{level:1})} title="제목 1">H1</Btn>
+        <Btn onClick={() => editor.chain().focus().toggleHeading({level:2}).run()} active={editor.isActive("heading",{level:2})} title="제목 2">H2</Btn>
+        <Divider />
+        <Btn onClick={() => editor.chain().focus().toggleBulletList().run()}  active={editor.isActive("bulletList")}  title="목록">•</Btn>
+        <Btn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="번호 목록">1.</Btn>
+        <Btn onClick={() => editor.chain().focus().toggleBlockquote().run()}  active={editor.isActive("blockquote")}  title="인용">❝</Btn>
+        <Btn onClick={() => editor.chain().focus().toggleCode().run()}        active={editor.isActive("code")}        title="인라인 코드">`</Btn>
+        <Btn onClick={() => editor.chain().focus().toggleCodeBlock().run()}   active={editor.isActive("codeBlock")}   title="코드블록">```</Btn>
+        <Divider />
+        {/* 색상 팔레트 */}
+        {EDITOR_COLORS.map(({ color, label }) => (
+          <button key={color} onMouseDown={e => { e.preventDefault(); editor.chain().focus().setColor(color).run(); }}
+            title={label} style={{
+              width:16, height:16, borderRadius:"50%", background:color, padding:0, cursor:"pointer",
+              border: editor.isActive("textStyle", { color }) ? `2px solid ${C.white}` : `2px solid transparent`,
+              outline: editor.isActive("textStyle", { color }) ? `2px solid ${color}` : "none",
+              transition:"transform .1s", flexShrink:0,
+            }} />
+        ))}
+        <Btn onClick={() => editor.chain().focus().unsetColor().run()} title="색상 제거">✕</Btn>
+        <Divider />
+        <Btn onClick={() => editor.chain().focus().undo().run()} title="실행 취소 (Ctrl+Z)">↩</Btn>
+        <Btn onClick={() => editor.chain().focus().redo().run()} title="다시 실행 (Ctrl+Y)">↪</Btn>
+      </div>
+
+      <EditorContent editor={editor} />
+    </div>
   );
 }
 
 // ── 노트 화면 ────────────────────────────────────
+const isHtml = (s) => /^<[a-z][\s\S]*>/i.test((s || "").trim());
 const NOTE_CATEGORIES = ["Python", "Java", "SQL", "AICE", "ADsP", "기타"];
 const CAT_COLOR = { Python:C.blue, Java:C.coral, SQL:C.green, AICE:C.purple, ADsP:C.yellow, "기타":C.muted };
 
@@ -5018,43 +5115,8 @@ function NoteScreen({ isGuest, onLogin }) {
   const [preview, setPreview]     = useState(false);
   const [deleteId, setDeleteId]   = useState(null);
   const [filterCat, setFilterCat] = useState("");
-  const textareaRef = useRef(null);
 
   const h = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` });
-
-  const applyFormat = (type) => {
-    const el = textareaRef.current;
-    if (!el) return;
-    const s = el.selectionStart, e = el.selectionEnd;
-    const sel = form.content.slice(s, e);
-    const before = form.content.slice(0, s), after = form.content.slice(e);
-    const wrap = (l, r = l) => {
-      setForm(f => ({ ...f, content: before + l + sel + r + after }));
-      setTimeout(() => { el.focus(); el.setSelectionRange(s + l.length, s + l.length + sel.length); }, 0);
-    };
-    const line = (prefix) => {
-      const lineStart = form.content.lastIndexOf("\n", s - 1) + 1;
-      const newContent = form.content.slice(0, lineStart) + prefix + form.content.slice(lineStart);
-      setForm(f => ({ ...f, content: newContent }));
-      setTimeout(() => { el.focus(); el.setSelectionRange(s + prefix.length, e + prefix.length); }, 0);
-    };
-    switch (type) {
-      case "bold":      return wrap("**");
-      case "italic":    return wrap("*");
-      case "code":      return wrap("`");
-      case "codeblock": return wrap("```\n", "\n```");
-      case "h1":        return line("# ");
-      case "h2":        return line("## ");
-      case "ul":        return line("- ");
-      case "quote":     return line("> ");
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (!(e.ctrlKey || e.metaKey)) return;
-    const map = { b:"bold", i:"italic", k:"code", Enter:"codeblock" };
-    if (map[e.key]) { e.preventDefault(); applyFormat(map[e.key]); }
-  };
 
   const load = () => {
     setLoading(true);
@@ -5066,7 +5128,11 @@ function NoteScreen({ isGuest, onLogin }) {
   useEffect(() => { if (!isGuest) load(); }, [isGuest]);
 
   const openNew = () => { setForm({ title: "", content: "", tags: "", category: "" }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
-  const openEdit = (n) => { setForm({ title: n.title, content: n.content, tags: n.tags, category: n.category || "" }); setCurrent(n); setPreview(false); setSaveError(""); setView("edit"); };
+  const openEdit = (n) => {
+    const content = isHtml(n.content) ? n.content : marked(n.content || "");
+    setForm({ title: n.title, content, tags: n.tags, category: n.category || "" });
+    setCurrent(n); setPreview(false); setSaveError(""); setView("edit");
+  };
   const openRead = (n) => { setCurrent(n); setView("read"); };
 
   const save = async () => {
@@ -5139,7 +5205,8 @@ function NoteScreen({ isGuest, onLogin }) {
         ))}
       </div>
       <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"24px 28px", minHeight:200 }}>
-        <MarkdownView content={current.content} />
+        <div dangerouslySetInnerHTML={{ __html: isHtml(current.content) ? current.content : marked(current.content||"") }}
+          style={{ fontFamily:SANS, fontSize:14, color:C.text, lineHeight:1.8 }} />
       </div>
       {deleteId && (
         <div style={{ position:"fixed", inset:0, background:"#00000088", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -5164,9 +5231,6 @@ function NoteScreen({ isGuest, onLogin }) {
           <ArrowLeft size={15} /> {current ? "뒤로" : "목록"}
         </button>
         <div style={{ flex:1 }} />
-        <button onClick={() => setPreview(p => !p)} style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${preview ? C.blue+"66" : C.line}`, background: preview ? C.blue+"18" : C.card2, color: preview ? C.blue : C.muted, fontFamily:SANS, fontSize:13, cursor:"pointer" }}>
-          {preview ? "편집" : "미리보기"}
-        </button>
         <button onClick={save} disabled={saving || !form.title.trim()} style={{ padding:"7px 20px", borderRadius:8, border:"none", background: form.title.trim() ? C.blue : C.line, color:"#fff", fontFamily:SANS, fontSize:13, fontWeight:700, cursor: form.title.trim() ? "pointer" : "not-allowed", opacity: saving ? 0.6 : 1 }}>
           {saving ? "저장 중…" : "저장"}
         </button>
@@ -5199,45 +5263,7 @@ function NoteScreen({ isGuest, onLogin }) {
           style={{ flex:1, background:C.card, border:`1px solid ${C.line}`, borderRadius:10, padding:"9px 16px", fontFamily:MONO, fontSize:12, color:C.muted, outline:"none" }}
         />
       </div>
-
-      {preview ? (
-        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"20px 24px", minHeight:400 }}>
-          <MarkdownView content={form.content} />
-        </div>
-      ) : (
-        <div style={{ border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden" }}>
-          {/* 툴바 */}
-          <div style={{ display:"flex", gap:2, padding:"8px 10px", background:C.card2, borderBottom:`1px solid ${C.line}`, flexWrap:"wrap" }}>
-            {[
-              { label:"B",  title:"굵게 (Ctrl+B)",       type:"bold",      style:{ fontWeight:800 } },
-              { label:"I",  title:"기울임 (Ctrl+I)",      type:"italic",    style:{ fontStyle:"italic" } },
-              { label:"`",  title:"인라인 코드 (Ctrl+K)", type:"code",      style:{ fontFamily:MONO } },
-              { label:"```",title:"코드블록 (Ctrl+Enter)",type:"codeblock", style:{ fontFamily:MONO, fontSize:10 } },
-              { label:"H1", title:"제목 1",               type:"h1",        style:{} },
-              { label:"H2", title:"제목 2",               type:"h2",        style:{} },
-              { label:"•",  title:"목록",                 type:"ul",        style:{ fontSize:16 } },
-              { label:"❝",  title:"인용",                 type:"quote",     style:{} },
-            ].map(btn => (
-              <button key={btn.type} onClick={() => applyFormat(btn.type)} title={btn.title} style={{
-                padding:"4px 9px", borderRadius:6, border:"none", background:"transparent",
-                color:C.muted, cursor:"pointer", fontFamily:SANS, fontSize:13, ...btn.style,
-                transition:"background .1s",
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = C.line}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-              >{btn.label}</button>
-            ))}
-          </div>
-          <textarea
-            ref={textareaRef}
-            value={form.content}
-            onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-            onKeyDown={handleKeyDown}
-            placeholder={"오늘 공부한 내용을 자유롭게 적어보세요.\n\n단축키: Ctrl+B 굵게  Ctrl+I 기울임  Ctrl+K 코드"}
-            style={{ width:"100%", minHeight:420, background:C.card, border:"none", padding:"16px 20px", fontFamily:MONO, fontSize:13, color:C.text, outline:"none", resize:"vertical", lineHeight:1.8, boxSizing:"border-box", display:"block" }}
-          />
-        </div>
-      )}
+      <RichEditor value={form.content} onChange={v => setForm(f => ({ ...f, content: v }))} />
     </div>
   );
 
