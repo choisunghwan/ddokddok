@@ -5906,6 +5906,7 @@ function AmbientPlayer() {
 
 // ── 스터디 아일랜드 (타이머 + 소리 통합) ────────────
 function StudyIsland() {
+  const isMobile = useIsMobile();
   const todayKey = () => new Date().toDateString();
   const token    = () => localStorage.getItem("token");
   const lsLoad   = () => {
@@ -6020,16 +6021,29 @@ function StudyIsland() {
   const pillBorder = running ? `${C.blue}66` : active ? `${cur.color}66` : C.line;
   const pillGlow   = running ? `0 0 18px ${C.blue}44` : active ? `0 0 16px ${cur?.color}44` : "0 2px 10px #0005";
 
+  // 데스크탑: 사이드바 하단 (아바타 위, 겹침 없음)
+  // 모바일: 상단 우측
+  const wrapStyle = isMobile
+    ? { position:"fixed", top:12, right:12, zIndex:9999, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }
+    : { position:"fixed", left:10, bottom:88, width:180, zIndex:9999, display:"flex", flexDirection:"column" };
+
   return (
-    <div ref={wrapperRef} style={{ position:"fixed", top:14, right:24, zIndex:9999, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
+    <div ref={wrapperRef} style={wrapStyle}>
       <style>{`
         @keyframes si-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
         @keyframes si-glow  { 0%,100%{box-shadow:${pillGlow}} 50%{box-shadow:0 0 28px ${running?C.blue:cur?.color||C.blue}66} }
       `}</style>
 
-      {/* 펼침 패널 */}
+      {/* 펼침 패널 — 버튼 위로 팝업 */}
       {open && (
-        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:18, padding:"18px 18px 14px", width:268, boxShadow:"0 12px 40px #0009", display:"flex", flexDirection:"column", gap:0 }}>
+        <div style={{
+          position: isMobile ? "relative" : "absolute",
+          bottom: isMobile ? undefined : "calc(100% + 8px)",
+          left: isMobile ? undefined : 0,
+          background:C.card, border:`1px solid ${C.line}`, borderRadius:18,
+          padding:"18px 18px 14px", width:268,
+          boxShadow:"0 12px 40px #0009", display:"flex", flexDirection:"column", gap:0,
+        }}>
 
           {/* 타이머 섹션 */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
@@ -6089,7 +6103,8 @@ function StudyIsland() {
 
       {/* 필 버튼 */}
       <button onClick={() => setOpen(o => !o)} style={{
-        height:40, borderRadius:20, padding:"0 16px",
+        height:40, borderRadius:10, padding:"0 14px",
+        width: isMobile ? "auto" : "100%", boxSizing:"border-box",
         background:pillBg, border:`1px solid ${pillBorder}`,
         cursor:"pointer", display:"flex", alignItems:"center", gap:8,
         boxShadow:pillGlow, transition:"all .2s",
@@ -6100,9 +6115,12 @@ function StudyIsland() {
           {running ? fmt(sessionSecs) : "타이머"}
         </span>
         {active && <>
-          <span style={{ color:C.line, fontSize:10 }}>·</span>
+          <span style={{ color:C.line, fontSize:10, marginLeft:"auto" }}>·</span>
           <span style={{ fontSize:14 }}>{cur?.emoji}</span>
         </>}
+        {!isMobile && !running && !active && (
+          <span style={{ marginLeft:"auto", fontSize:10, color:C.muted }}>클릭</span>
+        )}
       </button>
     </div>
   );
