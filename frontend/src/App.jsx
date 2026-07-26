@@ -5388,7 +5388,10 @@ function RichEditor({ value, onChange }) {
             dangerouslySetInnerHTML={{ __html: html }} />
         ))}
         <div style={{ width:1, height:18, background:C.line, margin:"0 4px" }} />
-        {/* 제목 */}
+        {/* 제목 / 본문 */}
+        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","P")}} title="기본 본문으로 되돌리기"
+          style={{ padding:"3px 7px", borderRadius:5, border:"none", background:"transparent",
+            color:C.muted, cursor:"pointer", fontSize:11, fontFamily:SANS }}>본문</button>
         {[["H1","H1"],["H2","H2"],["H3","H3"]].map(([label, tag]) => (
           <button key={tag} onMouseDown={e=>{e.preventDefault();exec("formatBlock",tag)}} title={`${label} 제목`}
             style={{ padding:"3px 7px", borderRadius:5, border:"none", background:"transparent",
