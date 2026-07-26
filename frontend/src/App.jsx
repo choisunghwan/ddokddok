@@ -5040,8 +5040,23 @@ const EDITOR_COLORS = [
   { color:"#F472B6", label:"분홍"   },
 ];
 
+const SLASH_CMDS = [
+  { key:"h1",      icon:"H1", label:"제목 1",     desc:"큰 제목",          action:(exec)=>exec("formatBlock","H1") },
+  { key:"h2",      icon:"H2", label:"제목 2",     desc:"중간 제목",         action:(exec)=>exec("formatBlock","H2") },
+  { key:"bullet",  icon:"•",  label:"글머리 목록", desc:"- 스페이스로도 입력",action:(exec)=>exec("insertUnorderedList") },
+  { key:"number",  icon:"1.", label:"번호 목록",   desc:"1. 스페이스로도 입력",action:(exec)=>exec("insertOrderedList") },
+  { key:"quote",   icon:"❝",  label:"인용구",     desc:"> 스페이스로도 입력",action:(exec)=>exec("formatBlock","BLOCKQUOTE") },
+  { key:"bold",    icon:"B",  label:"굵게",       desc:"Ctrl+B",           action:(exec)=>exec("bold") },
+  { key:"italic",  icon:"I",  label:"기울임",      desc:"Ctrl+I",           action:(exec)=>exec("italic") },
+  { key:"underline",icon:"U", label:"밑줄",       desc:"Ctrl+U",           action:(exec)=>exec("underline") },
+  { key:"strike",  icon:"S",  label:"취소선",      desc:"",                 action:(exec)=>exec("strikeThrough") },
+];
+
 function RichEditor({ value, onChange }) {
-  const ref = useRef(null);
+  const ref     = useRef(null);
+  const [bubble, setBubble]   = useState(null); // {top,left} | null
+  const [slash,  setSlash]    = useState(null); // {top,left,q} | null
+  const [slashSel, setSlashSel] = useState(0);
 
   useEffect(() => {
     if (ref.current) ref.current.innerHTML = value || "";
@@ -5053,49 +5068,189 @@ function RichEditor({ value, onChange }) {
     setTimeout(() => onChange(ref.current?.innerHTML || ""), 0);
   };
 
-  const bs = { padding:"4px 9px", borderRadius:6, border:"none", background:"transparent", color:C.muted, cursor:"pointer", fontFamily:SANS, fontSize:13, lineHeight:1 };
-  const Divider = () => <div style={{ width:1, height:16, background:C.line, margin:"0 3px", alignSelf:"center" }} />;
+  /* 버블 메뉴 – 텍스트 선택 시 표시 */
+  useEffect(() => {
+    const onSel = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !ref.current?.contains(sel.anchorNode)) { setBubble(null); return; }
+      const r  = sel.getRangeAt(0).getBoundingClientRect();
+      const er = ref.current.getBoundingClientRect();
+      setBubble({
+        top:  r.top  - er.top  - 50,
+        left: Math.min(Math.max(0, r.left - er.left + r.width / 2 - 150), er.width - 300),
+      });
+    };
+    document.addEventListener("selectionchange", onSel);
+    return () => document.removeEventListener("selectionchange", onSel);
+  }, []);
+
+  /* 슬래시 메뉴 – 외부 클릭 닫기 */
+  useEffect(() => {
+    if (!slash) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setSlash(null); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [slash]);
+
+  const handleInput = (e) => {
+    const sel  = window.getSelection();
+    const text = sel?.anchorNode?.textContent || "";
+    if (text === "/") {
+      const r  = sel.getRangeAt(0).getBoundingClientRect();
+      const er = ref.current.getBoundingClientRect();
+      setSlash({ top: r.bottom - er.top + 6, left: Math.max(0, r.left - er.left), q: "" });
+      setSlashSel(0);
+    } else if (slash) {
+      const m = text.match(/\/(\w*)$/);
+      if (m) { setSlash(s => ({ ...s, q: m[1].toLowerCase() })); setSlashSel(0); }
+      else setSlash(null);
+    }
+    onChange(e.currentTarget.innerHTML);
+  };
+
+  const handleKeyDown = (e) => {
+    /* 슬래시 메뉴 키 조작 */
+    if (slash) {
+      const list = SLASH_CMDS.filter(c => !slash.q || c.label.includes(slash.q) || c.key.startsWith(slash.q));
+      if (e.key === "ArrowDown") { e.preventDefault(); setSlashSel(i => (i+1) % list.length); return; }
+      if (e.key === "ArrowUp")   { e.preventDefault(); setSlashSel(i => (i-1+list.length) % list.length); return; }
+      if (e.key === "Enter")     { e.preventDefault(); applySlash(list[slashSel]); return; }
+      if (e.key === "Escape")    { setSlash(null); return; }
+    }
+
+    /* 마크다운 단축키 (스페이스) */
+    if (e.key === " ") {
+      const sel  = window.getSelection();
+      const node = sel?.anchorNode;
+      if (node?.nodeType === Node.TEXT_NODE && sel.anchorOffset === node.textContent.length) {
+        const t = node.textContent;
+        let fmt = null;
+        if (t === "#")        fmt = () => exec("formatBlock","H1");
+        else if (t === "##")  fmt = () => exec("formatBlock","H2");
+        else if (t === "###") fmt = () => exec("formatBlock","H3");
+        else if (t==="-"||t==="*") fmt = () => exec("insertUnorderedList");
+        else if (t === "1.")  fmt = () => exec("insertOrderedList");
+        else if (t === ">")   fmt = () => exec("formatBlock","BLOCKQUOTE");
+        if (fmt) {
+          e.preventDefault();
+          const r = document.createRange();
+          r.selectNodeContents(node); sel.removeAllRanges(); sel.addRange(r);
+          document.execCommand("delete");
+          fmt();
+          return;
+        }
+      }
+    }
+  };
+
+  const applySlash = (cmd) => {
+    if (!cmd) return;
+    const sel = window.getSelection();
+    const node = sel?.anchorNode;
+    if (node?.nodeType === Node.TEXT_NODE) {
+      const idx = node.textContent.lastIndexOf("/");
+      if (idx !== -1) {
+        node.textContent = node.textContent.slice(0, idx);
+        const r = document.createRange();
+        r.setStart(node, node.textContent.length); r.collapse(true);
+        sel.removeAllRanges(); sel.addRange(r);
+      }
+    }
+    cmd.action(exec);
+    setSlash(null);
+    ref.current?.focus();
+  };
+
+  const bb = { padding:"4px 9px", borderRadius:5, border:"none", background:"transparent", color:C.text, cursor:"pointer", fontFamily:SANS, fontSize:13, lineHeight:1 };
+
+  const filteredSlash = slash ? SLASH_CMDS.filter(c => !slash.q || c.label.includes(slash.q) || c.key.startsWith(slash.q)) : [];
 
   return (
-    <div style={{ border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden" }}>
+    <div style={{ border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden", position:"relative" }}>
       <style>{`
-        .rich-editor { min-height:420px; padding:16px 20px; font-family:${SANS}; font-size:14px; color:${C.text}; outline:none; line-height:1.8; background:${C.card}; }
-        .rich-editor h1 { font-size:22px; font-weight:800; margin:16px 0 8px; }
-        .rich-editor h2 { font-size:18px; font-weight:700; margin:14px 0 6px; }
-        .rich-editor ul, .rich-editor ol { padding-left:24px; margin:8px 0; }
-        .rich-editor li { margin:2px 0; }
-        .rich-editor code { background:${C.card2}; padding:2px 6px; border-radius:4px; font-family:${MONO}; font-size:12px; color:${C.yellow}; }
-        .rich-editor blockquote { border-left:3px solid ${C.blue}; margin:10px 0; padding:4px 0 4px 16px; color:${C.muted}; }
-        .rich-editor p { margin:4px 0; }
+        .rich-editor { min-height:500px; padding:24px 28px; font-family:${SANS}; font-size:15px; color:${C.text}; outline:none; line-height:1.9; background:${C.card}; }
+        .rich-editor:empty::before { content:"/ 를 입력해 블록 추가  •  텍스트 선택 시 서식 메뉴 표시"; color:${C.muted}+"88"; pointer-events:none; display:block; }
+        .rich-editor h1 { font-size:28px; font-weight:800; margin:20px 0 4px; line-height:1.25; color:${C.text}; }
+        .rich-editor h2 { font-size:20px; font-weight:700; margin:16px 0 4px; line-height:1.35; color:${C.text}; }
+        .rich-editor h3 { font-size:16px; font-weight:700; margin:12px 0 4px; color:${C.text}; }
+        .rich-editor ul, .rich-editor ol { padding-left:24px; margin:6px 0; }
+        .rich-editor li { margin:4px 0; }
+        .rich-editor blockquote { border-left:3px solid ${C.blue}; margin:12px 0; padding:10px 0 10px 18px; color:${C.muted}; background:${C.blue}0A; border-radius:0 8px 8px 0; }
+        .rich-editor p { margin:2px 0; }
+        .rich-editor code { background:${C.card2}; padding:2px 6px; border-radius:4px; font-family:${MONO}; font-size:13px; color:${C.yellow}; }
+        .rich-editor a { color:${C.blue}; text-decoration:underline; }
       `}</style>
 
-      <div style={{ display:"flex", gap:1, padding:"7px 10px", background:C.card2, borderBottom:`1px solid ${C.line}`, flexWrap:"wrap", alignItems:"center" }}>
-        <button onMouseDown={e=>{e.preventDefault();exec("bold")}}          style={bs} title="굵게 (Ctrl+B)"><b>B</b></button>
-        <button onMouseDown={e=>{e.preventDefault();exec("italic")}}        style={bs} title="기울임 (Ctrl+I)"><i>I</i></button>
-        <button onMouseDown={e=>{e.preventDefault();exec("underline")}}     style={bs} title="밑줄 (Ctrl+U)"><u>U</u></button>
-        <button onMouseDown={e=>{e.preventDefault();exec("strikeThrough")}} style={bs} title="취소선"><s>S</s></button>
-        <Divider />
-        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","H1")}} style={bs} title="제목 1">H1</button>
-        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","H2")}} style={bs} title="제목 2">H2</button>
-        <Divider />
-        <button onMouseDown={e=>{e.preventDefault();exec("insertUnorderedList")}}       style={bs} title="목록">•</button>
-        <button onMouseDown={e=>{e.preventDefault();exec("insertOrderedList")}}         style={bs} title="번호 목록">1.</button>
-        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","BLOCKQUOTE")}}  style={bs} title="인용">❝</button>
-        <Divider />
-        {EDITOR_COLORS.map(({color,label}) => (
-          <button key={color} onMouseDown={e=>{e.preventDefault();exec("foreColor",color)}} title={label}
-            style={{width:16,height:16,borderRadius:"50%",background:color,padding:0,cursor:"pointer",border:"2px solid transparent",flexShrink:0}} />
-        ))}
-        <button onMouseDown={e=>{e.preventDefault();exec("removeFormat")}} style={bs} title="서식 제거">✕</button>
-      </div>
+      {/* 버블 서식 메뉴 */}
+      {bubble && (
+        <div style={{
+          position:"absolute", top:bubble.top, left:bubble.left, zIndex:300,
+          background:"#1C2033", border:`1px solid ${C.line}`,
+          borderRadius:9, padding:"4px 6px",
+          display:"flex", alignItems:"center", gap:1,
+          boxShadow:"0 6px 24px #0009",
+        }}>
+          {[
+            ["bold","굵게","<b>B</b>"],["italic","기울임","<i>I</i>"],
+            ["underline","밑줄","<u>U</u>"],["strikeThrough","취소선","<s>S</s>"],
+          ].map(([cmd,title,html])=>(
+            <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd)}} title={title}
+              style={{...bb,color:"#E8EAFF"}} dangerouslySetInnerHTML={{__html:html}} />
+          ))}
+          <div style={{width:1,height:16,background:"#2E3350",margin:"0 3px"}}/>
+          <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","H1")}} style={{...bb,color:"#E8EAFF",fontWeight:700,fontSize:11}}>H1</button>
+          <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","H2")}} style={{...bb,color:"#E8EAFF",fontWeight:700,fontSize:11}}>H2</button>
+          <div style={{width:1,height:16,background:"#2E3350",margin:"0 3px"}}/>
+          {EDITOR_COLORS.slice(1).map(({color,label})=>(
+            <button key={color} onMouseDown={e=>{e.preventDefault();exec("foreColor",color)}} title={label}
+              style={{width:14,height:14,borderRadius:"50%",background:color,padding:0,cursor:"pointer",border:"none",flexShrink:0}} />
+          ))}
+          <div style={{width:1,height:16,background:"#2E3350",margin:"0 3px"}}/>
+          <button onMouseDown={e=>{e.preventDefault();exec("removeFormat")}} title="서식 제거"
+            style={{...bb,color:"#6B7280",fontSize:11}}>✕</button>
+        </div>
+      )}
+
+      {/* 슬래시 커맨드 메뉴 */}
+      {slash && filteredSlash.length > 0 && (
+        <div style={{
+          position:"absolute", top:slash.top, left:slash.left, zIndex:300,
+          background:C.card, border:`1px solid ${C.line}`,
+          borderRadius:12, padding:"6px", minWidth:220,
+          boxShadow:"0 8px 32px #0009",
+        }}>
+          <div style={{fontFamily:SANS,fontSize:10,color:C.muted,padding:"4px 8px 6px",letterSpacing:".06em",fontWeight:700}}>블록 추가</div>
+          {filteredSlash.map((c,i)=>(
+            <button key={c.key} onMouseDown={e=>{e.preventDefault();applySlash(c)}} style={{
+              display:"flex",alignItems:"center",gap:10,width:"100%",
+              padding:"7px 8px",borderRadius:8,border:"none",
+              background: i===slashSel ? C.blue+"22" : "transparent",
+              cursor:"pointer",textAlign:"left",
+            }}>
+              <div style={{width:30,height:30,borderRadius:7,background:C.card2,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontSize:12,color:C.text,fontWeight:700,flexShrink:0}}>{c.icon}</div>
+              <div>
+                <div style={{fontFamily:SANS,fontSize:13,color:C.text,fontWeight:600}}>{c.label}</div>
+                {c.desc && <div style={{fontFamily:SANS,fontSize:11,color:C.muted}}>{c.desc}</div>}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div
         ref={ref}
         className="rich-editor"
         contentEditable
         suppressContentEditableWarning
-        onInput={e => onChange(e.currentTarget.innerHTML)}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
       />
+
+      <div style={{padding:"7px 20px",background:C.card2,borderTop:`1px solid ${C.line}`,display:"flex",gap:16,flexWrap:"wrap"}}>
+        {[["/ 블록 추가"],["텍스트 선택 → 서식"],["# + 스페이스 → 제목"],["- + 스페이스 → 목록"]].map(([t])=>(
+          <span key={t} style={{fontFamily:SANS,fontSize:11,color:C.muted}}>{t}</span>
+        ))}
+      </div>
     </div>
   );
 }
