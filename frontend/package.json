@@ -10,16 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tiptap/extension-color": "^3.29.0",
-    "@tiptap/extension-text-style": "^3.29.0",
-    "@tiptap/extension-underline": "^3.29.0",
-    "@tiptap/pm": "^3.29.0",
-    "@tiptap/react": "^3.29.0",
-    "@tiptap/starter-kit": "^3.29.0",
+    "@tiptap/extension-color": "2.11.7",
+    "@tiptap/extension-text-style": "2.11.7",
+    "@tiptap/extension-underline": "2.11.7",
+    "@tiptap/pm": "2.11.7",
+    "@tiptap/react": "2.11.7",
+    "@tiptap/starter-kit": "2.11.7",
     "lucide-react": "^1.22.0",
     "marked": "^18.0.7",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-is": "^19.2.8",
     "recharts": "^3.9.1"
   },
   "devDependencies": {
