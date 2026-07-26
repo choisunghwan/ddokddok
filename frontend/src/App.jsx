@@ -5108,6 +5108,7 @@ function NoteScreen({ isGuest, onLogin }) {
   const [preview, setPreview]     = useState(false);
   const [deleteId, setDeleteId]   = useState(null);
   const [filterCat, setFilterCat] = useState("");
+  const [search, setSearch]       = useState("");
 
   const h = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` });
 
@@ -5273,6 +5274,31 @@ function NoteScreen({ isGuest, onLogin }) {
         </button>
       </div>
 
+      {/* 검색창 */}
+      <div style={{ position:"relative", marginBottom:14 }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="제목, 내용, 태그 검색…"
+          style={{
+            width:"100%", boxSizing:"border-box",
+            padding:"10px 16px 10px 40px",
+            borderRadius:10, border:`1px solid ${C.line}`,
+            background:C.card2, color:C.text,
+            fontFamily:SANS, fontSize:13, outline:"none",
+          }}
+        />
+        <svg style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", color:C.muted, pointerEvents:"none" }}
+          width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <circle cx={11} cy={11} r={8}/><line x1={21} y1={21} x2={16.65} y2={16.65}/>
+        </svg>
+        {search && (
+          <button onClick={() => setSearch("")} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex" }}>
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
       {/* 카테고리 필터 탭 */}
       <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:18 }}>
         {["전체", ...NOTE_CATEGORIES].map(cat => {
@@ -5292,12 +5318,21 @@ function NoteScreen({ isGuest, onLogin }) {
       {loading ? (
         <div style={{ textAlign:"center", color:C.muted, fontFamily:SANS, fontSize:14, padding:"60px 0" }}>불러오는 중…</div>
       ) : (() => {
-        const filtered = filterCat ? notes.filter(n => n.category === filterCat) : notes;
+        const q = search.trim().toLowerCase();
+        const filtered = notes.filter(n => {
+          if (filterCat && n.category !== filterCat) return false;
+          if (!q) return true;
+          return (
+            n.title.toLowerCase().includes(q) ||
+            stripHtml(n.content).toLowerCase().includes(q) ||
+            (n.tags || "").toLowerCase().includes(q)
+          );
+        });
         if (filtered.length === 0) return (
           <div style={{ textAlign:"center", padding:"80px 0" }}>
             <div style={{ fontSize:48, marginBottom:16 }}>📝</div>
             <div style={{ fontFamily:SANS, fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>
-              {filterCat ? `${filterCat} 노트가 없어요` : "첫 번째 노트를 작성해보세요"}
+              {q ? `"${q}" 검색 결과가 없어요` : filterCat ? `${filterCat} 노트가 없어요` : "첫 번째 노트를 작성해보세요"}
             </div>
             <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24 }}>마크다운으로 공부 내용을 정리할 수 있어요</div>
             <button onClick={openNew} style={{ padding:"10px 28px", borderRadius:10, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer" }}>노트 작성하기</button>
