@@ -5904,6 +5904,208 @@ function AmbientPlayer() {
   );
 }
 
+// ── 스터디 아일랜드 (타이머 + 소리 통합) ────────────
+function StudyIsland() {
+  const todayKey = () => new Date().toDateString();
+  const token    = () => localStorage.getItem("token");
+  const lsLoad   = () => {
+    try { const d = JSON.parse(localStorage.getItem("study_today")||"{}"); return d.date===todayKey() ? (d.secs||0) : 0; } catch { return 0; }
+  };
+  const lsSave = (s) => localStorage.setItem("study_today", JSON.stringify({ date: todayKey(), s }));
+
+  // ── 타이머 state ──
+  const [open,       setOpen]      = useState(false);
+  const [running,    setRunning]   = useState(false);
+  const [sessionSecs,setSession]   = useState(0);
+  const [baseToday,  setBaseToday] = useState(lsLoad);
+  const [synced,     setSynced]    = useState(false);
+  const sessionRef   = useRef(0);
+  const baseTodayRef = useRef(lsLoad());
+  const intervalRef  = useRef(null);
+  const autoSaveRef  = useRef(null);
+
+  // ── 사운드 state ──
+  const [active, setActive] = useState(null);
+  const [vol,    setVol]    = useState(0.6);
+  const ctxRef  = useRef(null);
+  const nodeRef = useRef(null);
+
+  const wrapperRef = useRef(null);
+
+  // 외부 클릭 닫기
+  useEffect(() => {
+    const h = (e) => { if (open && wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  // DB 로드
+  useEffect(() => {
+    const tok = token();
+    if (!tok) { setSynced(true); return; }
+    fetch(`${API}/api/dashboard/timer-stat`, { headers:{ Authorization:`Bearer ${tok}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.total_seconds != null) {
+          const best = Math.max(d.total_seconds, lsLoad());
+          setBaseToday(best); baseTodayRef.current = best; lsSave(best);
+        }
+        setSynced(true);
+      }).catch(() => setSynced(true));
+  }, []);
+
+  const dbSave = (secs) => {
+    const tok = token(); if (!tok) return;
+    fetch(`${API}/api/dashboard/timer-stat`, { method:"POST", headers:{ Authorization:`Bearer ${tok}`,"Content-Type":"application/json" }, body:JSON.stringify({ total_seconds: secs }) }).catch(()=>{});
+  };
+  const persist = (total) => {
+    lsSave(total); dbSave(total);
+    window.dispatchEvent(new CustomEvent("timer-saved", { detail:{ total } }));
+  };
+
+  useEffect(() => {
+    const save = () => { const t = baseTodayRef.current + sessionRef.current; if (t>0){ lsSave(t); dbSave(t); } };
+    window.addEventListener("beforeunload", save);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
+    return () => window.removeEventListener("beforeunload", save);
+  }, []);
+  useEffect(() => () => { clearInterval(intervalRef.current); clearInterval(autoSaveRef.current); }, []);
+
+  const handleStart = () => {
+    intervalRef.current = setInterval(() => { sessionRef.current += 1; setSession(sessionRef.current); }, 1000);
+    autoSaveRef.current = setInterval(() => persist(baseTodayRef.current + sessionRef.current), 60000);
+    setRunning(true);
+  };
+  const handlePause = () => {
+    clearInterval(intervalRef.current); clearInterval(autoSaveRef.current);
+    setRunning(false); persist(baseTodayRef.current + sessionRef.current);
+  };
+  const handleReset = () => {
+    clearInterval(intervalRef.current); clearInterval(autoSaveRef.current);
+    setRunning(false);
+    const total = baseTodayRef.current + sessionRef.current;
+    persist(total); setBaseToday(total); baseTodayRef.current = total;
+    sessionRef.current = 0; setSession(0);
+  };
+
+  const fmt = (s) => {
+    const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sc=s%60;
+    return h>0 ? `${h}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}` : `${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`;
+  };
+  const fmtH = (s) => {
+    const h=Math.floor(s/3600), m=Math.floor((s%3600)/60);
+    if (h>0&&m>0) return `${h}시간 ${m}분`; if (h>0) return `${h}시간`; if (m>0) return `${m}분`; return `${s%60}초`;
+  };
+
+  // 소리
+  const play = (id) => {
+    if (nodeRef.current) { nodeRef.current.stop(); nodeRef.current = null; }
+    if (active === id) { setActive(null); return; }
+    if (!ctxRef.current || ctxRef.current.state==="closed") ctxRef.current = new (window.AudioContext||window.webkitAudioContext)();
+    if (ctxRef.current.state==="suspended") ctxRef.current.resume();
+    const node = createAmbientNode(ctxRef.current, id);
+    node.gain.gain.value *= vol;
+    nodeRef.current = node; setActive(id);
+  };
+  const changeVol = (v) => { setVol(v); if (nodeRef.current) nodeRef.current.gain.gain.value = v * 0.6; };
+  useEffect(() => () => { if (nodeRef.current) nodeRef.current.stop(); }, []);
+
+  const todayTotal = baseToday + sessionSecs;
+  const goalSecs   = 4 * 3600;
+  const pct        = Math.min((todayTotal / goalSecs) * 100, 100);
+  const cur        = SOUNDS.find(s => s.id === active);
+
+  // 필 버튼 스타일
+  const pillBg     = running ? `${C.blue}18` : active ? `${cur.color}18` : C.card2;
+  const pillBorder = running ? `${C.blue}66` : active ? `${cur.color}66` : C.line;
+  const pillGlow   = running ? `0 0 18px ${C.blue}44` : active ? `0 0 16px ${cur?.color}44` : "0 2px 10px #0005";
+
+  return (
+    <div ref={wrapperRef} style={{ position:"fixed", top:14, right:24, zIndex:9999, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
+      <style>{`
+        @keyframes si-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+        @keyframes si-glow  { 0%,100%{box-shadow:${pillGlow}} 50%{box-shadow:0 0 28px ${running?C.blue:cur?.color||C.blue}66} }
+      `}</style>
+
+      {/* 펼침 패널 */}
+      {open && (
+        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:18, padding:"18px 18px 14px", width:268, boxShadow:"0 12px 40px #0009", display:"flex", flexDirection:"column", gap:0 }}>
+
+          {/* 타이머 섹션 */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+            <span style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em" }}>⏱ 현재 세션</span>
+            {token() && (
+              <span style={{ fontFamily:SANS, fontSize:9, color: synced?C.green:C.muted, display:"flex", alignItems:"center", gap:3 }}>
+                <span style={{ width:5, height:5, borderRadius:"50%", background: synced?C.green:C.muted, display:"inline-block" }} />
+                {synced ? "DB 연동" : "동기화 중…"}
+              </span>
+            )}
+          </div>
+          <div style={{ fontFamily:MONO, fontSize:44, fontWeight:800, color: running?C.blue:C.text, letterSpacing:"-.03em", lineHeight:1, marginBottom:14, transition:"color .3s" }}>
+            {fmt(sessionSecs)}
+            {running && <span style={{ display:"inline-block", width:8, height:8, borderRadius:"50%", background:C.blue, marginLeft:8, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
+          </div>
+          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+            <button onClick={running ? handlePause : handleStart} style={{ flex:1, padding:"9px 0", borderRadius:10, border:"none", cursor:"pointer", background: running?`${C.coral}22`:`${C.blue}22`, color: running?C.coral:C.blue, fontFamily:SANS, fontSize:13, fontWeight:700 }}>
+              {running ? "⏸ 일시정지" : sessionSecs>0 ? "▶ 재개" : "▶ 시작"}
+            </button>
+            <button onClick={handleReset} title="세션 저장 & 초기화" style={{ width:42, borderRadius:10, border:`1px solid ${C.line}`, cursor:"pointer", background:C.card2, color:C.muted, fontSize:16 }}>⟳</button>
+          </div>
+
+          {/* 오늘 진행 */}
+          <div style={{ background:C.card2, borderRadius:10, padding:"10px 12px", marginBottom:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+              <span style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".06em" }}>오늘 총 공부</span>
+              <span style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color: pct>=100?C.yellow:C.green }}>{fmtH(todayTotal)}</span>
+            </div>
+            <div style={{ background:C.line, borderRadius:99, height:4, overflow:"hidden" }}>
+              <div style={{ width:`${pct}%`, height:"100%", background: pct>=100?C.yellow:"linear-gradient(90deg,#2563EB,#6D28D9)", borderRadius:99, transition:"width .5s" }} />
+            </div>
+            <div style={{ fontFamily:SANS, fontSize:10, color:C.muted, marginTop:5, textAlign:"right" }}>목표 4시간 {pct>=100?"🎉 달성!": `${Math.round(pct)}%`}</div>
+          </div>
+
+          {/* 소리 섹션 */}
+          <div style={{ borderTop:`1px solid ${C.line}`, paddingTop:14 }}>
+            <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:10 }}>🎵 집중 사운드</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7 }}>
+              {SOUNDS.map(s => (
+                <button key={s.id} onClick={() => play(s.id)} style={{ display:"flex", alignItems:"center", gap:7, background: active===s.id?`${s.color}22`:C.card2, border:`1px solid ${active===s.id?s.color:C.line}`, borderRadius:10, padding:"8px 10px", cursor:"pointer", transition:"all .15s" }}>
+                  <span style={{ fontSize:15 }}>{s.emoji}</span>
+                  <span style={{ fontFamily:SANS, fontSize:12, color: active===s.id?s.color:C.text, fontWeight: active===s.id?700:400 }}>{s.label}</span>
+                </button>
+              ))}
+            </div>
+            {active && (
+              <div style={{ marginTop:12 }}>
+                <div style={{ fontFamily:SANS, fontSize:10, color:C.muted, marginBottom:5 }}>볼륨</div>
+                <input type="range" min={0} max={1} step={0.01} value={vol}
+                  onChange={e => changeVol(parseFloat(e.target.value))}
+                  style={{ width:"100%", accentColor: cur?.color||C.blue }} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 필 버튼 */}
+      <button onClick={() => setOpen(o => !o)} style={{
+        height:40, borderRadius:20, padding:"0 16px",
+        background:pillBg, border:`1px solid ${pillBorder}`,
+        cursor:"pointer", display:"flex", alignItems:"center", gap:8,
+        boxShadow:pillGlow, transition:"all .2s",
+        animation: (running||active) ? "si-glow 2.5s ease-in-out infinite" : "none",
+      }}>
+        <span style={{ fontSize:14 }}>⏱</span>
+        <span style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color: running?C.blue:C.muted }}>
+          {running ? fmt(sessionSecs) : "타이머"}
+        </span>
+        <span style={{ color:C.line, fontSize:10 }}>·</span>
+        <span style={{ fontSize:14 }}>{active ? cur?.emoji : "🔇"}</span>
+      </button>
+    </div>
+  );
+}
+
 // ── 루트 ────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("home");
@@ -6039,8 +6241,7 @@ export default function App() {
       {showStudyModal && <StudyLoginModal onLogin={handleBackToLogin} onClose={() => setShowStudyModal(false)} />}
       {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} kakaoLinked={kakaoLinked} onKakaoLink={handleKakaoLink} onKakaoUnlink={() => setKakaoLinked(false)} />}
       <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} darkMode={darkMode} onToggleTheme={toggleTheme} />
-      <StudyTimer />
-      <AmbientPlayer />
+      <StudyIsland />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
         {tab === "code"  && <CodeScreen key={screenKeys.code} isGuest={isGuest} />}
