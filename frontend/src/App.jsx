@@ -5017,9 +5017,44 @@ function NoteScreen({ isGuest, onLogin }) {
   const [saveError, setSaveError] = useState("");
   const [preview, setPreview]     = useState(false);
   const [deleteId, setDeleteId]   = useState(null);
-  const [filterCat, setFilterCat] = useState("");  // 목록 필터
+  const [filterCat, setFilterCat] = useState("");
+  const textareaRef = useRef(null);
 
   const h = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` });
+
+  const applyFormat = (type) => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const s = el.selectionStart, e = el.selectionEnd;
+    const sel = form.content.slice(s, e);
+    const before = form.content.slice(0, s), after = form.content.slice(e);
+    const wrap = (l, r = l) => {
+      setForm(f => ({ ...f, content: before + l + sel + r + after }));
+      setTimeout(() => { el.focus(); el.setSelectionRange(s + l.length, s + l.length + sel.length); }, 0);
+    };
+    const line = (prefix) => {
+      const lineStart = form.content.lastIndexOf("\n", s - 1) + 1;
+      const newContent = form.content.slice(0, lineStart) + prefix + form.content.slice(lineStart);
+      setForm(f => ({ ...f, content: newContent }));
+      setTimeout(() => { el.focus(); el.setSelectionRange(s + prefix.length, e + prefix.length); }, 0);
+    };
+    switch (type) {
+      case "bold":      return wrap("**");
+      case "italic":    return wrap("*");
+      case "code":      return wrap("`");
+      case "codeblock": return wrap("```\n", "\n```");
+      case "h1":        return line("# ");
+      case "h2":        return line("## ");
+      case "ul":        return line("- ");
+      case "quote":     return line("> ");
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const map = { b:"bold", i:"italic", k:"code", Enter:"codeblock" };
+    if (map[e.key]) { e.preventDefault(); applyFormat(map[e.key]); }
+  };
 
   const load = () => {
     setLoading(true);
@@ -5170,12 +5205,38 @@ function NoteScreen({ isGuest, onLogin }) {
           <MarkdownView content={form.content} />
         </div>
       ) : (
-        <textarea
-          value={form.content}
-          onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-          placeholder={"# 마크다운 지원\n\n**굵게**, *기울임*, `코드`, ```코드블록```\n\n오늘 공부한 내용을 자유롭게 적어보세요."}
-          style={{ width:"100%", minHeight:440, background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"16px 20px", fontFamily:MONO, fontSize:13, color:C.text, outline:"none", resize:"vertical", lineHeight:1.7, boxSizing:"border-box" }}
-        />
+        <div style={{ border:`1px solid ${C.line}`, borderRadius:12, overflow:"hidden" }}>
+          {/* 툴바 */}
+          <div style={{ display:"flex", gap:2, padding:"8px 10px", background:C.card2, borderBottom:`1px solid ${C.line}`, flexWrap:"wrap" }}>
+            {[
+              { label:"B",  title:"굵게 (Ctrl+B)",       type:"bold",      style:{ fontWeight:800 } },
+              { label:"I",  title:"기울임 (Ctrl+I)",      type:"italic",    style:{ fontStyle:"italic" } },
+              { label:"`",  title:"인라인 코드 (Ctrl+K)", type:"code",      style:{ fontFamily:MONO } },
+              { label:"```",title:"코드블록 (Ctrl+Enter)",type:"codeblock", style:{ fontFamily:MONO, fontSize:10 } },
+              { label:"H1", title:"제목 1",               type:"h1",        style:{} },
+              { label:"H2", title:"제목 2",               type:"h2",        style:{} },
+              { label:"•",  title:"목록",                 type:"ul",        style:{ fontSize:16 } },
+              { label:"❝",  title:"인용",                 type:"quote",     style:{} },
+            ].map(btn => (
+              <button key={btn.type} onClick={() => applyFormat(btn.type)} title={btn.title} style={{
+                padding:"4px 9px", borderRadius:6, border:"none", background:"transparent",
+                color:C.muted, cursor:"pointer", fontFamily:SANS, fontSize:13, ...btn.style,
+                transition:"background .1s",
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = C.line}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+              >{btn.label}</button>
+            ))}
+          </div>
+          <textarea
+            ref={textareaRef}
+            value={form.content}
+            onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+            onKeyDown={handleKeyDown}
+            placeholder={"오늘 공부한 내용을 자유롭게 적어보세요.\n\n단축키: Ctrl+B 굵게  Ctrl+I 기울임  Ctrl+K 코드"}
+            style={{ width:"100%", minHeight:420, background:C.card, border:"none", padding:"16px 20px", fontFamily:MONO, fontSize:13, color:C.text, outline:"none", resize:"vertical", lineHeight:1.8, boxSizing:"border-box", display:"block" }}
+          />
+        </div>
       )}
     </div>
   );
