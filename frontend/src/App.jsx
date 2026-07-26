@@ -5093,7 +5093,12 @@ function RichEditor({ value, onChange }) {
 
 // ── 노트 화면 ────────────────────────────────────
 const isHtml = (s) => /^<[a-z][\s\S]*>/i.test((s || "").trim());
-const stripHtml = (s) => (s || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+const stripHtml = (s) => (s || "")
+  .replace(/<[^>]*>/g, " ")
+  .replace(/&[a-zA-Z]+;/g, " ")
+  .replace(/[#*`]/g, "")
+  .replace(/\s+/g, " ")
+  .trim();
 const NOTE_CATEGORIES = ["Python", "Java", "SQL", "AICE", "ADsP", "기타"];
 const CAT_COLOR = { Python:C.blue, Java:C.coral, SQL:C.green, AICE:C.purple, ADsP:C.yellow, "기타":C.muted };
 
@@ -5354,7 +5359,7 @@ function NoteScreen({ isGuest, onLogin }) {
                         <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
                       </div>
                       <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        {(isHtml(n.content) ? stripHtml(n.content) : n.content.replace(/[#*`<>]/g, "")).slice(0, 80) || "내용 없음"}
+                        {stripHtml(n.content).slice(0, 80) || "내용 없음"}
                       </div>
                     </div>
                     <span style={{ fontFamily:MONO, fontSize:11, color:C.muted, whiteSpace:"nowrap", flexShrink:0 }}>{fmtDate(n.updated_at)}</span>
