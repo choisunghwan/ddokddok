@@ -6099,8 +6099,10 @@ function StudyIsland() {
         <span style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color: running?C.blue:C.muted }}>
           {running ? fmt(sessionSecs) : "타이머"}
         </span>
-        <span style={{ color:C.line, fontSize:10 }}>·</span>
-        <span style={{ fontSize:14 }}>{active ? cur?.emoji : "🔇"}</span>
+        {active && <>
+          <span style={{ color:C.line, fontSize:10 }}>·</span>
+          <span style={{ fontSize:14 }}>{cur?.emoji}</span>
+        </>}
       </button>
     </div>
   );
