@@ -5156,22 +5156,37 @@ const EDITOR_COLORS = [
 ];
 
 const SLASH_CMDS = [
-  { key:"h1",      icon:"H1", label:"제목 1",     desc:"큰 제목",          action:(exec)=>exec("formatBlock","H1") },
-  { key:"h2",      icon:"H2", label:"제목 2",     desc:"중간 제목",         action:(exec)=>exec("formatBlock","H2") },
-  { key:"bullet",  icon:"•",  label:"글머리 목록", desc:"- 스페이스로도 입력",action:(exec)=>exec("insertUnorderedList") },
+  { key:"h1",      icon:"H1", label:"제목 1",     desc:"큰 제목",           action:(exec)=>exec("formatBlock","H1") },
+  { key:"h2",      icon:"H2", label:"제목 2",     desc:"중간 제목",          action:(exec)=>exec("formatBlock","H2") },
+  { key:"bullet",  icon:"•",  label:"글머리 목록", desc:"- 스페이스로도 입력", action:(exec)=>exec("insertUnorderedList") },
   { key:"number",  icon:"1.", label:"번호 목록",   desc:"1. 스페이스로도 입력",action:(exec)=>exec("insertOrderedList") },
-  { key:"quote",   icon:"❝",  label:"인용구",     desc:"> 스페이스로도 입력",action:(exec)=>exec("formatBlock","BLOCKQUOTE") },
-  { key:"bold",    icon:"B",  label:"굵게",       desc:"Ctrl+B",           action:(exec)=>exec("bold") },
-  { key:"italic",  icon:"I",  label:"기울임",      desc:"Ctrl+I",           action:(exec)=>exec("italic") },
-  { key:"underline",icon:"U", label:"밑줄",       desc:"Ctrl+U",           action:(exec)=>exec("underline") },
-  { key:"strike",  icon:"S",  label:"취소선",      desc:"",                 action:(exec)=>exec("strikeThrough") },
+  { key:"quote",   icon:"❝",  label:"인용구",     desc:"> 스페이스로도 입력", action:(exec)=>exec("formatBlock","BLOCKQUOTE") },
+  { key:"bold",    icon:"B",  label:"굵게",        desc:"Ctrl+B",            action:(exec)=>exec("bold") },
+  { key:"italic",  icon:"I",  label:"기울임",      desc:"Ctrl+I",            action:(exec)=>exec("italic") },
+  { key:"underline",icon:"U", label:"밑줄",        desc:"Ctrl+U",            action:(exec)=>exec("underline") },
+  { key:"strike",  icon:"S",  label:"취소선",      desc:"",                  action:(exec)=>exec("strikeThrough") },
+  { key:"red",     icon:"A",  label:"빨간 글씨",   desc:"", color:"#F87171",  action:(exec)=>exec("foreColor","#F87171") },
+  { key:"blue",    icon:"A",  label:"파란 글씨",   desc:"", color:"#4F8EF7",  action:(exec)=>exec("foreColor","#4F8EF7") },
+  { key:"green",   icon:"A",  label:"초록 글씨",   desc:"", color:"#34D399",  action:(exec)=>exec("foreColor","#34D399") },
+  { key:"yellow",  icon:"A",  label:"노란 글씨",   desc:"", color:"#FBBF24",  action:(exec)=>exec("foreColor","#FBBF24") },
+  { key:"purple",  icon:"A",  label:"보라 글씨",   desc:"", color:"#A78BFA",  action:(exec)=>exec("foreColor","#A78BFA") },
+  { key:"normal",  icon:"A",  label:"색상 초기화",  desc:"", color:"",         action:(exec)=>exec("removeFormat") },
 ];
 
 function RichEditor({ value, onChange }) {
-  const ref     = useRef(null);
-  const [bubble, setBubble]   = useState(null); // {top,left} | null
-  const [slash,  setSlash]    = useState(null); // {top,left,q} | null
+  const ref        = useRef(null);
+  const [bubble, setBubble]     = useState(null);
+  const [slash,  setSlash]      = useState(null);
   const [slashSel, setSlashSel] = useState(0);
+  // stale closure 방지용 ref
+  const slashRef    = useRef(null);
+  const slashSelRef = useRef(0);
+
+  const _setSlash = (v) => { slashRef.current = v; setSlash(v); };
+  const _setSlashSel = (v) => {
+    const val = typeof v === "function" ? v(slashSelRef.current) : v;
+    slashSelRef.current = val; setSlashSel(val);
+  };
 
   useEffect(() => {
     if (ref.current) ref.current.innerHTML = value || "";
@@ -5202,7 +5217,7 @@ function RichEditor({ value, onChange }) {
   /* 슬래시 메뉴 – 외부 클릭 닫기 */
   useEffect(() => {
     if (!slash) return;
-    const close = (e) => { if (!ref.current?.contains(e.target)) setSlash(null); };
+    const close = (e) => { if (!ref.current?.contains(e.target)) _setSlash(null); };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [slash]);
@@ -5213,25 +5228,29 @@ function RichEditor({ value, onChange }) {
     if (text === "/") {
       const r  = sel.getRangeAt(0).getBoundingClientRect();
       const er = ref.current.getBoundingClientRect();
-      setSlash({ top: r.bottom - er.top + 6, left: Math.max(0, r.left - er.left), q: "" });
-      setSlashSel(0);
-    } else if (slash) {
-      const m = text.match(/\/(\w*)$/);
-      if (m) { setSlash(s => ({ ...s, q: m[1].toLowerCase() })); setSlashSel(0); }
-      else setSlash(null);
+      _setSlash({ top: r.bottom - er.top + 6, left: Math.max(0, r.left - er.left), q: "" });
+      _setSlashSel(0);
+    } else if (slashRef.current) {
+      const m = text.match(/\/([^/]*)$/);
+      if (m) { _setSlash({ ...slashRef.current, q: m[1].toLowerCase() }); _setSlashSel(0); }
+      else _setSlash(null);
     }
     onChange(e.currentTarget.innerHTML);
   };
 
   const handleKeyDown = (e) => {
-    /* 슬래시 메뉴 키 조작 */
-    if (slash) {
-      const list = SLASH_CMDS.filter(c => !slash.q || c.label.includes(slash.q) || c.key.startsWith(slash.q));
-      const sel  = Math.min(slashSel, list.length - 1);
-      if (e.key === "ArrowDown") { e.preventDefault(); setSlashSel(i => (i+1) % list.length); return; }
-      if (e.key === "ArrowUp")   { e.preventDefault(); setSlashSel(i => (i-1+list.length) % list.length); return; }
-      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); applySlash(list[sel]); return; }
-      if (e.key === "Escape")    { setSlash(null); return; }
+    /* 슬래시 메뉴 키 조작 — ref로 동기 접근 */
+    const curSlash = slashRef.current;
+    if (curSlash) {
+      const list = SLASH_CMDS.filter(c => !curSlash.q || c.label.includes(curSlash.q) || c.key.startsWith(curSlash.q));
+      if (!list.length) { _setSlash(null); }
+      else {
+        const idx = Math.min(slashSelRef.current, list.length - 1);
+        if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); _setSlashSel((i) => (i+1) % list.length); return; }
+        if (e.key === "ArrowUp")   { e.preventDefault(); e.stopPropagation(); _setSlashSel((i) => (i-1+list.length) % list.length); return; }
+        if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); e.stopPropagation(); applySlash(list[idx]); return; }
+        if (e.key === "Escape")    { e.preventDefault(); _setSlash(null); return; }
+      }
     }
 
     /* 마크다운 단축키 (스페이스) */
@@ -5261,20 +5280,23 @@ function RichEditor({ value, onChange }) {
 
   const applySlash = (cmd) => {
     if (!cmd) return;
+    _setSlash(null);
+    ref.current?.focus();
+    // / 부터 현재 커서까지 선택 후 delete
     const sel = window.getSelection();
-    const node = sel?.anchorNode;
-    if (node?.nodeType === Node.TEXT_NODE) {
-      const idx = node.textContent.lastIndexOf("/");
+    if (sel && sel.anchorNode?.nodeType === Node.TEXT_NODE) {
+      const node = sel.anchorNode;
+      const idx  = node.textContent.lastIndexOf("/");
       if (idx !== -1) {
-        node.textContent = node.textContent.slice(0, idx);
-        const r = document.createRange();
-        r.setStart(node, node.textContent.length); r.collapse(true);
-        sel.removeAllRanges(); sel.addRange(r);
+        const range = document.createRange();
+        range.setStart(node, idx);
+        range.setEnd(node, sel.anchorOffset);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand("delete");
       }
     }
     cmd.action(exec);
-    setSlash(null);
-    ref.current?.focus();
   };
 
   const bb = { padding:"4px 9px", borderRadius:5, border:"none", background:"transparent", color:C.text, cursor:"pointer", fontFamily:SANS, fontSize:13, lineHeight:1 };
@@ -5345,7 +5367,7 @@ function RichEditor({ value, onChange }) {
                 background: isSelected ? "linear-gradient(135deg,rgba(37,99,235,0.3),rgba(109,40,217,0.3))" : "transparent",
                 cursor:"pointer",textAlign:"left",
               }}>
-                <div style={{width:30,height:30,borderRadius:7,background:isSelected?"rgba(37,99,235,0.25)":"#22263A",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontSize:12,color:isSelected?"#93C5FD":"#9CA3AF",fontWeight:700,flexShrink:0}}>{c.icon}</div>
+                <div style={{width:30,height:30,borderRadius:7,background:isSelected?"rgba(37,99,235,0.25)":"#22263A",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontSize:12,color:c.color||( isSelected?"#93C5FD":"#9CA3AF"),fontWeight:700,flexShrink:0}}>{c.icon}</div>
                 <div>
                   <div style={{fontFamily:SANS,fontSize:13,color:isSelected?"#E8EAFF":"#CBD5E1",fontWeight:600}}>{c.label}</div>
                   {c.desc && <div style={{fontFamily:SANS,fontSize:11,color:"#6B7280"}}>{c.desc}</div>}
