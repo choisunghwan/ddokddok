@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from database import get_db
-from models import User, AiceSubmission, StudySession, CourseProgress, StudyMember, StudyCheckin
+from models import User, AiceSubmission, StudySession, CourseProgress, StudyMember, StudyCheckin, StudyNote, StudyTimerStat
 from deps import get_current_user
 import os, httpx
 
@@ -155,13 +155,30 @@ def kakao_login(body: KakaoLoginRequest, db: Session = Depends(get_db)):
     return TokenResponse(access_token=create_token(user.id), nickname=user.nickname)
 
 
+def _merge_kakao_account(db: Session, kakao_user: User, target_user: User):
+    # 노트·학습 데이터 이전
+    for model in [StudyNote, AiceSubmission, StudySession, CourseProgress]:
+        db.query(model).filter(model.user_id == kakao_user.id).update(
+            {"user_id": target_user.id}, synchronize_session=False
+        )
+    # 중복 가능한 테이블은 삭제 (카카오 전용 계정은 보통 비어있음)
+    for model in [StudyMember, StudyCheckin, StudyTimerStat]:
+        db.query(model).filter(model.user_id == kakao_user.id).delete(synchronize_session=False)
+    db.delete(kakao_user)
+    db.commit()
+
+
 @router.post("/kakao/link")
 def kakao_link(body: KakaoLoginRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     kakao_id, _ = _kakao_exchange(body.code, body.redirect_uri)
 
     existing = db.query(User).filter(User.kakao_id == kakao_id).first()
     if existing and existing.id != current_user.id:
-        raise HTTPException(status_code=400, detail="이미 다른 계정에 연결된 카카오 계정입니다")
+        if existing.email.endswith("@kakao.local"):
+            # 카카오 전용 계정 → 데이터 합치고 삭제
+            _merge_kakao_account(db, kakao_user=existing, target_user=current_user)
+        else:
+            raise HTTPException(status_code=400, detail="이미 다른 계정에 연결된 카카오 계정입니다")
 
     current_user.kakao_id = kakao_id
     db.commit()
