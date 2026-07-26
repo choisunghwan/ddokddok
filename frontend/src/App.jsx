@@ -5126,7 +5126,7 @@ function NoteScreen({ isGuest, onLogin, nickname }) {
 
   useEffect(() => { if (!isGuest) load(); }, [isGuest]);
 
-  const openNew = () => { setForm({ title: "", content: "", tags: "", category: "" }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
+  const openNew = () => { setForm({ title: "", content: "", tags: "", category: filterCat }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
   const openEdit = (n) => {
     const content = isHtml(n.content) ? n.content : marked.parse(n.content || "", MD_OPTS);
     setForm({ title: n.title, content, tags: n.tags, category: n.category || "" });
