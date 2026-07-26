@@ -5171,6 +5171,8 @@ const SLASH_CMDS = [
   { key:"yellow",  icon:"A",  label:"노란 글씨",   desc:"", color:"#FBBF24",  action:(exec)=>exec("foreColor","#FBBF24") },
   { key:"purple",  icon:"A",  label:"보라 글씨",   desc:"", color:"#A78BFA",  action:(exec)=>exec("foreColor","#A78BFA") },
   { key:"normal",  icon:"A",  label:"색상 초기화",  desc:"", color:"",         action:(exec)=>exec("removeFormat") },
+  { key:"toggle",  icon:"▶",  label:"토글",        desc:"접을 수 있는 블록",  action:(exec)=>exec("insertHTML",'<details class="toggle-block"><summary>토글 제목</summary><p>내용을 입력하세요</p></details><p><br></p>') },
+  { key:"divider", icon:"—",  label:"구분선",      desc:"",                   action:(exec)=>exec("insertHTML","<hr/><p><br></p>") },
 ];
 
 function RichEditor({ value, onChange }) {
@@ -5227,8 +5229,7 @@ function RichEditor({ value, onChange }) {
     const text = sel?.anchorNode?.textContent || "";
     if (text === "/") {
       const r  = sel.getRangeAt(0).getBoundingClientRect();
-      const er = ref.current.getBoundingClientRect();
-      _setSlash({ top: r.bottom - er.top + 6, left: Math.max(0, r.left - er.left), q: "" });
+      _setSlash({ top: r.bottom + window.scrollY + 6, left: r.left + window.scrollX, q: "" });
       _setSlashSel(0);
     } else if (slashRef.current) {
       const m = text.match(/\/([^/]*)$/);
@@ -5325,6 +5326,12 @@ function RichEditor({ value, onChange }) {
         .rich-editor p { margin:2px 0; }
         .rich-editor code { background:${C.card2}; padding:2px 6px; border-radius:4px; font-family:${MONO}; font-size:13px; color:${C.yellow}; }
         .rich-editor a { color:${C.blue}; text-decoration:underline; }
+        .rich-editor details.toggle-block { margin:6px 0; border-left:2px solid ${C.blue}; padding:4px 0 4px 14px; border-radius:0 6px 6px 0; background:${C.blue}08; }
+        .rich-editor details.toggle-block summary { cursor:pointer; font-weight:600; padding:4px 0; list-style:none; display:flex; align-items:center; gap:6px; }
+        .rich-editor details.toggle-block summary::before { content:"▶"; font-size:10px; color:${C.muted}; transition:transform .2s; flex-shrink:0; }
+        .rich-editor details.toggle-block[open] summary::before { transform:rotate(90deg); }
+        .rich-editor details.toggle-block[open] summary { margin-bottom:4px; }
+        .rich-editor hr { border:none; border-top:1px solid ${C.line}; margin:12px 0; }
       `}</style>
 
       {/* 버블 서식 메뉴 */}
@@ -5357,10 +5364,10 @@ function RichEditor({ value, onChange }) {
         </div>
       )}
 
-      {/* 슬래시 커맨드 메뉴 */}
+      {/* 슬래시 커맨드 메뉴 — fixed로 overflow:hidden 탈출 */}
       {slash && filteredSlash.length > 0 && (
         <div style={{
-          position:"absolute", top:slash.top, left:slash.left, zIndex:300,
+          position:"fixed", top:slash.top, left:slash.left, zIndex:9999,
           background:"#1C2033", border:"1px solid #2E3350",
           borderRadius:12, padding:"6px", minWidth:240,
           boxShadow:"0 8px 32px rgba(0,0,0,0.5)",
