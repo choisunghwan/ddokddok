@@ -36,6 +36,7 @@ const _savedTheme = typeof localStorage !== "undefined" ? localStorage.getItem("
 const C = { ...(_savedTheme === "light" ? LIGHT : DARK) };
 const SANS = "'Pretendard','Inter',system-ui,sans-serif";
 const MONO = "'JetBrains Mono','Fira Code',monospace";
+const GRAD = "linear-gradient(135deg, #2563EB 0%, #6D28D9 100%)";
 
 // ── 목 데이터 ──────────────────────────────────
 const WEEKLY = [
@@ -632,7 +633,7 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
           <button key={key} onClick={() => setTab(key)} style={{
             flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             padding:"10px 0 8px", border:"none", background:"transparent",
-            color: locked ? C.muted+"99" : active ? C.blue : C.muted, cursor:"pointer", position:"relative",
+            color: locked ? C.muted+"99" : active ? "#5B8DEF" : C.muted, cursor:"pointer", position:"relative",
           }}>
             <Icon size={20} />
             <span style={{ fontFamily:SANS, fontSize:9, fontWeight:active?700:400 }}>{label}</span>
@@ -645,8 +646,11 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
 
   return (
     <div style={{ position:"fixed", left:0, top:0, bottom:0, width:200, background:C.card, borderRight:`1px solid ${C.line}`, display:"flex", flexDirection:"column", padding:"24px 12px", zIndex:10 }}>
-      <div onClick={() => setTab("home")} style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:20, color:C.text, marginBottom:36, paddingLeft:8, cursor:"pointer" }}>
-        <span style={{ color:C.blue }}>똑</span>똑
+      <div onClick={() => setTab("home")} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:36, paddingLeft:8, cursor:"pointer" }}>
+        <img src="/favicon.svg" width={30} height={30} style={{ borderRadius:8, flexShrink:0 }} />
+        <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:20, color:C.text }}>
+          <span style={{ backgroundImage:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>똑</span>똑
+        </span>
       </div>
       {items.map(({ key, icon: Icon, label }) => {
         const active = tab === key;
@@ -654,10 +658,12 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
         return (
           <button key={key} onClick={() => setTab(key)} style={{
             display:"flex", alignItems:"center", gap:10, padding:"11px 12px", borderRadius:10, border:"none",
-            background: active ? C.blue+"22" : "transparent",
-            color: locked ? C.muted+"88" : active ? C.blue : C.muted,
+            background: active ? "linear-gradient(135deg, rgba(37,99,235,0.15), rgba(109,40,217,0.15))" : "transparent",
+            color: locked ? C.muted+"88" : active ? "#5B8DEF" : C.muted,
             cursor:"pointer", fontFamily:SANS, fontSize:14, fontWeight: active ? 700 : 500,
             marginBottom:4, transition:"all 0.15s",
+            borderLeft: active ? "3px solid" : "3px solid transparent",
+            borderImage: active ? GRAD + " 1" : "none",
           }}>
             <Icon size={17} />
             <span style={{ flex:1 }}>{label}</span>
@@ -676,7 +682,7 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
           </div>
         ) : (
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:32, height:32, borderRadius:"50%", background:C.blue+"44", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:13, color:C.blue, fontWeight:700 }}>
+            <div style={{ width:32, height:32, borderRadius:"50%", background:GRAD, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:13, color:"#fff", fontWeight:700 }}>
               {nickname?.[0]?.toUpperCase()}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
@@ -999,7 +1005,7 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
 
         <button onClick={submit} disabled={loading} style={{
           width:"100%", padding:"12px 0", borderRadius:9, border:"none",
-          background: loading ? C.line : C.blue, color:C.white,
+          background: loading ? C.line : GRAD, color:C.white,
           fontFamily:SANS, fontSize:14, fontWeight:700, cursor: loading ? "not-allowed" : "pointer",
         }}>{loading ? "처리 중…" : mode === "login" ? "로그인" : "회원가입"}</button>
 
