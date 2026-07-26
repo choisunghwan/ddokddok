@@ -5180,6 +5180,8 @@ function RichEditor({ value, onChange }) {
   const [bubble, setBubble]     = useState(null);
   const [slash,  setSlash]      = useState(null);
   const [slashSel, setSlashSel] = useState(0);
+  const [addBtn, setAddBtn]     = useState(null); // { top, left } fixed
+  const hoverElRef = useRef(null);
   // stale closure 방지용 ref
   const slashRef    = useRef(null);
   const slashSelRef = useRef(0);
@@ -5193,6 +5195,39 @@ function RichEditor({ value, onChange }) {
   useEffect(() => {
     if (ref.current) ref.current.innerHTML = value || "";
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* 줄 호버 시 + 버튼 */
+  const handleEditorMouseMove = (e) => {
+    if (!ref.current || slashRef.current) return;
+    let el = document.elementFromPoint(e.clientX, e.clientY);
+    while (el && el.parentElement !== ref.current) el = el.parentElement;
+    if (!el) { setAddBtn(null); hoverElRef.current = null; return; }
+    hoverElRef.current = el;
+    const rect = el.getBoundingClientRect();
+    const edRect = ref.current.getBoundingClientRect();
+    setAddBtn({ top: rect.top + rect.height / 2 - 11, left: edRect.left - 34 });
+  };
+
+  const handleAddBlock = () => {
+    const target = hoverElRef.current;
+    setAddBtn(null);
+    ref.current?.focus();
+    if (target) {
+      const range = document.createRange();
+      range.selectNodeContents(target);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    document.execCommand("insertParagraph");
+    const sel2 = window.getSelection();
+    if (sel2?.rangeCount) {
+      const r = sel2.getRangeAt(0).getBoundingClientRect();
+      _setSlash({ top: r.bottom + window.scrollY + 6, left: r.left + window.scrollX, q: "" });
+      _setSlashSel(0);
+    }
+  };
 
   const exec = (cmd, val) => {
     ref.current?.focus();
@@ -5334,6 +5369,57 @@ function RichEditor({ value, onChange }) {
         .rich-editor hr { border:none; border-top:1px solid ${C.line}; margin:12px 0; }
       `}</style>
 
+      {/* 고정 툴바 */}
+      <div style={{
+        display:"flex", alignItems:"center", gap:2, flexWrap:"wrap",
+        padding:"6px 10px", borderBottom:`1px solid ${C.line}`,
+        background:C.card2,
+      }}>
+        {/* 텍스트 서식 */}
+        {[
+          { cmd:"bold",         html:"<b>B</b>",      title:"굵게 (Ctrl+B)" },
+          { cmd:"italic",       html:"<i>I</i>",      title:"기울임 (Ctrl+I)" },
+          { cmd:"underline",    html:"<u>U</u>",      title:"밑줄 (Ctrl+U)" },
+          { cmd:"strikeThrough",html:"<s>S</s>",      title:"취소선" },
+        ].map(({ cmd, html, title }) => (
+          <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd)}} title={title}
+            style={{ padding:"3px 8px", borderRadius:5, border:"none", background:"transparent",
+              color:C.text, cursor:"pointer", fontSize:13, fontFamily:SANS }}
+            dangerouslySetInnerHTML={{ __html: html }} />
+        ))}
+        <div style={{ width:1, height:18, background:C.line, margin:"0 4px" }} />
+        {/* 제목 */}
+        {[["H1","H1"],["H2","H2"],["H3","H3"]].map(([label, tag]) => (
+          <button key={tag} onMouseDown={e=>{e.preventDefault();exec("formatBlock",tag)}} title={`${label} 제목`}
+            style={{ padding:"3px 7px", borderRadius:5, border:"none", background:"transparent",
+              color:C.text, cursor:"pointer", fontSize:11, fontWeight:700, fontFamily:SANS }}>
+            {label}
+          </button>
+        ))}
+        <div style={{ width:1, height:18, background:C.line, margin:"0 4px" }} />
+        {/* 목록 */}
+        <button onMouseDown={e=>{e.preventDefault();exec("insertUnorderedList")}} title="글머리 목록"
+          style={{ padding:"3px 8px", borderRadius:5, border:"none", background:"transparent", color:C.text, cursor:"pointer", fontSize:14 }}>☰</button>
+        <button onMouseDown={e=>{e.preventDefault();exec("insertOrderedList")}} title="번호 목록"
+          style={{ padding:"3px 8px", borderRadius:5, border:"none", background:"transparent", color:C.text, cursor:"pointer", fontSize:13, fontFamily:MONO }}>1.</button>
+        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","BLOCKQUOTE")}} title="인용구"
+          style={{ padding:"3px 8px", borderRadius:5, border:"none", background:"transparent", color:C.text, cursor:"pointer", fontSize:14 }}>❝</button>
+        <div style={{ width:1, height:18, background:C.line, margin:"0 4px" }} />
+        {/* 글씨 색 */}
+        {[
+          { color:"#F87171", title:"빨간 글씨" },
+          { color:"#4F8EF7", title:"파란 글씨" },
+          { color:"#34D399", title:"초록 글씨" },
+          { color:"#FBBF24", title:"노란 글씨" },
+          { color:"#A78BFA", title:"보라 글씨" },
+        ].map(({ color, title }) => (
+          <button key={color} onMouseDown={e=>{e.preventDefault();exec("foreColor",color)}} title={title}
+            style={{ width:16, height:16, borderRadius:"50%", background:color, border:"none", cursor:"pointer", flexShrink:0, padding:0 }} />
+        ))}
+        <button onMouseDown={e=>{e.preventDefault();exec("removeFormat")}} title="서식 초기화"
+          style={{ padding:"3px 7px", borderRadius:5, border:"none", background:"transparent", color:C.muted, cursor:"pointer", fontSize:11 }}>✕</button>
+      </div>
+
       {/* 버블 서식 메뉴 */}
       {bubble && (
         <div style={{
@@ -5402,7 +5488,25 @@ function RichEditor({ value, onChange }) {
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onCompositionEnd={handleCompositionEnd}
+        onMouseMove={handleEditorMouseMove}
+        onMouseLeave={() => setAddBtn(null)}
       />
+
+      {/* 줄 옆 + 버튼 */}
+      {addBtn && !slash && (
+        <button
+          onMouseDown={e => { e.preventDefault(); handleAddBlock(); }}
+          style={{
+            position:"fixed", top:addBtn.top, left:addBtn.left, zIndex:9998,
+            width:22, height:22, borderRadius:"50%",
+            border:`1px solid ${C.line}`, background:C.card2,
+            color:C.muted, fontSize:16, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center", padding:0,
+            lineHeight:1,
+          }}
+          title="블록 추가"
+        >+</button>
+      )}
 
       <div style={{padding:"7px 20px",background:C.card2,borderTop:`1px solid ${C.line}`,display:"flex",gap:16,flexWrap:"wrap"}}>
         {[["/ 블록 추가"],["텍스트 선택 → 서식"],["# + 스페이스 → 제목"],["- + 스페이스 → 목록"]].map(([t])=>(
