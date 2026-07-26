@@ -5011,6 +5011,7 @@ function NoteScreen({ isGuest, onLogin }) {
   const [current, setCurrent]   = useState(null);   // 선택된 노트
   const [form, setForm]         = useState({ title: "", content: "", tags: "" });
   const [saving, setSaving]     = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [preview, setPreview]   = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
@@ -5025,18 +5026,21 @@ function NoteScreen({ isGuest, onLogin }) {
 
   useEffect(() => { if (!isGuest) load(); }, [isGuest]);
 
-  const openNew = () => { setForm({ title: "", content: "", tags: "" }); setCurrent(null); setPreview(false); setView("edit"); };
-  const openEdit = (n) => { setForm({ title: n.title, content: n.content, tags: n.tags }); setCurrent(n); setPreview(false); setView("edit"); };
+  const openNew = () => { setForm({ title: "", content: "", tags: "" }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
+  const openEdit = (n) => { setForm({ title: n.title, content: n.content, tags: n.tags }); setCurrent(n); setPreview(false); setSaveError(""); setView("edit"); };
   const openRead = (n) => { setCurrent(n); setView("read"); };
 
   const save = async () => {
     if (!form.title.trim()) return;
     setSaving(true);
+    setSaveError("");
     const url    = current ? `${API}/api/notes/${current.id}` : `${API}/api/notes`;
     const method = current ? "PUT" : "POST";
     const r = await fetch(url, { method, headers: h(), body: JSON.stringify(form) }).catch(() => null);
     setSaving(false);
-    if (!r?.ok) return;
+    if (!r) { setSaveError("네트워크 오류 — 서버에 연결할 수 없어요"); return; }
+    if (r.status === 401) { setSaveError("로그인이 만료됐어요. 다시 로그인해주세요"); return; }
+    if (!r.ok) { setSaveError(`저장 실패 (${r.status})`); return; }
     const saved = await r.json();
     if (current) {
       setNotes(ns => ns.map(n => n.id === saved.id ? saved : n));
@@ -5126,6 +5130,11 @@ function NoteScreen({ isGuest, onLogin }) {
         </button>
       </div>
 
+      {saveError && (
+        <div style={{ background:C.coral+"18", border:`1px solid ${C.coral}44`, borderRadius:10, padding:"10px 16px", fontFamily:SANS, fontSize:13, color:C.coral, marginBottom:12 }}>
+          ⚠️ {saveError}
+        </div>
+      )}
       <input
         value={form.title}
         onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
