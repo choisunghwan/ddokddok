@@ -5102,7 +5102,7 @@ const stripHtml = (s) => (s || "")
 const NOTE_CATEGORIES = ["Python", "Java", "SQL", "AICE", "ADsP", "기타"];
 const CAT_COLOR = { Python:C.blue, Java:C.coral, SQL:C.green, AICE:C.purple, ADsP:C.yellow, "기타":C.muted };
 
-function NoteScreen({ isGuest, onLogin }) {
+function NoteScreen({ isGuest, onLogin, nickname }) {
   const [notes, setNotes]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [view, setView]           = useState("list"); // list | edit | read
@@ -5364,13 +5364,21 @@ function NoteScreen({ isGuest, onLogin }) {
                     </div>
                     <span style={{ fontFamily:MONO, fontSize:11, color:C.muted, whiteSpace:"nowrap", flexShrink:0 }}>{fmtDate(n.updated_at)}</span>
                   </div>
-                  {n.tags && (
-                    <div style={{ display:"flex", gap:6, marginTop:10, flexWrap:"wrap" }}>
-                      {n.tags.split(",").filter(Boolean).map(tag => (
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:10, flexWrap:"wrap", gap:6 }}>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {n.tags && n.tags.split(",").filter(Boolean).map(tag => (
                         <span key={tag.trim()} style={{ fontFamily:MONO, fontSize:10, color:C.blue, background:C.blue+"18", padding:"2px 8px", borderRadius:99 }}>#{tag.trim()}</span>
                       ))}
                     </div>
-                  )}
+                    {nickname && (
+                      <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
+                        <div style={{ width:18, height:18, borderRadius:"50%", background:C.blue+"44", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:9, fontWeight:700, color:C.blue }}>
+                          {nickname[0]?.toUpperCase()}
+                        </div>
+                        <span style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{nickname}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -5526,7 +5534,7 @@ export default function App() {
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
         {tab === "code"  && <CodeScreen key={screenKeys.code} isGuest={isGuest} />}
         {tab === "cert"  && <CertScreen key={screenKeys.cert} />}
-        {tab === "notes" && <NoteScreen key={screenKeys.notes} isGuest={isGuest} onLogin={handleBackToLogin} />}
+        {tab === "notes" && <NoteScreen key={screenKeys.notes} isGuest={isGuest} onLogin={handleBackToLogin} nickname={nickname} />}
         {tab === "arch"  && <ArchScreen key={screenKeys.arch} />}
         {tab === "study" && !isGuest && <StudyScreen key={screenKeys.study} />}
       </div>
