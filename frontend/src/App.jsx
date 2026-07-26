@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut, PenLine, Trash2, ArrowLeft, Tag, Plus } from "lucide-react";
+import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut, PenLine, Trash2, ArrowLeft, Tag, Plus, Sun, Moon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, ResponsiveContainer } from "recharts";
 import { marked } from "marked";
 
 // ── 디자인 토큰 ──────────────────────────────────
-const C = {
+const DARK = {
   bg:    "#0F1117",
   card:  "#1A1D27",
   card2: "#22263A",
@@ -18,6 +18,22 @@ const C = {
   muted: "#6B7280",
   white: "#FFFFFF",
 };
+const LIGHT = {
+  bg:    "#F5F7FF",
+  card:  "#FFFFFF",
+  card2: "#EEF1FF",
+  line:  "#DDE3F5",
+  blue:  "#3B7FF5",
+  green: "#059669",
+  coral: "#DC2626",
+  yellow:"#B45309",
+  purple:"#7C3AED",
+  text:  "#0F1117",
+  muted: "#64748B",
+  white: "#FFFFFF",
+};
+const _savedTheme = typeof localStorage !== "undefined" ? localStorage.getItem("ddok_theme") : "dark";
+const C = { ...(_savedTheme === "light" ? LIGHT : DARK) };
 const SANS = "'Pretendard','Inter',system-ui,sans-serif";
 const MONO = "'JetBrains Mono','Fira Code',monospace";
 
@@ -596,7 +612,7 @@ function useIsMobile() {
   return mobile;
 }
 
-function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest }) {
+function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, onToggleTheme }) {
   const isMobile = useIsMobile();
   const items = [
     { key:"home",   icon: Home,    label:"홈"        },
@@ -666,6 +682,9 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest }) {
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nickname}</div>
             </div>
+            <button onClick={onToggleTheme} title={darkMode?"라이트 모드":"다크 모드"} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex", alignItems:"center" }}>
+              {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
             <button onClick={onSettings} title="설정" style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, padding:2, display:"flex", alignItems:"center" }}>
               <Settings size={14} />
             </button>
@@ -5074,6 +5093,7 @@ function RichEditor({ value, onChange }) {
 
 // ── 노트 화면 ────────────────────────────────────
 const isHtml = (s) => /^<[a-z][\s\S]*>/i.test((s || "").trim());
+const stripHtml = (s) => (s || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 const NOTE_CATEGORIES = ["Python", "Java", "SQL", "AICE", "ADsP", "기타"];
 const CAT_COLOR = { Python:C.blue, Java:C.coral, SQL:C.green, AICE:C.purple, ADsP:C.yellow, "기타":C.muted };
 
@@ -5299,7 +5319,7 @@ function NoteScreen({ isGuest, onLogin }) {
                         <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
                       </div>
                       <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        {n.content.replace(/[#*`]/g, "").slice(0, 80) || "내용 없음"}
+                        {(isHtml(n.content) ? stripHtml(n.content) : n.content.replace(/[#*`<>]/g, "")).slice(0, 80) || "내용 없음"}
                       </div>
                     </div>
                     <span style={{ fontFamily:MONO, fontSize:11, color:C.muted, whiteSpace:"nowrap", flexShrink:0 }}>{fmtDate(n.updated_at)}</span>
@@ -5405,7 +5425,16 @@ export default function App() {
   const [showStudyModal, setShowStudyModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, notes:0, arch:0, study:0 });
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("ddok_theme") !== "light");
   const isMobile = useIsMobile();
+
+  const toggleTheme = () => {
+    const newDark = !darkMode;
+    Object.assign(C, newDark ? DARK : LIGHT);
+    localStorage.setItem("ddok_theme", newDark ? "dark" : "light");
+    document.body.style.background = newDark ? DARK.bg : LIGHT.bg;
+    setDarkMode(newDark);
+  };
 
   const BANNER_H = 36;
 
@@ -5450,7 +5479,7 @@ export default function App() {
       {showBanner && <GuestBanner onLogin={handleBackToLogin} onDismiss={() => setBannerDismissed(true)} />}
       {showStudyModal && <StudyLoginModal onLogin={handleBackToLogin} onClose={() => setShowStudyModal(false)} />}
       {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} />}
-      <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} />
+      <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} darkMode={darkMode} onToggleTheme={toggleTheme} />
       <StudyTimer />
       <AmbientPlayer />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
