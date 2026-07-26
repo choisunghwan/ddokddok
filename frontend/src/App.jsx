@@ -5018,7 +5018,7 @@ const EDITOR_COLORS = [
 ];
 
 function RichEditor({ value, onChange }) {
-  const editor = useEditor({
+  const { editor } = useEditor({
     extensions: [
       StarterKit,
       TextStyle,
