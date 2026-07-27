@@ -6278,12 +6278,12 @@ function NoteScreen({ isGuest, onLogin, nickname }) {
                         <span key={tag.trim()} style={{ fontFamily:MONO, fontSize:10, color:C.blue, background:C.blue+"18", padding:"2px 8px", borderRadius:99 }}>#{tag.trim()}</span>
                       ))}
                     </div>
-                    {nickname && (
+                    {n.author && (
                       <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
                         <div style={{ width:18, height:18, borderRadius:"50%", background:C.blue+"44", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:9, fontWeight:700, color:C.blue }}>
-                          {nickname[0]?.toUpperCase()}
+                          {n.author[0]?.toUpperCase()}
                         </div>
-                        <span style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{nickname}</span>
+                        <span style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{n.author}</span>
                       </div>
                     )}
                   </div>
