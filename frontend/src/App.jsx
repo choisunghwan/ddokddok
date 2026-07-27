@@ -1251,24 +1251,46 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
       })()}
 
       {/* 주간 활동 */}
-      <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"18px 20px", marginBottom:28 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-          <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>이번 주 학습 현황</div>
-          <button onClick={fetchStats} disabled={loading} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:14, padding:4, opacity: loading ? 0.4 : 1 }} title="새로고침">↻</button>
+      {(() => {
+        const totalWeekMin = chart.reduce((s, d) => s + (d.min || 0), 0);
+        const maxMin = Math.max(...chart.map(d => d.min || 0), 1);
+        const today = new Date().getDay(); // 0=Sun
+        const todayIdx = today === 0 ? 6 : today - 1; // Mon=0
+        return (
+        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"18px 20px", marginBottom:28 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+            <div>
+              <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>이번 주 학습 현황</div>
+              <div style={{ fontFamily:MONO, fontSize:11, color:C.muted, marginTop:2 }}>총 {totalWeekMin}분 학습</div>
+            </div>
+            <button onClick={fetchStats} disabled={loading} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:14, padding:4, opacity: loading ? 0.4 : 1 }} title="새로고침">↻</button>
+          </div>
+          <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80 }}>
+            {chart.map((d, i) => {
+              const h = maxMin > 0 ? Math.round((d.min / maxMin) * 64) : 0;
+              const isToday = i === todayIdx;
+              const hasData = d.min > 0;
+              return (
+                <div key={d.day} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, position:"relative" }}>
+                  {hasData && (
+                    <div style={{ fontFamily:MONO, fontSize:9, color: isToday ? C.blue : C.muted, position:"absolute", top: 64 - h - 14, left:"50%", transform:"translateX(-50%)", whiteSpace:"nowrap" }}>{d.min}분</div>
+                  )}
+                  <div style={{
+                    width:"100%", height: h || 3, borderRadius: h > 0 ? "5px 5px 3px 3px" : "3px",
+                    background: isToday ? C.blue : hasData ? C.blue+"55" : C.line,
+                    marginTop: 64 - (h || 3), transition:"height .3s",
+                  }} />
+                  <div style={{ fontFamily:MONO, fontSize:10, color: isToday ? C.blue : C.muted, fontWeight: isToday ? 700 : 400 }}>{d.day}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <ResponsiveContainer width="100%" height={110}>
-          <BarChart data={chart} margin={{ top:0, right:0, left:-30, bottom:0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={C.line} vertical={false} />
-            <XAxis dataKey="day" tick={{ fontFamily:MONO, fontSize:10, fill:C.muted }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontFamily:MONO, fontSize:10, fill:C.muted }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ background:C.card2, border:`1px solid ${C.line}`, fontFamily:SANS, fontSize:11, color:C.text }} formatter={(v) => [`${v}분`, "학습"]} />
-            <Bar dataKey="min" fill={C.blue} radius={[5,5,0,0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+        );
+      })()}
 
-      {/* 이어서 */}
-      <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:12 }}>이어서 학습하기</div>
+      {/* 최근 학습 */}
+      <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:12 }}>최근 학습</div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         {courses.map((c) => {
           const pct = c.total > 0 ? Math.min((c.progress / c.total) * 100, 100) : 0;
@@ -1868,7 +1890,7 @@ function LangListScreen({ onSelect }) {
   return (
     <div style={{ padding:"32px 32px 60px" }}>
       <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>코딩 학습</div>
-      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>학습할 언어를 선택하세요</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>단계별 시각화로 코드를 직접 배워보세요</div>
       <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
         {LANG_LIST.map(lang => (
           <button key={lang.id} onClick={() => lang.available && onSelect(lang.id)} style={{
@@ -4830,6 +4852,17 @@ _buf.getvalue().strip()
 }
 
 // ── 코딩테스트 화면 ──────────────────────────────
+const SOLVED_KEY = "ddok_ct_solved";
+function getCtSolved() {
+  try { return new Set(JSON.parse(localStorage.getItem(SOLVED_KEY) || "[]")); } catch { return new Set(); }
+}
+function markCtSolved(id) {
+  try {
+    const s = getCtSolved(); s.add(id);
+    localStorage.setItem(SOLVED_KEY, JSON.stringify([...s]));
+  } catch {}
+}
+
 function CodeTestScreen() {
   const [problem,   setProblem]    = useState(null);
   const [code,      setCode]       = useState("");
@@ -4838,6 +4871,7 @@ function CodeTestScreen() {
   const [pyReady,   setPyReady]    = useState(false);
   const [pyLoading, setPyLoading]  = useState(false);
   const [showSol,   setShowSol]    = useState(false);
+  const [solvedIds, setSolvedIds]  = useState(() => getCtSolved());
   const edRef = useRef(null);
 
   // Pyodide 미리 로드
@@ -4874,6 +4908,10 @@ function CodeTestScreen() {
     }
     setResults(res);
     setRunning(false);
+    if (res.every(r => r.pass) && problem) {
+      markCtSolved(problem.id);
+      setSolvedIds(getCtSolved());
+    }
   };
 
   const passed = results ? results.filter(r => r.pass).length : 0;
@@ -4895,23 +4933,30 @@ function CodeTestScreen() {
         </div>
       )}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
-        {CODE_PROBLEMS.map(p => (
+        {CODE_PROBLEMS.map(p => {
+          const done = solvedIds.has(p.id);
+          return (
           <button key={p.id} onClick={() => selectProblem(p)} style={{
             textAlign:"left", padding:"18px 20px", borderRadius:14,
-            border:`1px solid ${C.line}`, background:C.card, cursor:"pointer",
-            transition:"all .15s", display:"flex", flexDirection:"column", gap:8,
+            border:`1px solid ${done ? C.green+"55" : C.line}`,
+            background: done ? C.green+"08" : C.card,
+            cursor:"pointer", transition:"all .15s", display:"flex", flexDirection:"column", gap:8,
           }}
-          onMouseEnter={e => e.currentTarget.style.borderColor=C.blue}
-          onMouseLeave={e => e.currentTarget.style.borderColor=C.line}
+          onMouseEnter={e => e.currentTarget.style.borderColor=done?C.green:C.blue}
+          onMouseLeave={e => e.currentTarget.style.borderColor=done?C.green+"55":C.line}
           >
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <span style={{ fontFamily:MONO, fontSize:11, color:C.muted }}>#{p.id}</span>
-              <span style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color: DIFF_COLOR[p.diff], background: DIFF_COLOR[p.diff]+"22", padding:"2px 8px", borderRadius:99 }}>{p.diff}</span>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                {done && <span style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.green, background:C.green+"22", padding:"2px 8px", borderRadius:99 }}>✓ 완료</span>}
+                <span style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color: DIFF_COLOR[p.diff], background: DIFF_COLOR[p.diff]+"22", padding:"2px 8px", borderRadius:99 }}>{p.diff}</span>
+              </div>
             </div>
             <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text }}>{p.title}</div>
             <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, background:C.card2, padding:"2px 8px", borderRadius:6, alignSelf:"flex-start" }}>{p.cat}</div>
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
