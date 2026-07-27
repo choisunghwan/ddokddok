@@ -1154,6 +1154,8 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
 
   // 오늘 공부 시간: DB값과 localStorage 타이머값 중 큰 값 사용
   const getLocalTimer = () => {
+    // 타이머가 지금 실행 중이면 실시간 값 사용
+    if (typeof window._siSecs === "number" && window._siSecs > 0) return window._siSecs;
     try {
       const d = JSON.parse(localStorage.getItem("study_today") || "{}");
       return d.date === new Date().toDateString() ? (d.s || d.secs || 0) : 0;
@@ -1252,10 +1254,15 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
 
       {/* 주간 활동 */}
       {(() => {
-        const totalWeekMin = chart.reduce((s, d) => s + (d.min || 0), 0);
-        const maxMin = Math.max(...chart.map(d => d.min || 0), 1);
-        const today = new Date().getDay(); // 0=Sun
-        const todayIdx = today === 0 ? 6 : today - 1; // Mon=0
+        const today = new Date().getDay();
+        const todayIdx = today === 0 ? 6 : today - 1;
+        // 오늘 막대: 라이브 타이머 값으로 보정 (대시보드와 타이머 일치)
+        const liveTodayMin = Math.floor(getLocalTimer() / 60);
+        const liveChart = chart.map((d, i) =>
+          i === todayIdx ? { ...d, min: Math.max(d.min || 0, liveTodayMin) } : d
+        );
+        const totalWeekMin = liveChart.reduce((s, d) => s + (d.min || 0), 0);
+        const maxMin = Math.max(...liveChart.map(d => d.min || 0), 1);
         return (
         <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"18px 20px", marginBottom:28 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
@@ -1266,7 +1273,7 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
             <button onClick={fetchStats} disabled={loading} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:14, padding:4, opacity: loading ? 0.4 : 1 }} title="새로고침">↻</button>
           </div>
           <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80 }}>
-            {chart.map((d, i) => {
+            {liveChart.map((d, i) => {
               const h = maxMin > 0 ? Math.round((d.min / maxMin) * 64) : 0;
               const isToday = i === todayIdx;
               const hasData = d.min > 0;
@@ -5149,8 +5156,9 @@ function StudyScreen() {
   const broadcast = () => {
     if (!groupsRef.current.length) return;
     const running = window._siRunning||false;
-    let secs=0;
-    try{const d=JSON.parse(localStorage.getItem("study_today")||"{}");if(d.date===new Date().toDateString())secs=d.s||d.secs||0;}catch{}
+    // window._siSecs = 실시간 타이머 (매초 갱신), fallback = localStorage
+    let secs = typeof window._siSecs === "number" ? window._siSecs : 0;
+    if (!secs) { try{const d=JSON.parse(localStorage.getItem("study_today")||"{}");if(d.date===new Date().toDateString())secs=d.s||d.secs||0;}catch{} }
     groupsRef.current.filter(g=>g.is_member).forEach(g=>{
       fetch(`${API}/api/study/groups/${g.id}/presence`,{
         method:"POST",headers:{"Content-Type":"application/json",...authHeader()},
@@ -6578,9 +6586,9 @@ function StudyIsland() {
   const todayKey = () => new Date().toDateString();
   const token    = () => localStorage.getItem("token");
   const lsLoad   = () => {
-    try { const d = JSON.parse(localStorage.getItem("study_today")||"{}"); return d.date===todayKey() ? (d.secs||0) : 0; } catch { return 0; }
+    try { const d = JSON.parse(localStorage.getItem("study_today")||"{}"); return d.date===todayKey() ? (d.s||d.secs||0) : 0; } catch { return 0; }
   };
-  const lsSave = (s) => localStorage.setItem("study_today", JSON.stringify({ date: todayKey(), s }));
+  const lsSave = (s) => { localStorage.setItem("study_today", JSON.stringify({ date: todayKey(), s })); window._siSecs = s; };
 
   // ── 타이머 state ──
   const [open,       setOpen]      = useState(false);
@@ -6701,8 +6709,12 @@ function StudyIsland() {
 
   const handleStart = () => {
     window._siRunning = true;
-    intervalRef.current = setInterval(() => { sessionRef.current += 1; setSession(sessionRef.current); }, 1000);
-    autoSaveRef.current = setInterval(() => persist(baseTodayRef.current + sessionRef.current), 60000);
+    intervalRef.current = setInterval(() => {
+      sessionRef.current += 1;
+      setSession(sessionRef.current);
+      window._siSecs = baseTodayRef.current + sessionRef.current; // 매초 글로벌 노출
+    }, 1000);
+    autoSaveRef.current = setInterval(() => persist(baseTodayRef.current + sessionRef.current), 30000); // 30s마다 저장
     setRunning(true);
   };
   const handlePause = () => {
