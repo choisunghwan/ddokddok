@@ -54,8 +54,22 @@ class StudyGroup(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     topic = Column(String(200), default="")
+    is_public = Column(Boolean, default=True, nullable=False, server_default="true")
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class StudyPresence(Base):
+    __tablename__ = "study_presence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    group_id = Column(Integer, ForeignKey("study_groups.id"), nullable=False)
+    last_seen = Column(DateTime(timezone=True), server_default=func.now())
+    timer_running = Column(Boolean, default=False)
+    timer_seconds = Column(Integer, default=0)
+
+    __table_args__ = (UniqueConstraint("user_id", "group_id"),)
 
 
 class StudyMember(Base):

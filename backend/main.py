@@ -4,11 +4,17 @@ load_dotenv()
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from database import engine
 import models
 from routers import aice, auth, dashboard, study, notes
 
 models.Base.metadata.create_all(bind=engine)
+
+# Column migration for existing tables
+with engine.connect() as _conn:
+    _conn.execute(text("ALTER TABLE study_groups ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT TRUE"))
+    _conn.commit()
 
 app = FastAPI(title="똑똑 API")
 
