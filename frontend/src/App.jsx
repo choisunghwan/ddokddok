@@ -5315,7 +5315,7 @@ function StudyScreen() {
                   </div>
                 )}
                 {m.checked_in_today&&(
-                  <div style={{fontFamily:SANS,fontSize:10,color:C.green,fontWeight:700}}>✓ 오늘 완료</div>
+                  <div style={{fontFamily:SANS,fontSize:10,color:C.green,fontWeight:700}}>✅ 오공완</div>
                 )}
               </div>
             );
@@ -5332,7 +5332,7 @@ function StudyScreen() {
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>checkin(g.id)} disabled={g.checked_in_today}
                 style={{flex:2,padding:"12px 0",borderRadius:10,border:"none",background:g.checked_in_today?C.green+"22":C.green,color:g.checked_in_today?C.green:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:g.checked_in_today?"default":"pointer"}}>
-                {g.checked_in_today?"✓ 오늘 완료됨":"오늘 완료 체크"}
+                {g.checked_in_today?"✅ 오공완 완료":"✏️ 오공완 하기"}
               </button>
               {g.is_creator?(
                 <button onClick={()=>deleteGroup(g.id,g.name)}
@@ -5691,9 +5691,9 @@ function StudyTimer() {
   };
   const fmtHuman = (s) => {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
-    if (h > 0 && m > 0) return `${h}시간 ${m}분`;
-    if (h > 0) return `${h}시간`;
-    if (m > 0) return `${m}분`;
+    if (h > 0 && m > 0) return `${h}시간 ${m}분 ${sc}초`;
+    if (h > 0) return `${h}시간 ${sc}초`;
+    if (m > 0) return `${m}분 ${sc}초`;
     return `${sc}초`;
   };
 
@@ -6735,8 +6735,8 @@ function StudyIsland() {
     return h>0 ? `${h}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}` : `${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`;
   };
   const fmtH = (s) => {
-    const h=Math.floor(s/3600), m=Math.floor((s%3600)/60);
-    if (h>0&&m>0) return `${h}시간 ${m}분`; if (h>0) return `${h}시간`; if (m>0) return `${m}분`; return `${s%60}초`;
+    const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sc=s%60;
+    if (h>0&&m>0) return `${h}시간 ${m}분 ${sc}초`; if (h>0) return `${h}시간 ${sc}초`; if (m>0) return `${m}분 ${sc}초`; return `${sc}초`;
   };
 
   // 소리
