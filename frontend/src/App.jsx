@@ -5143,6 +5143,7 @@ function StudyScreen() {
   const [joining,      setJoining]      = useState(false);
   const [showPw,       setShowPw]       = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null); // null=목록, object=룸뷰
+  const [settingsOpen,  setSettingsOpen]  = useState(false);
   const groupsRef     = useRef([]);
   const selectedIdRef = useRef(null);
   const firstLoadRef  = useRef(true);
@@ -5190,12 +5191,23 @@ function StudyScreen() {
 
   useEffect(()=>{
     load();
-    // 5s마다: broadcast 먼저, 1.5s 뒤 reload → presence 반영된 데이터 수신
     const iv = setInterval(()=>{
       broadcast();
       setTimeout(()=>load(true), 1500);
     }, 5000);
-    return ()=>clearInterval(iv);
+
+    const handleAutoCheckin = () => {
+      groupsRef.current.filter(g=>g.is_member).forEach(g=>{
+        fetch(`${API}/api/study/groups/${g.id}/checkin`,{
+          method:"POST", headers:authHeader(),
+        }).catch(()=>{});
+      });
+      setTimeout(()=>load(true), 800);
+    };
+    const handleClickOutside = () => setSettingsOpen(false);
+    window.addEventListener("auto-checkin", handleAutoCheckin);
+    window.addEventListener("click", handleClickOutside);
+    return ()=>{ clearInterval(iv); window.removeEventListener("auto-checkin", handleAutoCheckin); window.removeEventListener("click", handleClickOutside); };
   },[]);
 
   const createGroup = async()=>{
@@ -5329,22 +5341,51 @@ function StudyScreen() {
               {g.has_password?"🔒 비밀번호로 참가하기":"참가하기"}
             </button>
           ):(
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>checkin(g.id)} disabled={g.checked_in_today}
-                style={{flex:2,padding:"12px 0",borderRadius:10,border:"none",background:g.checked_in_today?C.green+"22":C.green,color:g.checked_in_today?C.green:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:g.checked_in_today?"default":"pointer"}}>
-                {g.checked_in_today?"✅ 오공완 완료":"✏️ 오공완 하기"}
-              </button>
-              {g.is_creator?(
-                <button onClick={()=>deleteGroup(g.id,g.name)}
-                  style={{flex:1,padding:"12px 0",borderRadius:10,border:`1px solid ${C.coral}44`,background:C.coral+"11",color:C.coral,fontFamily:SANS,fontSize:13,cursor:"pointer"}}>
-                  그룹 삭제
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {/* 오공완 진행 상태 */}
+              {g.checked_in_today?(
+                <div style={{flex:1,display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>✅</span>
+                  <span style={{fontFamily:SANS,fontSize:13,fontWeight:700,color:C.green}}>오공완 완료!</span>
+                </div>
+              ):(()=>{
+                const todaySecs = typeof window._siSecs==="number"?window._siSecs:(()=>{try{const d=JSON.parse(localStorage.getItem("study_today")||"{}");return d.date===new Date().toDateString()?(d.s||d.secs||0):0;}catch{return 0;}})();
+                const pct = Math.min(100, Math.round(todaySecs/1800*100));
+                return (
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                      <span style={{fontFamily:SANS,fontSize:12,color:C.muted}}>오공완까지</span>
+                      <span style={{fontFamily:SANS,fontSize:12,fontWeight:700,color:C.accent}}>{pct}%</span>
+                    </div>
+                    <div style={{height:6,borderRadius:3,background:C.line,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:C.accent,borderRadius:3,transition:"width .3s"}}/>
+                    </div>
+                  </div>
+                );
+              })()}
+              {/* ⋯ 설정 드롭다운 */}
+              <div style={{position:"relative"}}>
+                <button onClick={()=>setSettingsOpen(v=>v===g.id?false:g.id)}
+                  style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
+                  ⋯
                 </button>
-              ):(
-                <button onClick={()=>leaveGroup(g.id)}
-                  style={{flex:1,padding:"12px 0",borderRadius:10,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontFamily:SANS,fontSize:13,cursor:"pointer"}}>
-                  탈퇴하기
-                </button>
-              )}
+                {settingsOpen===g.id&&(
+                  <div style={{position:"absolute",right:0,bottom:42,background:C.card,border:`1px solid ${C.line}`,borderRadius:10,boxShadow:"0 4px 16px #0002",minWidth:120,zIndex:100}}
+                    onClick={e=>e.stopPropagation()}>
+                    {g.is_creator?(
+                      <button onClick={()=>{setSettingsOpen(false);deleteGroup(g.id,g.name);}}
+                        style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.coral,cursor:"pointer"}}>
+                        그룹 삭제
+                      </button>
+                    ):(
+                      <button onClick={()=>{setSettingsOpen(false);leaveGroup(g.id);}}
+                        style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.muted,cursor:"pointer"}}>
+                        탈퇴하기
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -6685,6 +6726,13 @@ function StudyIsland() {
         if (d?.total_seconds != null) {
           const best = Math.max(d.total_seconds, lsLoad());
           setBaseToday(best); baseTodayRef.current = best; lsSave(best);
+          window._siSecs = best;
+          // DB 로드 시 이미 30분 이상이면 자동 오공완
+          if (!autoCheckinRef.current && best >= 30*60) {
+            autoCheckinRef.current = true;
+            localStorage.setItem("auto_checkin_date", new Date().toDateString());
+            window.dispatchEvent(new CustomEvent("auto-checkin"));
+          }
         }
         setSynced(true);
       }).catch(() => setSynced(true));
@@ -6707,14 +6755,26 @@ function StudyIsland() {
   }, []);
   useEffect(() => () => { clearInterval(intervalRef.current); clearInterval(autoSaveRef.current); }, []);
 
+  const AUTO_CHECKIN_SECS = 30 * 60; // 30분 달성 시 자동 오공완
+  const autoCheckinRef = useRef(
+    localStorage.getItem("auto_checkin_date") === new Date().toDateString()
+  );
+
   const handleStart = () => {
     window._siRunning = true;
     intervalRef.current = setInterval(() => {
       sessionRef.current += 1;
       setSession(sessionRef.current);
-      window._siSecs = baseTodayRef.current + sessionRef.current; // 매초 글로벌 노출
+      const total = baseTodayRef.current + sessionRef.current;
+      window._siSecs = total;
+      // 30분 달성 → 자동 오공완 이벤트
+      if (!autoCheckinRef.current && total >= AUTO_CHECKIN_SECS) {
+        autoCheckinRef.current = true;
+        localStorage.setItem("auto_checkin_date", new Date().toDateString());
+        window.dispatchEvent(new CustomEvent("auto-checkin"));
+      }
     }, 1000);
-    autoSaveRef.current = setInterval(() => persist(baseTodayRef.current + sessionRef.current), 30000); // 30s마다 저장
+    autoSaveRef.current = setInterval(() => persist(baseTodayRef.current + sessionRef.current), 30000);
     setRunning(true);
   };
   const handlePause = () => {
