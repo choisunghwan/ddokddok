@@ -1122,7 +1122,7 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
     setLoading(true); setError(false);
     Promise.all([
       fetch(`${API}/api/dashboard/stats`,    { headers: authHeader() }).then(r => r.json()),
-      fetch(`${API}/api/dashboard/activity`, { headers: authHeader() }).then(r => r.json()),
+      fetch(`${API}/api/dashboard/activity?weeks=8`, { headers: authHeader() }).then(r => r.json()),
     ])
       .then(([s, a]) => { setStats(s); setActivity(Array.isArray(a) ? a : []); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
@@ -1257,81 +1257,141 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
 
       {/* 학습 잔디 */}
       {(() => {
+        const WEEKS = 8;
         const todayStr = new Date().toISOString().slice(0,10);
         const liveTodayMin = Math.floor(getLocalTimer() / 60);
-        // 오늘 값은 DB + live 타이머 중 큰 것
-        const cells = activity.map(d =>
-          d.date === todayStr ? { ...d, min: Math.max(d.min || 0, liveTodayMin) } : d
+        const MO = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+        const DL = ["월","화","수","목","금","토","일"];
+        // 레벨별 색상 (빈 셀~진한 초록)
+        const LV_BG = ["transparent", C.green+"2a", C.green+"55", C.green+"99", C.green];
+        const LV_BD = [C.line+"88",   C.green+"44", C.green+"66", C.green+"aa", C.green+"cc"];
+
+        // 정확히 WEEKS*7개 셀 확보 (앞 패딩)
+        let cells = activity.map(d =>
+          d.date === todayStr ? { ...d, min: Math.max(d.min||0, liveTodayMin) } : d
         );
-        const totalMin = cells.reduce((s,d) => s+(d.min||0), 0);
-        const activeDays = cells.filter(d=>d.min>0).length;
+        const need = WEEKS * 7;
+        while (cells.length < need) cells = [{ date:"", min:0 }, ...cells];
+        cells = cells.slice(-need);
 
-        // 잔디 색 레벨 (0~4)
-        const level = (min) => {
-          if (!min) return 0;
-          if (min < 15)  return 1;
-          if (min < 30)  return 2;
-          if (min < 60)  return 3;
-          return 4;
-        };
-        const grassColor = (lv, isToday) => {
-          if (isToday && lv === 0) return C.blue+"22";
-          const colors = ["transparent", C.green+"55", C.green+"88", C.green+"bb", C.green];
-          return colors[lv];
-        };
+        const weeks = Array.from({ length: WEEKS }, (_, w) => cells.slice(w*7, w*7+7));
 
-        // 4주 × 7일 그리드 (월~일 세로)
-        // cells[0]이 가장 오래된 날짜
-        const DAYS_KR = ["월","화","수","목","금","토","일"];
-        const weeks = [];
-        for (let w = 0; w < 4; w++) {
-          weeks.push(cells.slice(w*7, w*7+7));
+        // 통계
+        const totalMin  = cells.reduce((s,d) => s+(d.min||0), 0);
+        const totalH    = Math.floor(totalMin/60);
+        const totalM    = totalMin%60;
+        const activeDays= cells.filter(d=>d.min>0).length;
+        const maxMin    = Math.max(...cells.map(d=>d.min||0), 1);
+
+        // 연속 공부 일수 (오늘 기준으로 역산)
+        let streak = 0;
+        for (let i = cells.length-1; i >= 0; i--) {
+          if ((cells[i].min||0) > 0) streak++;
+          else break;
         }
 
+        const lv = (min) => !min?0:min<15?1:min<30?2:min<60?3:4;
+
+        // 월 레이블 (컬럼 첫 날 기준, 월 바뀌면 표시)
+        const monthLabel = (wi) => {
+          const d = weeks[wi][0]?.date ? new Date(weeks[wi][0].date) : null;
+          if (!d) return "";
+          if (wi === 0) return MO[d.getMonth()];
+          const p = weeks[wi-1][0]?.date ? new Date(weeks[wi-1][0].date) : null;
+          return (!p || d.getMonth() !== p.getMonth()) ? MO[d.getMonth()] : "";
+        };
+
         return (
-        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"18px 20px", marginBottom:28 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+        <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"18px 18px 14px", marginBottom:28 }}>
+          {/* ── 헤더 ── */}
+          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
             <div>
-              <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>학습 잔디</div>
-              <div style={{ fontFamily:MONO, fontSize:11, color:C.muted, marginTop:2 }}>
-                {activeDays}일 활성 · 총 {totalMin}분
+              <div style={{ fontFamily:SANS, fontSize:13, fontWeight:800, color:C.text, letterSpacing:"-0.3px" }}>학습 잔디</div>
+              <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:3 }}>
+                최근 {WEEKS}주 중&nbsp;
+                <span style={{ color:C.green, fontWeight:700 }}>{activeDays}일</span> 공부
               </div>
             </div>
-            <button onClick={fetchStats} disabled={loading} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:14, padding:4, opacity: loading ? 0.4 : 1 }} title="새로고침">↻</button>
+            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+              {/* 총 학습 */}
+              <div style={{ textAlign:"center" }}>
+                <div style={{ fontFamily:MONO, fontSize:17, fontWeight:900, color:C.green, lineHeight:1 }}>
+                  {totalH > 0 ? `${totalH}h ${totalM}m` : `${totalMin}m`}
+                </div>
+                <div style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginTop:3 }}>총 학습</div>
+              </div>
+              {/* 연속 */}
+              {streak > 0 && (
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontFamily:MONO, fontSize:17, fontWeight:900, color:C.yellow, lineHeight:1 }}>
+                    {streak}🔥
+                  </div>
+                  <div style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginTop:3 }}>연속</div>
+                </div>
+              )}
+              <button onClick={fetchStats} disabled={loading}
+                style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:13, padding:2, opacity:loading?0.4:1 }}>↻</button>
+            </div>
           </div>
-          <div style={{ display:"flex", gap:4 }}>
-            {/* 요일 레이블 */}
-            <div style={{ display:"flex", flexDirection:"column", gap:3, paddingTop:2 }}>
-              {DAYS_KR.map(d => (
-                <div key={d} style={{ height:16, fontFamily:MONO, fontSize:9, color:C.muted, lineHeight:"16px", width:14, textAlign:"right" }}>{d}</div>
+
+          {/* ── 그리드 ── */}
+          <div style={{ display:"flex", gap:4, alignItems:"flex-start" }}>
+            {/* 요일 레이블 (월·수·금만 보임) */}
+            <div style={{ display:"flex", flexDirection:"column", gap:3, paddingTop:18, flexShrink:0 }}>
+              {DL.map((d,i) => (
+                <div key={d} style={{
+                  height:12, lineHeight:"12px", fontFamily:MONO, fontSize:8,
+                  color:C.muted, textAlign:"right", width:13,
+                  visibility:[0,2,4].includes(i)?"visible":"hidden",
+                }}>{d}</div>
               ))}
             </div>
-            {/* 주별 컬럼 */}
-            {weeks.map((week, wi) => (
-              <div key={wi} style={{ flex:1, display:"flex", flexDirection:"column", gap:3 }}>
-                {week.map((d, di) => {
-                  const lv = level(d.min);
-                  const isToday = d.date === todayStr;
-                  const bg = grassColor(lv, isToday);
-                  return (
-                    <div key={di} title={`${d.date}: ${d.min}분`} style={{
-                      height:16, borderRadius:3,
-                      background: bg,
-                      border: isToday ? `1.5px solid ${C.blue}` : `1px solid ${lv>0?C.green+"33":C.line+"88"}`,
-                      transition:"background .2s",
-                    }} />
-                  );
-                })}
-              </div>
-            ))}
+
+            {/* 주 컬럼들 */}
+            <div style={{ flex:1, minWidth:0, display:"flex", gap:3 }}>
+              {weeks.map((week, wi) => (
+                <div key={wi} style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:0 }}>
+                  {/* 월 레이블 */}
+                  <div style={{ height:14, marginBottom:4, fontFamily:MONO, fontSize:8, color:C.muted, overflow:"hidden", whiteSpace:"nowrap" }}>
+                    {monthLabel(wi)}
+                  </div>
+                  {/* 7일 셀 */}
+                  {week.map((cell, di) => {
+                    const lvl = lv(cell?.min);
+                    const isToday = cell?.date === todayStr;
+                    const isBest  = lvl === 4 && (cell?.min||0) >= maxMin && maxMin > 60;
+                    return (
+                      <div key={di}
+                        title={cell?.date ? `${cell.date}\n${cell.min||0}분 공부` : ""}
+                        style={{
+                          width:"100%", aspectRatio:"1",
+                          borderRadius:3, marginBottom:3,
+                          background: LV_BG[lvl],
+                          border: isToday
+                            ? `2px solid ${C.blue}`
+                            : `1px solid ${LV_BD[lvl]}`,
+                          boxSizing:"border-box",
+                          boxShadow: isBest ? `0 0 6px ${C.green}88` : "none",
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
-          {/* 범례 */}
-          <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:10, justifyContent:"flex-end" }}>
-            <span style={{ fontFamily:MONO, fontSize:9, color:C.muted }}>적음</span>
-            {[0,1,2,3,4].map(lv=>(
-              <div key={lv} style={{ width:10, height:10, borderRadius:2, background:grassColor(lv,false)||C.line+"88", border:`1px solid ${C.line}` }}/>
+
+          {/* ── 범례 ── */}
+          <div style={{ display:"flex", alignItems:"center", gap:3, marginTop:8, justifyContent:"flex-end" }}>
+            <span style={{ fontFamily:MONO, fontSize:8, color:C.muted, marginRight:3 }}>적음</span>
+            {LV_BG.map((bg, i) => (
+              <div key={i} style={{
+                width:10, height:10, borderRadius:2,
+                background: bg === "transparent" ? "none" : bg,
+                border:`1px solid ${LV_BD[i]}`,
+              }}/>
             ))}
-            <span style={{ fontFamily:MONO, fontSize:9, color:C.muted }}>많음</span>
+            <span style={{ fontFamily:MONO, fontSize:8, color:C.muted, marginLeft:3 }}>많음</span>
           </div>
         </div>
         );
