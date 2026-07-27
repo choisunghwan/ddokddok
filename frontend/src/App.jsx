@@ -5287,19 +5287,18 @@ function StudyScreen() {
   };
 
   const load = (quiet=false) => {
-    if (!quiet) setLoading(true);
+    // 이미 데이터 있으면 스피너 생략 (백그라운드 갱신)
+    if (!quiet && groupsRef.current.length === 0) setLoading(true);
     fetch(`${API}/api/study/groups`,{headers:authHeader()})
       .then(r=>r.json())
       .then(data=>{
         const arr=Array.isArray(data)?data:[];
         setGroups(arr); groupsRef.current=arr; setLoading(false);
-        // 룸 뷰 열려 있으면 해당 그룹 데이터도 갱신
         if (selectedIdRef.current) {
           const fresh=arr.find(g=>g.id===selectedIdRef.current);
           if (fresh) setSelectedGroup(fresh);
         }
         broadcast();
-        // 최초 로드 후 1.5s 뒤에 한 번 더 갱신 → 본인 온라인 dot 즉시 표시
         if (firstLoadRef.current) {
           firstLoadRef.current=false;
           setTimeout(()=>load(true), 1500);

@@ -30,16 +30,25 @@ class PresenceUpdate(BaseModel):
 
 
 def _calc_streak(group_id: int, db: Session) -> int:
-    check_date = date.today()
+    rows = (
+        db.query(StudyCheckin.date)
+        .filter(StudyCheckin.group_id == group_id)
+        .distinct()
+        .order_by(StudyCheckin.date.desc())
+        .all()
+    )
+    dates = [r[0] for r in rows]
+    if not dates:
+        return 0
+    today = date.today()
+    if dates[0] < today - timedelta(days=1):
+        return 0
     streak = 0
-    while True:
-        has = db.query(StudyCheckin).filter(
-            StudyCheckin.group_id == group_id,
-            StudyCheckin.date == check_date,
-        ).first()
-        if has:
+    expected = dates[0]
+    for d in dates:
+        if d == expected:
             streak += 1
-            check_date -= timedelta(days=1)
+            expected = d - timedelta(days=1)
         else:
             break
     return streak
@@ -74,9 +83,11 @@ def _group_dict(g: StudyGroup, current_user_id: int, db: Session) -> dict:
         for p in db.query(StudyPresence).filter(StudyPresence.group_id == g.id).all()
     }
 
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(member_ids)).all()}
+
     member_list = []
     for uid in member_ids:
-        u = db.query(User).filter(User.id == uid).first()
+        u = users.get(uid)
         if u:
             p = presences.get(uid)
             online = _is_online(p.last_seen) if p else False
