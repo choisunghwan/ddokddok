@@ -5550,7 +5550,7 @@ function StudyScreen() {
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
             <div>
               <div style={{fontFamily:SANS,fontSize:20,fontWeight:800,color:C.text}}>스터디 그룹</div>
-              <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginTop:2}}>온라인 스터디 카페 — 클릭해서 입장하세요</div>
+              <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginTop:2}}>클릭해서 스터디룸에 입장하세요</div>
             </div>
             <button onClick={()=>setShowCreate(true)} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
               <Plus size={15}/> 만들기
