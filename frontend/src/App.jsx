@@ -5123,20 +5123,23 @@ function DevScreen({ isGuest }) {
 
 // ── 스터디 그룹 ─────────────────────────────────
 function StudyScreen() {
-  const [groups,     setGroups]     = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [form,       setForm]       = useState({ name:"", topic:"", password:"" });
-  const [formErr,    setFormErr]    = useState("");
-  const [creating,   setCreating]   = useState(false);
-  const [search,     setSearch]     = useState("");
-  const [joinTarget, setJoinTarget] = useState(null);
-  const [joinPw,     setJoinPw]     = useState("");
-  const [joinErr,    setJoinErr]    = useState("");
-  const [joining,    setJoining]    = useState(false);
-  const [showPw,     setShowPw]     = useState(false);
-  const groupsRef = useRef([]);
-  const isMobile  = useIsMobile();
+  const [groups,       setGroups]       = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [showCreate,   setShowCreate]   = useState(false);
+  const [form,         setForm]         = useState({ name:"", topic:"", password:"" });
+  const [formErr,      setFormErr]      = useState("");
+  const [creating,     setCreating]     = useState(false);
+  const [search,       setSearch]       = useState("");
+  const [joinTarget,   setJoinTarget]   = useState(null);
+  const [joinPw,       setJoinPw]       = useState("");
+  const [joinErr,      setJoinErr]      = useState("");
+  const [joining,      setJoining]      = useState(false);
+  const [showPw,       setShowPw]       = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null); // null=목록, object=룸뷰
+  const groupsRef     = useRef([]);
+  const selectedIdRef = useRef(null);
+  const firstLoadRef  = useRef(true);
+  const isMobile      = useIsMobile();
 
   const fmtSec = (s) => {
     const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;
@@ -5163,17 +5166,27 @@ function StudyScreen() {
       .then(data=>{
         const arr=Array.isArray(data)?data:[];
         setGroups(arr); groupsRef.current=arr; setLoading(false);
-        broadcast(); // broadcast immediately after we know our groups
+        // 룸 뷰 열려 있으면 해당 그룹 데이터도 갱신
+        if (selectedIdRef.current) {
+          const fresh=arr.find(g=>g.id===selectedIdRef.current);
+          if (fresh) setSelectedGroup(fresh);
+        }
+        broadcast();
+        // 최초 로드 후 1.5s 뒤에 한 번 더 갱신 → 본인 온라인 dot 즉시 표시
+        if (firstLoadRef.current) {
+          firstLoadRef.current=false;
+          setTimeout(()=>load(true), 1500);
+        }
       }).catch(()=>setLoading(false));
   };
 
   useEffect(()=>{
     load();
-    // Every 10s: broadcast first, then reload 1.5s later so reload sees updated presence
+    // 5s마다: broadcast 먼저, 1.5s 뒤 reload → presence 반영된 데이터 수신
     const iv = setInterval(()=>{
       broadcast();
       setTimeout(()=>load(true), 1500);
-    }, 10000);
+    }, 5000);
     return ()=>clearInterval(iv);
   },[]);
 
@@ -5207,91 +5220,155 @@ function StudyScreen() {
     setJoinTarget(null); load();
   };
 
-  const checkin    = async(id)=>{ await fetch(`${API}/api/study/groups/${id}/checkin`,{method:"POST",headers:authHeader()}); load(); };
-  const leaveGroup = async(id)=>{ if(!window.confirm("탈퇴하시겠습니까?"))return; await fetch(`${API}/api/study/groups/${id}/leave`,{method:"DELETE",headers:authHeader()}); load(); };
-  const deleteGroup= async(id,n)=>{ if(!window.confirm(`"${n}" 그룹을 삭제하시겠습니까?`))return; await fetch(`${API}/api/study/groups/${id}`,{method:"DELETE",headers:authHeader()}); load(); };
+  const checkin    = async(id)=>{ await fetch(`${API}/api/study/groups/${id}/checkin`,{method:"POST",headers:authHeader()}); load(true); };
+  const leaveGroup = async(id)=>{ if(!window.confirm("탈퇴하시겠습니까?"))return; await fetch(`${API}/api/study/groups/${id}/leave`,{method:"DELETE",headers:authHeader()}); setSelectedGroup(null); selectedIdRef.current=null; load(); };
+  const deleteGroup= async(id,n)=>{ if(!window.confirm(`"${n}" 그룹을 삭제하시겠습니까?`))return; await fetch(`${API}/api/study/groups/${id}`,{method:"DELETE",headers:authHeader()}); setSelectedGroup(null); selectedIdRef.current=null; load(); };
 
   const q = search.trim().toLowerCase();
   const visible = groups
     .filter(g=>!q||g.name.toLowerCase().includes(q)||(g.topic||"").toLowerCase().includes(q))
     .sort((a,b)=>(b.is_member?1:0)-(a.is_member?1:0));
 
+  // ── 룸 뷰 ─────────────────────────────────────────────
+  const renderRoom = () => {
+    const g = selectedGroup;
+    if (!g) return null;
+    const onlineCnt = g.members.filter(m=>m.online).length;
+    const runningCnt = g.members.filter(m=>m.online&&m.timer_running).length;
+    return (
+      <div style={{paddingBottom:80}}>
+        {/* 뒤로 + 그룹명 */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,paddingTop:4}}>
+          <button onClick={()=>{setSelectedGroup(null);selectedIdRef.current=null;}}
+            style={{display:"flex",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",color:C.muted,fontFamily:SANS,fontSize:13,padding:"6px 0",flexShrink:0}}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><polyline points="15 18 9 12 15 6"/></svg>
+            목록
+          </button>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontFamily:SANS,fontSize:17,fontWeight:800,color:C.text}}>{g.name}</span>
+              {g.has_password&&<span style={{fontFamily:SANS,fontSize:10,padding:"1px 7px",borderRadius:99,color:C.muted,background:C.card2,border:`1px solid ${C.line}`,fontWeight:600}}>🔒 비번방</span>}
+              <span style={{fontFamily:MONO,fontSize:11,color:C.yellow}}>🔥 {g.streak}일</span>
+            </div>
+            {g.topic&&<div style={{fontFamily:MONO,fontSize:11,color:C.muted,marginTop:2}}>📌 {g.topic}</div>}
+          </div>
+        </div>
+
+        {/* 현황 요약 바 */}
+        <div style={{background:C.card2,borderRadius:12,padding:"10px 16px",marginBottom:20,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:8,height:8,borderRadius:"50%",background:onlineCnt>0?C.green:"#555",display:"inline-block",animation:onlineCnt>0?"si-pulse 2s ease-in-out infinite":"none"}}/>
+            <span style={{fontFamily:SANS,fontSize:12,fontWeight:700,color:onlineCnt>0?C.green:C.muted}}>{onlineCnt}명 접속 중</span>
+          </div>
+          {runningCnt>0&&(
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{width:8,height:8,borderRadius:"50%",background:C.blue,display:"inline-block",animation:"si-pulse 2s ease-in-out infinite"}}/>
+              <span style={{fontFamily:SANS,fontSize:12,fontWeight:700,color:C.blue}}>{runningCnt}명 타이머 ON</span>
+            </div>
+          )}
+          <span style={{fontFamily:SANS,fontSize:11,color:C.muted,marginLeft:"auto"}}>전체 {g.member_count}명</span>
+        </div>
+
+        {/* 멤버 그리드 */}
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr)",gap:10,marginBottom:22}}>
+          {g.members.map((m,i)=>{
+            const online=m.online, running=online&&m.timer_running;
+            const bCol=online?(running?C.blue:C.green):C.line;
+            const bg=online?(running?C.blue+"10":C.green+"10"):C.card2;
+            const tc=online?(running?C.blue:C.green):C.muted;
+            return(
+              <div key={i} style={{background:bg,border:`1.5px solid ${bCol}`,borderRadius:14,padding:"14px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:7,transition:"all .4s",position:"relative"}}>
+                <div style={{position:"absolute",top:8,right:8,width:10,height:10,borderRadius:"50%",
+                  background:online?(running?C.blue:C.green):"#555",
+                  border:`2px solid ${bg}`,
+                  animation:online?"si-pulse 2s ease-in-out infinite":"none",
+                }}/>
+                <div style={{width:48,height:48,borderRadius:14,background:online?(running?C.blue+"20":C.green+"20"):"transparent",border:`2px solid ${bCol}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontSize:18,fontWeight:800,color:tc}}>
+                  {m.nickname[0]?.toUpperCase()}
+                </div>
+                <div style={{fontFamily:SANS,fontSize:12,fontWeight:700,color:C.text,textAlign:"center",width:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {m.nickname}
+                </div>
+                <div style={{fontFamily:SANS,fontSize:10,color:tc,fontWeight:600}}>
+                  {online?(running?"⏱ 타이머 ON":"● 접속 중"):"○ 오프라인"}
+                </div>
+                {online&&m.timer_seconds>0&&(
+                  <div style={{fontFamily:MONO,fontSize:14,fontWeight:800,color:running?C.blue:C.green,letterSpacing:".02em"}}>
+                    {fmtSec(m.timer_seconds)}
+                  </div>
+                )}
+                {m.checked_in_today&&(
+                  <div style={{fontFamily:SANS,fontSize:10,color:C.green,fontWeight:700}}>✓ 오늘 완료</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 액션 */}
+        <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:14,padding:"14px 16px"}}>
+          {!g.is_member?(
+            <button onClick={()=>handleJoin(g)} style={{width:"100%",padding:"12px 0",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+              {g.has_password?"🔒 비밀번호로 참가하기":"참가하기"}
+            </button>
+          ):(
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>checkin(g.id)} disabled={g.checked_in_today}
+                style={{flex:2,padding:"12px 0",borderRadius:10,border:"none",background:g.checked_in_today?C.green+"22":C.green,color:g.checked_in_today?C.green:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:g.checked_in_today?"default":"pointer"}}>
+                {g.checked_in_today?"✓ 오늘 완료됨":"오늘 완료 체크"}
+              </button>
+              {g.is_creator?(
+                <button onClick={()=>deleteGroup(g.id,g.name)}
+                  style={{flex:1,padding:"12px 0",borderRadius:10,border:`1px solid ${C.coral}44`,background:C.coral+"11",color:C.coral,fontFamily:SANS,fontSize:13,cursor:"pointer"}}>
+                  그룹 삭제
+                </button>
+              ):(
+                <button onClick={()=>leaveGroup(g.id)}
+                  style={{flex:1,padding:"12px 0",borderRadius:10,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontFamily:SANS,fontSize:13,cursor:"pointer"}}>
+                  탈퇴하기
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ── 목록 카드 (요약만 표시) ─────────────────────────
   const renderCard = (g) => {
     const onlineCnt = g.members.filter(m=>m.online).length;
+    const enterRoom = () => { setSelectedGroup(g); selectedIdRef.current=g.id; };
     return (
-      <div key={g.id} style={{background:C.card,border:`1px solid ${g.is_member?C.blue+"33":C.line}`,borderRadius:18,overflow:"hidden",boxShadow:"0 2px 14px #0001"}}>
-        {g.is_member && <div style={{height:3,background:`linear-gradient(90deg,${C.blue},${C.purple})`}}/>}
-        <div style={{padding:"18px 20px"}}>
-          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
-                <span style={{fontFamily:SANS,fontSize:15,fontWeight:800,color:C.text}}>{g.name}</span>
-                {g.has_password&&<span style={{fontFamily:SANS,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,color:C.muted,background:C.card2,border:`1px solid ${C.line}`}}>🔒 비번방</span>}
-              </div>
-              {g.topic&&<div style={{fontFamily:MONO,fontSize:11,color:C.muted}}>📌 {g.topic}</div>}
+      <div key={g.id} onClick={enterRoom}
+        style={{background:C.card,border:`1px solid ${g.is_member?C.blue+"44":C.line}`,borderRadius:16,overflow:"hidden",cursor:"pointer",boxShadow:"0 1px 8px #0001",transition:"box-shadow .15s,border-color .15s"}}
+        onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 20px #0003";e.currentTarget.style.borderColor=g.is_member?C.blue+"88":C.blue+"33";}}
+        onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 8px #0001";e.currentTarget.style.borderColor=g.is_member?C.blue+"44":C.line;}}
+      >
+        {g.is_member&&<div style={{height:3,background:`linear-gradient(90deg,${C.blue},${C.purple})`}}/>}
+        <div style={{padding:"15px 18px",display:"flex",alignItems:"center",gap:14}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
+              <span style={{fontFamily:SANS,fontSize:15,fontWeight:800,color:C.text}}>{g.name}</span>
+              {g.has_password&&<span style={{fontFamily:SANS,fontSize:10,padding:"1px 7px",borderRadius:99,color:C.muted,background:C.card2,border:`1px solid ${C.line}`,fontWeight:600}}>🔒</span>}
+              {g.is_member&&<span style={{fontFamily:SANS,fontSize:10,padding:"1px 7px",borderRadius:99,color:C.blue,background:C.blue+"15",border:`1px solid ${C.blue+"33"}`,fontWeight:700}}>참여중</span>}
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:4,fontFamily:MONO,fontSize:12,color:C.yellow,flexShrink:0,marginLeft:8}}>🔥 {g.streak}일</div>
-          </div>
-
-          <div style={{marginBottom:16}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <span style={{fontFamily:SANS,fontSize:10,fontWeight:700,color:C.muted,letterSpacing:".06em"}}>멤버 {g.member_count}명</span>
+            {g.topic&&<div style={{fontFamily:MONO,fontSize:11,color:C.muted,marginBottom:6}}>📌 {g.topic}</div>}
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontFamily:SANS,fontSize:12,color:C.muted}}>👥 {g.member_count}명</span>
               {onlineCnt>0&&(
-                <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:SANS,fontSize:10,fontWeight:700,color:C.green}}>
-                  <span style={{width:6,height:6,borderRadius:"50%",background:C.green,display:"inline-block",animation:"si-pulse 2s ease-in-out infinite"}}/>
+                <span style={{display:"flex",alignItems:"center",gap:5,fontFamily:SANS,fontSize:12,fontWeight:700,color:C.green}}>
+                  <span style={{width:7,height:7,borderRadius:"50%",background:C.green,display:"inline-block",animation:"si-pulse 2s ease-in-out infinite"}}/>
                   {onlineCnt}명 공부 중
                 </span>
               )}
             </div>
-            <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-              {g.members.map((m,i)=>{
-                const online=m.online,running=online&&m.timer_running;
-                const dotCol=online?(running?C.blue:C.green):"#777";
-                return(
-                  <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,width:52}}>
-                    <div style={{position:"relative"}}>
-                      <div style={{width:44,height:44,borderRadius:14,
-                        background:online?(running?C.blue+"1A":C.green+"1A"):C.card2,
-                        border:`2px solid ${online?(running?C.blue:C.green):C.line}`,
-                        display:"flex",alignItems:"center",justifyContent:"center",
-                        fontFamily:MONO,fontSize:15,fontWeight:700,
-                        color:online?(running?C.blue:C.green):C.muted,
-                        transition:"all .4s",
-                      }}>{m.checked_in_today?"✓":m.nickname[0]?.toUpperCase()}</div>
-                      <div style={{position:"absolute",bottom:-2,right:-2,width:12,height:12,borderRadius:"50%",background:dotCol,border:`2px solid ${C.card}`,animation:running?"si-pulse 2s ease-in-out infinite":"none",transition:"background .4s"}}/>
-                    </div>
-                    {online&&m.timer_seconds>0&&(
-                      <div style={{fontFamily:MONO,fontSize:9,fontWeight:700,color:running?C.blue:C.green,textAlign:"center",lineHeight:1.2}}>
-                        {fmtSec(m.timer_seconds)}
-                      </div>
-                    )}
-                    <div style={{fontFamily:SANS,fontSize:9,color:C.muted,width:"100%",textAlign:"center",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.nickname}</div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
-
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
-            <div style={{fontFamily:MONO,fontSize:10.5,color:C.muted}}>{g.members.filter(m=>m.checked_in_today).length}/{g.member_count}명 오늘 완료</div>
-            <div style={{display:"flex",gap:8}}>
-              {!g.is_member?(
-                <button onClick={()=>handleJoin(g)} style={{padding:"8px 18px",borderRadius:9,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:12,fontWeight:700,cursor:"pointer"}}>
-                  {g.has_password?"🔒 참가":"참가하기"}
-                </button>
-              ):(
-                <>
-                  <button onClick={()=>checkin(g.id)} disabled={g.checked_in_today} style={{padding:"8px 16px",borderRadius:9,border:"none",background:g.checked_in_today?C.green+"22":C.green,color:g.checked_in_today?C.green:"#fff",fontFamily:SANS,fontSize:12,fontWeight:700,cursor:g.checked_in_today?"default":"pointer"}}>
-                    {g.checked_in_today?"✓ 완료":"오늘 완료"}
-                  </button>
-                  {g.is_creator?(
-                    <button onClick={()=>deleteGroup(g.id,g.name)} style={{padding:"8px 10px",borderRadius:9,border:`1px solid ${C.coral}44`,background:C.coral+"11",color:C.coral,fontFamily:SANS,fontSize:12,cursor:"pointer"}}>삭제</button>
-                  ):(
-                    <button onClick={()=>leaveGroup(g.id)} style={{padding:"8px 10px",borderRadius:9,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontFamily:SANS,fontSize:12,cursor:"pointer"}}>탈퇴</button>
-                  )}
-                </>
-              )}
-            </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+            <span style={{fontFamily:MONO,fontSize:12,color:C.yellow}}>🔥 {g.streak}일</span>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{color:C.muted}}>
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
           </div>
         </div>
       </div>
@@ -5362,41 +5439,44 @@ function StudyScreen() {
         </div>
       )}
 
-      {/* 헤더 */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
-        <div>
-          <div style={{fontFamily:SANS,fontSize:20,fontWeight:800,color:C.text}}>스터디 그룹</div>
-          <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginTop:2}}>온라인 스터디 카페 — 실시간으로 함께 공부해요</div>
-        </div>
-        <button onClick={()=>setShowCreate(true)} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
-          <Plus size={15}/> 만들기
-        </button>
-      </div>
-
-      {/* 검색 */}
-      <div style={{position:"relative",marginBottom:20}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)}
-          placeholder="스터디 그룹 검색..."
-          style={{width:"100%",boxSizing:"border-box",padding:"10px 16px 10px 40px",borderRadius:11,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none"}}
-        />
-        <svg style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",color:C.muted,pointerEvents:"none"}} width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <circle cx={11} cy={11} r={8}/><line x1={21} y1={21} x2={16.65} y2={16.65}/>
-        </svg>
-        {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,padding:2,display:"flex"}}><X size={14}/></button>}
-      </div>
-
-      {loading?(
-        <div style={{textAlign:"center",color:C.muted,fontFamily:SANS,fontSize:14,padding:"60px 0"}}>불러오는 중…</div>
-      ):visible.length===0?(
-        <div style={{textAlign:"center",padding:"60px 0"}}>
-          <div style={{fontSize:48,marginBottom:16}}>{search?"🔍":"👥"}</div>
-          <div style={{fontFamily:SANS,fontSize:16,fontWeight:700,color:C.text,marginBottom:8}}>
-            {search?`"${search}" 검색 결과가 없어요`:"아직 스터디 그룹이 없어요"}
+      {/* 룸 뷰 or 목록 */}
+      {selectedGroup ? renderRoom() : (
+        <>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+            <div>
+              <div style={{fontFamily:SANS,fontSize:20,fontWeight:800,color:C.text}}>스터디 그룹</div>
+              <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginTop:2}}>온라인 스터디 카페 — 클릭해서 입장하세요</div>
+            </div>
+            <button onClick={()=>setShowCreate(true)} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+              <Plus size={15}/> 만들기
+            </button>
           </div>
-          {!search&&<button onClick={()=>setShowCreate(true)} style={{padding:"10px 24px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer",marginTop:8}}>첫 그룹 만들기</button>}
-        </div>
-      ):(
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>{visible.map(g=>renderCard(g))}</div>
+
+          <div style={{position:"relative",marginBottom:20}}>
+            <input value={search} onChange={e=>setSearch(e.target.value)}
+              placeholder="스터디 그룹 검색..."
+              style={{width:"100%",boxSizing:"border-box",padding:"10px 16px 10px 40px",borderRadius:11,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none"}}
+            />
+            <svg style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",color:C.muted,pointerEvents:"none"}} width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <circle cx={11} cy={11} r={8}/><line x1={21} y1={21} x2={16.65} y2={16.65}/>
+            </svg>
+            {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,padding:2,display:"flex"}}><X size={14}/></button>}
+          </div>
+
+          {loading?(
+            <div style={{textAlign:"center",color:C.muted,fontFamily:SANS,fontSize:14,padding:"60px 0"}}>불러오는 중…</div>
+          ):visible.length===0?(
+            <div style={{textAlign:"center",padding:"60px 0"}}>
+              <div style={{fontSize:48,marginBottom:16}}>{search?"🔍":"👥"}</div>
+              <div style={{fontFamily:SANS,fontSize:16,fontWeight:700,color:C.text,marginBottom:8}}>
+                {search?`"${search}" 검색 결과가 없어요`:"아직 스터디 그룹이 없어요"}
+              </div>
+              {!search&&<button onClick={()=>setShowCreate(true)} style={{padding:"10px 24px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer",marginTop:8}}>첫 그룹 만들기</button>}
+            </div>
+          ):(
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>{visible.map(g=>renderCard(g))}</div>
+          )}
+        </>
       )}
     </div>
   );
