@@ -4651,7 +4651,8 @@ const CODE_PROBLEMS = [
     outputDesc:"A+B를 출력한다.",
     examples:[{ input:"1 2", output:"3" }],
     cases:[{ input:"1 2",expected:"3" },{ input:"-5 10",expected:"5" },{ input:"0 0",expected:"0" },{ input:"999 1",expected:"1000" }],
-    starter:"A, B = map(int, input().split())\n# 여기에 코드를 작성하세요\n" },
+    starter:"A, B = map(int, input().split())\n# 여기에 코드를 작성하세요\n",
+    solution:"A, B = map(int, input().split())\nprint(A + B)\n" },
 
   { id:2, title:"FizzBuzz", diff:"쉬움", cat:"조건문",
     desc:"1부터 N까지 출력하되, 3의 배수는 Fizz, 5의 배수는 Buzz, 15의 배수는 FizzBuzz를 출력하세요.",
@@ -4662,7 +4663,8 @@ const CODE_PROBLEMS = [
       { input:"5", expected:"1\n2\nFizz\n4\nBuzz" },
       { input:"15", expected:"1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz" },
     ],
-    starter:"N = int(input())\nfor i in range(1, N+1):\n    # 조건 작성\n    pass\n" },
+    starter:"N = int(input())\nfor i in range(1, N+1):\n    # 조건 작성\n    pass\n",
+    solution:"N = int(input())\nfor i in range(1, N+1):\n    if i % 15 == 0:\n        print('FizzBuzz')\n    elif i % 3 == 0:\n        print('Fizz')\n    elif i % 5 == 0:\n        print('Buzz')\n    else:\n        print(i)\n" },
 
   { id:3, title:"최솟값과 최댓값", diff:"쉬움", cat:"배열",
     desc:"N개의 정수가 주어질 때 최솟값과 최댓값을 공백으로 구분하여 출력하세요.",
@@ -4674,7 +4676,8 @@ const CODE_PROBLEMS = [
       { input:"1\n42", expected:"42 42" },
       { input:"4\n-3 -1 -4 -2", expected:"-4 -1" },
     ],
-    starter:"N = int(input())\nnums = list(map(int, input().split()))\n# 최솟값과 최댓값을 출력하세요\n" },
+    starter:"N = int(input())\nnums = list(map(int, input().split()))\n# 최솟값과 최댓값을 출력하세요\n",
+    solution:"N = int(input())\nnums = list(map(int, input().split()))\nprint(min(nums), max(nums))\n" },
 
   { id:4, title:"문자열 뒤집기", diff:"쉬움", cat:"문자열",
     desc:"문자열 S를 뒤집어 출력하세요.",
@@ -4687,7 +4690,8 @@ const CODE_PROBLEMS = [
       { input:"a", expected:"a" },
       { input:"racecar", expected:"racecar" },
     ],
-    starter:"S = input()\n# S를 뒤집어 출력하세요\n" },
+    starter:"S = input()\n# S를 뒤집어 출력하세요\n",
+    solution:"S = input()\nprint(S[::-1])\n" },
 
   { id:5, title:"팰린드롬 확인", diff:"보통", cat:"문자열",
     desc:"문자열 S가 팰린드롬(앞뒤로 읽어도 같은 문자열)이면 1, 아니면 0을 출력하세요.",
@@ -4701,7 +4705,8 @@ const CODE_PROBLEMS = [
       { input:"abacaba", expected:"1" },
       { input:"abcd", expected:"0" },
     ],
-    starter:"S = input()\n# 팰린드롬이면 1, 아니면 0을 출력하세요\n" },
+    starter:"S = input()\n# 팰린드롬이면 1, 아니면 0을 출력하세요\n",
+    solution:"S = input()\nprint(1 if S == S[::-1] else 0)\n" },
 
   { id:6, title:"소수 판별", diff:"보통", cat:"수학",
     desc:"정수 N이 소수이면 YES, 아니면 NO를 출력하세요.",
@@ -4715,7 +4720,8 @@ const CODE_PROBLEMS = [
       { input:"1000000", expected:"NO" },
       { input:"999983", expected:"YES" },
     ],
-    starter:"import math\nN = int(input())\n# N이 소수인지 판별하세요\n" },
+    starter:"import math\nN = int(input())\n# N이 소수인지 판별하세요\n",
+    solution:"import math\nN = int(input())\nif N < 2:\n    print('NO')\nelse:\n    is_prime = all(N % i != 0 for i in range(2, int(math.sqrt(N)) + 1))\n    print('YES' if is_prime else 'NO')\n" },
 
   { id:7, title:"피보나치 수열", diff:"보통", cat:"동적 프로그래밍",
     desc:"F(1)=1, F(2)=1, F(N)=F(N-1)+F(N-2) 로 정의되는 피보나치 수열의 N번째 수를 출력하세요.",
@@ -4728,7 +4734,8 @@ const CODE_PROBLEMS = [
       { input:"20", expected:"6765" },
       { input:"50", expected:"12586269025" },
     ],
-    starter:"N = int(input())\n# N번째 피보나치 수를 출력하세요\n" },
+    starter:"N = int(input())\n# N번째 피보나치 수를 출력하세요\n",
+    solution:"N = int(input())\na, b = 1, 1\nfor _ in range(N - 1):\n    a, b = b, a + b\nprint(a)\n" },
 
   { id:8, title:"최대공약수", diff:"보통", cat:"수학",
     desc:"두 자연수 A와 B의 최대공약수(GCD)를 유클리드 호제법으로 구하세요.",
@@ -4741,7 +4748,8 @@ const CODE_PROBLEMS = [
       { input:"100 75", expected:"25" },
       { input:"7 13", expected:"1" },
     ],
-    starter:"A, B = map(int, input().split())\n# 유클리드 호제법으로 GCD를 구하세요\n" },
+    starter:"A, B = map(int, input().split())\n# 유클리드 호제법으로 GCD를 구하세요\n",
+    solution:"A, B = map(int, input().split())\nwhile B:\n    A, B = B, A % B\nprint(A)\n" },
 
   { id:9, title:"이진 탐색", diff:"어려움", cat:"탐색",
     desc:"정렬된 N개의 정수 배열에서 X를 이진 탐색으로 찾아 인덱스(0부터)를 출력하세요. 없으면 -1을 출력하세요.",
@@ -4755,7 +4763,8 @@ const CODE_PROBLEMS = [
       { input:"6\n2 4 6 8 10 12\n1", expected:"-1" },
       { input:"6\n2 4 6 8 10 12\n12", expected:"5" },
     ],
-    starter:"N = int(input())\narr = list(map(int, input().split()))\nX = int(input())\n# 이진 탐색으로 X의 인덱스를 찾으세요\n" },
+    starter:"N = int(input())\narr = list(map(int, input().split()))\nX = int(input())\n# 이진 탐색으로 X의 인덱스를 찾으세요\n",
+    solution:"N = int(input())\narr = list(map(int, input().split()))\nX = int(input())\nlo, hi = 0, N - 1\nans = -1\nwhile lo <= hi:\n    mid = (lo + hi) // 2\n    if arr[mid] == X:\n        ans = mid\n        break\n    elif arr[mid] < X:\n        lo = mid + 1\n    else:\n        hi = mid - 1\nprint(ans)\n" },
 
   { id:10, title:"계단 오르기", diff:"어려움", cat:"동적 프로그래밍",
     desc:"N개의 계단이 있고 한 번에 1칸 또는 2칸을 오를 수 있습니다. N번째 계단에 오르는 방법의 수를 구하세요.",
@@ -4769,7 +4778,8 @@ const CODE_PROBLEMS = [
       { input:"10", expected:"89" },
       { input:"50", expected:"20365011074" },
     ],
-    starter:"N = int(input())\n# DP로 계단 오르기 방법의 수를 구하세요\n" },
+    starter:"N = int(input())\n# DP로 계단 오르기 방법의 수를 구하세요\n",
+    solution:"N = int(input())\nif N == 1:\n    print(1)\nelif N == 2:\n    print(2)\nelse:\n    dp = [0] * (N + 1)\n    dp[1], dp[2] = 1, 2\n    for i in range(3, N + 1):\n        dp[i] = dp[i-1] + dp[i-2]\n    print(dp[N])\n" },
 ];
 
 const DIFF_COLOR = { "쉬움": C.green, "보통": C.yellow, "어려움": C.coral };
@@ -4821,12 +4831,13 @@ _buf.getvalue().strip()
 
 // ── 코딩테스트 화면 ──────────────────────────────
 function CodeTestScreen() {
-  const [problem, setProblem]   = useState(null);
-  const [code,    setCode]      = useState("");
-  const [results, setResults]   = useState(null); // [{pass,input,expected,actual}]
-  const [running, setRunning]   = useState(false);
-  const [pyReady, setPyReady]   = useState(false);
-  const [pyLoading,setPyLoading]= useState(false);
+  const [problem,   setProblem]    = useState(null);
+  const [code,      setCode]       = useState("");
+  const [results,   setResults]    = useState(null);
+  const [running,   setRunning]    = useState(false);
+  const [pyReady,   setPyReady]    = useState(false);
+  const [pyLoading, setPyLoading]  = useState(false);
+  const [showSol,   setShowSol]    = useState(false);
   const edRef = useRef(null);
 
   // Pyodide 미리 로드
@@ -4839,6 +4850,7 @@ function CodeTestScreen() {
     setProblem(p);
     setCode(p.starter);
     setResults(null);
+    setShowSol(false);
   };
 
   const handleTabKey = (e) => {
@@ -4969,6 +4981,36 @@ function CodeTestScreen() {
             ))}
           </div>
         )}
+
+        {/* 정답 보기 */}
+        <div style={{ borderTop:`1px solid ${C.line}`, paddingTop:14 }}>
+          <button onClick={() => setShowSol(s => !s)} style={{
+            display:"flex", alignItems:"center", gap:6, width:"100%",
+            padding:"8px 12px", borderRadius:9, border:`1px solid ${C.line}`,
+            background: showSol ? C.purple+"18" : C.card2,
+            color: showSol ? C.purple : C.muted,
+            fontFamily:SANS, fontSize:12, fontWeight:700, cursor:"pointer",
+          }}>
+            {showSol ? "🔒 정답 숨기기" : "💡 정답 보기"}
+          </button>
+          {showSol && problem.solution && (
+            <div style={{ marginTop:10 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+                <span style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.purple, letterSpacing:".06em" }}>모범 답안</span>
+                <button onClick={() => setCode(problem.solution)} style={{
+                  fontFamily:SANS, fontSize:11, color:C.blue, background:"none", border:"none",
+                  cursor:"pointer", textDecoration:"underline", padding:0,
+                }}>에디터에 붙여넣기</button>
+              </div>
+              <pre style={{
+                margin:0, background:"#0D1117", borderRadius:10,
+                padding:"14px 16px", fontFamily:MONO, fontSize:12,
+                color:"#E6EDF3", whiteSpace:"pre-wrap", lineHeight:1.7,
+                border:`1px solid ${C.purple}44`,
+              }}>{problem.solution}</pre>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 오른쪽: 코드 에디터 */}
