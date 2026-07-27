@@ -1111,17 +1111,20 @@ function authHeader() {
 }
 
 function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }) {
-  const [stats, setStats]     = useState(null);
-  const [loading, setLoading] = useState(!isGuest);
-  const [error, setError]     = useState(false);
+  const [stats, setStats]       = useState(null);
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading]   = useState(!isGuest);
+  const [error, setError]       = useState(false);
   const isMobile = useIsMobile();
 
   const fetchStats = () => {
     if (isGuest) return;
     setLoading(true); setError(false);
-    fetch(`${API}/api/dashboard/stats`, { headers: authHeader() })
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(d => { setStats(d); setLoading(false); })
+    Promise.all([
+      fetch(`${API}/api/dashboard/stats`,    { headers: authHeader() }).then(r => r.json()),
+      fetch(`${API}/api/dashboard/activity`, { headers: authHeader() }).then(r => r.json()),
+    ])
+      .then(([s, a]) => { setStats(s); setActivity(Array.isArray(a) ? a : []); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
   };
 
@@ -1252,45 +1255,83 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         );
       })()}
 
-      {/* 주간 활동 */}
+      {/* 학습 잔디 */}
       {(() => {
-        const today = new Date().getDay();
-        const todayIdx = today === 0 ? 6 : today - 1;
-        // 오늘 막대: 라이브 타이머 값으로 보정 (대시보드와 타이머 일치)
+        const todayStr = new Date().toISOString().slice(0,10);
         const liveTodayMin = Math.floor(getLocalTimer() / 60);
-        const liveChart = chart.map((d, i) =>
-          i === todayIdx ? { ...d, min: Math.max(d.min || 0, liveTodayMin) } : d
+        // 오늘 값은 DB + live 타이머 중 큰 것
+        const cells = activity.map(d =>
+          d.date === todayStr ? { ...d, min: Math.max(d.min || 0, liveTodayMin) } : d
         );
-        const totalWeekMin = liveChart.reduce((s, d) => s + (d.min || 0), 0);
-        const maxMin = Math.max(...liveChart.map(d => d.min || 0), 1);
+        const totalMin = cells.reduce((s,d) => s+(d.min||0), 0);
+        const activeDays = cells.filter(d=>d.min>0).length;
+
+        // 잔디 색 레벨 (0~4)
+        const level = (min) => {
+          if (!min) return 0;
+          if (min < 15)  return 1;
+          if (min < 30)  return 2;
+          if (min < 60)  return 3;
+          return 4;
+        };
+        const grassColor = (lv, isToday) => {
+          if (isToday && lv === 0) return C.blue+"22";
+          const colors = ["transparent", C.green+"55", C.green+"88", C.green+"bb", C.green];
+          return colors[lv];
+        };
+
+        // 4주 × 7일 그리드 (월~일 세로)
+        // cells[0]이 가장 오래된 날짜
+        const DAYS_KR = ["월","화","수","목","금","토","일"];
+        const weeks = [];
+        for (let w = 0; w < 4; w++) {
+          weeks.push(cells.slice(w*7, w*7+7));
+        }
+
         return (
         <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"18px 20px", marginBottom:28 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <div>
-              <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>이번 주 학습 현황</div>
-              <div style={{ fontFamily:MONO, fontSize:11, color:C.muted, marginTop:2 }}>총 {totalWeekMin}분 학습</div>
+              <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>학습 잔디</div>
+              <div style={{ fontFamily:MONO, fontSize:11, color:C.muted, marginTop:2 }}>
+                {activeDays}일 활성 · 총 {totalMin}분
+              </div>
             </div>
             <button onClick={fetchStats} disabled={loading} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:14, padding:4, opacity: loading ? 0.4 : 1 }} title="새로고침">↻</button>
           </div>
-          <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80 }}>
-            {liveChart.map((d, i) => {
-              const h = maxMin > 0 ? Math.round((d.min / maxMin) * 64) : 0;
-              const isToday = i === todayIdx;
-              const hasData = d.min > 0;
-              return (
-                <div key={d.day} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, position:"relative" }}>
-                  {hasData && (
-                    <div style={{ fontFamily:MONO, fontSize:9, color: isToday ? C.blue : C.muted, position:"absolute", top: 64 - h - 14, left:"50%", transform:"translateX(-50%)", whiteSpace:"nowrap" }}>{d.min}분</div>
-                  )}
-                  <div style={{
-                    width:"100%", height: h || 3, borderRadius: h > 0 ? "5px 5px 3px 3px" : "3px",
-                    background: isToday ? C.blue : hasData ? C.blue+"55" : C.line,
-                    marginTop: 64 - (h || 3), transition:"height .3s",
-                  }} />
-                  <div style={{ fontFamily:MONO, fontSize:10, color: isToday ? C.blue : C.muted, fontWeight: isToday ? 700 : 400 }}>{d.day}</div>
-                </div>
-              );
-            })}
+          <div style={{ display:"flex", gap:4 }}>
+            {/* 요일 레이블 */}
+            <div style={{ display:"flex", flexDirection:"column", gap:3, paddingTop:2 }}>
+              {DAYS_KR.map(d => (
+                <div key={d} style={{ height:16, fontFamily:MONO, fontSize:9, color:C.muted, lineHeight:"16px", width:14, textAlign:"right" }}>{d}</div>
+              ))}
+            </div>
+            {/* 주별 컬럼 */}
+            {weeks.map((week, wi) => (
+              <div key={wi} style={{ flex:1, display:"flex", flexDirection:"column", gap:3 }}>
+                {week.map((d, di) => {
+                  const lv = level(d.min);
+                  const isToday = d.date === todayStr;
+                  const bg = grassColor(lv, isToday);
+                  return (
+                    <div key={di} title={`${d.date}: ${d.min}분`} style={{
+                      height:16, borderRadius:3,
+                      background: bg,
+                      border: isToday ? `1.5px solid ${C.blue}` : `1px solid ${lv>0?C.green+"33":C.line+"88"}`,
+                      transition:"background .2s",
+                    }} />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          {/* 범례 */}
+          <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:10, justifyContent:"flex-end" }}>
+            <span style={{ fontFamily:MONO, fontSize:9, color:C.muted }}>적음</span>
+            {[0,1,2,3,4].map(lv=>(
+              <div key={lv} style={{ width:10, height:10, borderRadius:2, background:grassColor(lv,false)||C.line+"88", border:`1px solid ${C.line}` }}/>
+            ))}
+            <span style={{ fontFamily:MONO, fontSize:9, color:C.muted }}>많음</span>
           </div>
         </div>
         );

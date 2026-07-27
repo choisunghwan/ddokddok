@@ -175,6 +175,41 @@ def upsert_timer_stat(
     return {"ok": True}
 
 
+@router.get("/activity")
+def get_activity(
+    weeks: int = 4,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """최근 N주 일별 공부 분 반환 (잔디 그래프용)"""
+    today = date.today()
+    days = weeks * 7
+    start = today - timedelta(days=days - 1)
+
+    sessions = db.query(StudySession).filter(
+        StudySession.user_id == current_user.id,
+        StudySession.date >= start,
+    ).all()
+    timers = db.query(StudyTimerStat).filter(
+        StudyTimerStat.user_id == current_user.id,
+        StudyTimerStat.date >= start,
+    ).all()
+
+    day_minutes: dict = {}
+    for s in sessions:
+        k = s.date.isoformat()
+        day_minutes[k] = day_minutes.get(k, 0) + s.duration_minutes
+    for t in timers:
+        k = t.date.isoformat()
+        day_minutes[k] = day_minutes.get(k, 0) + (t.total_seconds // 60)
+
+    result = []
+    for i in range(days):
+        d = start + timedelta(days=i)
+        result.append({"date": d.isoformat(), "min": day_minutes.get(d.isoformat(), 0)})
+    return result
+
+
 @router.post("/progress")
 def update_progress(
     course_id: str,
