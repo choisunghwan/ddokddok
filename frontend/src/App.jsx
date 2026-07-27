@@ -620,7 +620,6 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
     { key:"code",   icon: Code2,   label:"코딩 학습" },
     { key:"cert",   icon: BookOpen,label:"자격증"    },
     { key:"notes",  icon: PenLine, label:"노트"      },
-    { key:"arch",   icon: Network, label:"아키텍처"  },
     { key:"study",  icon: Users,   label:"스터디"    },
   ];
 
@@ -4644,6 +4643,397 @@ function ArchScreen() {
   );
 }
 
+// ── 코딩테스트 문제 ──────────────────────────────
+const CODE_PROBLEMS = [
+  { id:1, title:"두 수의 합", diff:"쉬움", cat:"입출력",
+    desc:"두 정수 A와 B를 입력받아 합을 출력하세요.",
+    inputDesc:"첫째 줄에 두 정수 A B (-1000 ≤ A,B ≤ 1000)",
+    outputDesc:"A+B를 출력한다.",
+    examples:[{ input:"1 2", output:"3" }],
+    cases:[{ input:"1 2",expected:"3" },{ input:"-5 10",expected:"5" },{ input:"0 0",expected:"0" },{ input:"999 1",expected:"1000" }],
+    starter:"A, B = map(int, input().split())\n# 여기에 코드를 작성하세요\n" },
+
+  { id:2, title:"FizzBuzz", diff:"쉬움", cat:"조건문",
+    desc:"1부터 N까지 출력하되, 3의 배수는 Fizz, 5의 배수는 Buzz, 15의 배수는 FizzBuzz를 출력하세요.",
+    inputDesc:"첫째 줄에 N (1 ≤ N ≤ 100)",
+    outputDesc:"1부터 N까지 각 줄에 출력",
+    examples:[{ input:"5", output:"1\n2\nFizz\n4\nBuzz" }],
+    cases:[
+      { input:"5", expected:"1\n2\nFizz\n4\nBuzz" },
+      { input:"15", expected:"1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz" },
+    ],
+    starter:"N = int(input())\nfor i in range(1, N+1):\n    # 조건 작성\n    pass\n" },
+
+  { id:3, title:"최솟값과 최댓값", diff:"쉬움", cat:"배열",
+    desc:"N개의 정수가 주어질 때 최솟값과 최댓값을 공백으로 구분하여 출력하세요.",
+    inputDesc:"첫째 줄 N, 둘째 줄 N개의 정수",
+    outputDesc:"최솟값 최댓값",
+    examples:[{ input:"5\n3 1 4 1 5", output:"1 5" }],
+    cases:[
+      { input:"5\n3 1 4 1 5", expected:"1 5" },
+      { input:"1\n42", expected:"42 42" },
+      { input:"4\n-3 -1 -4 -2", expected:"-4 -1" },
+    ],
+    starter:"N = int(input())\nnums = list(map(int, input().split()))\n# 최솟값과 최댓값을 출력하세요\n" },
+
+  { id:4, title:"문자열 뒤집기", diff:"쉬움", cat:"문자열",
+    desc:"문자열 S를 뒤집어 출력하세요.",
+    inputDesc:"첫째 줄에 문자열 S",
+    outputDesc:"S를 뒤집은 문자열",
+    examples:[{ input:"abcdef", output:"fedcba" }],
+    cases:[
+      { input:"abcdef", expected:"fedcba" },
+      { input:"Python", expected:"nohtyP" },
+      { input:"a", expected:"a" },
+      { input:"racecar", expected:"racecar" },
+    ],
+    starter:"S = input()\n# S를 뒤집어 출력하세요\n" },
+
+  { id:5, title:"팰린드롬 확인", diff:"보통", cat:"문자열",
+    desc:"문자열 S가 팰린드롬(앞뒤로 읽어도 같은 문자열)이면 1, 아니면 0을 출력하세요.",
+    inputDesc:"첫째 줄에 문자열 S (영소문자, 1 ≤ |S| ≤ 1,000,000)",
+    outputDesc:"팰린드롬이면 1, 아니면 0",
+    examples:[{ input:"racecar", output:"1" },{ input:"hello", output:"0" }],
+    cases:[
+      { input:"racecar", expected:"1" },
+      { input:"hello", expected:"0" },
+      { input:"a", expected:"1" },
+      { input:"abacaba", expected:"1" },
+      { input:"abcd", expected:"0" },
+    ],
+    starter:"S = input()\n# 팰린드롬이면 1, 아니면 0을 출력하세요\n" },
+
+  { id:6, title:"소수 판별", diff:"보통", cat:"수학",
+    desc:"정수 N이 소수이면 YES, 아니면 NO를 출력하세요.",
+    inputDesc:"첫째 줄에 정수 N (2 ≤ N ≤ 1,000,000)",
+    outputDesc:"소수이면 YES, 아니면 NO",
+    examples:[{ input:"7", output:"YES" },{ input:"12", output:"NO" }],
+    cases:[
+      { input:"7", expected:"YES" },
+      { input:"12", expected:"NO" },
+      { input:"2", expected:"YES" },
+      { input:"1000000", expected:"NO" },
+      { input:"999983", expected:"YES" },
+    ],
+    starter:"import math\nN = int(input())\n# N이 소수인지 판별하세요\n" },
+
+  { id:7, title:"피보나치 수열", diff:"보통", cat:"동적 프로그래밍",
+    desc:"F(1)=1, F(2)=1, F(N)=F(N-1)+F(N-2) 로 정의되는 피보나치 수열의 N번째 수를 출력하세요.",
+    inputDesc:"첫째 줄에 N (1 ≤ N ≤ 50)",
+    outputDesc:"N번째 피보나치 수",
+    examples:[{ input:"10", output:"55" }],
+    cases:[
+      { input:"1", expected:"1" },
+      { input:"10", expected:"55" },
+      { input:"20", expected:"6765" },
+      { input:"50", expected:"12586269025" },
+    ],
+    starter:"N = int(input())\n# N번째 피보나치 수를 출력하세요\n" },
+
+  { id:8, title:"최대공약수", diff:"보통", cat:"수학",
+    desc:"두 자연수 A와 B의 최대공약수(GCD)를 유클리드 호제법으로 구하세요.",
+    inputDesc:"첫째 줄에 두 자연수 A B (1 ≤ A,B ≤ 1,000,000,000)",
+    outputDesc:"최대공약수",
+    examples:[{ input:"24 36", output:"12" }],
+    cases:[
+      { input:"24 36", expected:"12" },
+      { input:"1 1000000000", expected:"1" },
+      { input:"100 75", expected:"25" },
+      { input:"7 13", expected:"1" },
+    ],
+    starter:"A, B = map(int, input().split())\n# 유클리드 호제법으로 GCD를 구하세요\n" },
+
+  { id:9, title:"이진 탐색", diff:"어려움", cat:"탐색",
+    desc:"정렬된 N개의 정수 배열에서 X를 이진 탐색으로 찾아 인덱스(0부터)를 출력하세요. 없으면 -1을 출력하세요.",
+    inputDesc:"첫째 줄 N, 둘째 줄 N개 정수(오름차순), 셋째 줄 X",
+    outputDesc:"X의 인덱스 또는 -1",
+    examples:[{ input:"5\n1 3 5 7 9\n5", output:"2" },{ input:"5\n1 3 5 7 9\n6", output:"-1" }],
+    cases:[
+      { input:"5\n1 3 5 7 9\n5", expected:"2" },
+      { input:"5\n1 3 5 7 9\n6", expected:"-1" },
+      { input:"1\n42\n42", expected:"0" },
+      { input:"6\n2 4 6 8 10 12\n1", expected:"-1" },
+      { input:"6\n2 4 6 8 10 12\n12", expected:"5" },
+    ],
+    starter:"N = int(input())\narr = list(map(int, input().split()))\nX = int(input())\n# 이진 탐색으로 X의 인덱스를 찾으세요\n" },
+
+  { id:10, title:"계단 오르기", diff:"어려움", cat:"동적 프로그래밍",
+    desc:"N개의 계단이 있고 한 번에 1칸 또는 2칸을 오를 수 있습니다. N번째 계단에 오르는 방법의 수를 구하세요.",
+    inputDesc:"첫째 줄에 N (1 ≤ N ≤ 50)",
+    outputDesc:"방법의 수",
+    examples:[{ input:"5", output:"8" }],
+    cases:[
+      { input:"1", expected:"1" },
+      { input:"2", expected:"2" },
+      { input:"5", expected:"8" },
+      { input:"10", expected:"89" },
+      { input:"50", expected:"20365011074" },
+    ],
+    starter:"N = int(input())\n# DP로 계단 오르기 방법의 수를 구하세요\n" },
+];
+
+const DIFF_COLOR = { "쉬움": C.green, "보통": C.yellow, "어려움": C.coral };
+
+// Pyodide 싱글턴 로더
+let _pyodideInst = null;
+let _pyodideP    = null;
+function getPyodide() {
+  if (_pyodideInst) return Promise.resolve(_pyodideInst);
+  if (_pyodideP)    return _pyodideP;
+  _pyodideP = (async () => {
+    await new Promise((res, rej) => {
+      if (window.loadPyodide) { res(); return; }
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js";
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+    _pyodideInst = await window.loadPyodide({ indexURL:"https://cdn.jsdelivr.net/pyodide/v0.26.4/full/" });
+    return _pyodideInst;
+  })();
+  return _pyodideP;
+}
+
+async function runPy(code, inputStr) {
+  const py = await getPyodide();
+  py.globals.set("_user_code", code);
+  py.globals.set("_user_input", inputStr);
+  const runner = `
+import sys, io
+sys.stdin  = io.StringIO(_user_input)
+_buf = io.StringIO()
+sys.stdout = _buf
+try:
+    exec(_user_code)
+except Exception as e:
+    import traceback
+    _buf.write(traceback.format_exc())
+sys.stdout = sys.__stdout__
+_buf.getvalue().strip()
+`;
+  try {
+    const out = py.runPython(runner);
+    return { ok: true, output: String(out) };
+  } catch(e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+// ── 코딩테스트 화면 ──────────────────────────────
+function CodeTestScreen() {
+  const [problem, setProblem]   = useState(null);
+  const [code,    setCode]      = useState("");
+  const [results, setResults]   = useState(null); // [{pass,input,expected,actual}]
+  const [running, setRunning]   = useState(false);
+  const [pyReady, setPyReady]   = useState(false);
+  const [pyLoading,setPyLoading]= useState(false);
+  const edRef = useRef(null);
+
+  // Pyodide 미리 로드
+  useEffect(() => {
+    setPyLoading(true);
+    getPyodide().then(() => { setPyReady(true); setPyLoading(false); }).catch(() => setPyLoading(false));
+  }, []);
+
+  const selectProblem = (p) => {
+    setProblem(p);
+    setCode(p.starter);
+    setResults(null);
+  };
+
+  const handleTabKey = (e) => {
+    if (e.key !== "Tab") return;
+    e.preventDefault();
+    const el = edRef.current;
+    const s = el.selectionStart, end = el.selectionEnd;
+    const next = code.slice(0,s) + "    " + code.slice(end);
+    setCode(next);
+    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 4; });
+  };
+
+  const run = async () => {
+    if (!pyReady || running || !problem) return;
+    setRunning(true);
+    setResults(null);
+    const res = [];
+    for (const tc of problem.cases) {
+      const r = await runPy(code, tc.input);
+      res.push({ input: tc.input, expected: tc.expected, actual: r.ok ? r.output : r.error, pass: r.ok && r.output === tc.expected });
+    }
+    setResults(res);
+    setRunning(false);
+  };
+
+  const passed = results ? results.filter(r => r.pass).length : 0;
+
+  /* ── 목록 화면 ── */
+  if (!problem) return (
+    <div style={{ padding:"28px 32px 60px" }}>
+      <div style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>⌨️ 코딩테스트</div>
+      <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:8 }}>Python으로 풀어보는 알고리즘 문제</div>
+      {pyLoading && (
+        <div style={{ fontFamily:SANS, fontSize:12, color:C.blue, marginBottom:20, display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ display:"inline-block", width:8, height:8, borderRadius:"50%", background:C.blue, animation:"si-pulse 1s infinite" }} />
+          Python 실행 환경 초기화 중… (최초 1회 30초 소요)
+        </div>
+      )}
+      {pyReady && (
+        <div style={{ fontFamily:SANS, fontSize:12, color:C.green, marginBottom:20, display:"flex", alignItems:"center", gap:6 }}>
+          ✓ Python 실행 환경 준비 완료
+        </div>
+      )}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
+        {CODE_PROBLEMS.map(p => (
+          <button key={p.id} onClick={() => selectProblem(p)} style={{
+            textAlign:"left", padding:"18px 20px", borderRadius:14,
+            border:`1px solid ${C.line}`, background:C.card, cursor:"pointer",
+            transition:"all .15s", display:"flex", flexDirection:"column", gap:8,
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor=C.blue}
+          onMouseLeave={e => e.currentTarget.style.borderColor=C.line}
+          >
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <span style={{ fontFamily:MONO, fontSize:11, color:C.muted }}>#{p.id}</span>
+              <span style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color: DIFF_COLOR[p.diff], background: DIFF_COLOR[p.diff]+"22", padding:"2px 8px", borderRadius:99 }}>{p.diff}</span>
+            </div>
+            <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text }}>{p.title}</div>
+            <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, background:C.card2, padding:"2px 8px", borderRadius:6, alignSelf:"flex-start" }}>{p.cat}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  /* ── 문제 풀기 화면 (좌: 설명 / 우: 에디터) ── */
+  return (
+    <div style={{ display:"flex", height:"calc(100vh - 108px)", overflow:"hidden" }}>
+
+      {/* 왼쪽: 문제 설명 */}
+      <div style={{ width:380, flexShrink:0, overflowY:"auto", borderRight:`1px solid ${C.line}`, padding:"24px 24px 40px", display:"flex", flexDirection:"column", gap:16 }}>
+        <button onClick={() => { setProblem(null); setResults(null); }} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontFamily:SANS, fontSize:13, display:"flex", alignItems:"center", gap:4, padding:0, marginBottom:4 }}>
+          ← 목록
+        </button>
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+            <span style={{ fontFamily:MONO, fontSize:11, color:C.muted }}>#{problem.id}</span>
+            <span style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color: DIFF_COLOR[problem.diff], background: DIFF_COLOR[problem.diff]+"22", padding:"2px 8px", borderRadius:99 }}>{problem.diff}</span>
+            <span style={{ fontFamily:SANS, fontSize:11, color:C.muted, background:C.card2, padding:"2px 8px", borderRadius:6 }}>{problem.cat}</span>
+          </div>
+          <div style={{ fontFamily:SANS, fontSize:18, fontWeight:800, color:C.text }}>{problem.title}</div>
+        </div>
+        <div style={{ fontFamily:SANS, fontSize:14, color:C.text, lineHeight:1.8 }}>{problem.desc}</div>
+        <div>
+          <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.muted, letterSpacing:".06em", marginBottom:4 }}>입력</div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.text }}>{problem.inputDesc}</div>
+        </div>
+        <div>
+          <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.muted, letterSpacing:".06em", marginBottom:4 }}>출력</div>
+          <div style={{ fontFamily:SANS, fontSize:13, color:C.text }}>{problem.outputDesc}</div>
+        </div>
+        <div>
+          <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.muted, letterSpacing:".06em", marginBottom:8 }}>예제</div>
+          {problem.examples.map((ex, i) => (
+            <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
+              <div>
+                <div style={{ fontFamily:SANS, fontSize:10, color:C.muted, marginBottom:3 }}>입력 {i+1}</div>
+                <pre style={{ margin:0, background:C.card2, borderRadius:8, padding:"10px 12px", fontFamily:MONO, fontSize:12, color:C.text, whiteSpace:"pre-wrap" }}>{ex.input}</pre>
+              </div>
+              <div>
+                <div style={{ fontFamily:SANS, fontSize:10, color:C.muted, marginBottom:3 }}>출력 {i+1}</div>
+                <pre style={{ margin:0, background:C.card2, borderRadius:8, padding:"10px 12px", fontFamily:MONO, fontSize:12, color:C.text, whiteSpace:"pre-wrap" }}>{ex.output}</pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 테스트 결과 */}
+        {results && (
+          <div>
+            <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.muted, letterSpacing:".06em", marginBottom:8 }}>
+              결과 — {passed}/{results.length} 통과
+              {passed === results.length && <span style={{ color:C.green, marginLeft:8 }}>🎉 전체 통과!</span>}
+            </div>
+            {results.map((r, i) => (
+              <div key={i} style={{ borderRadius:10, border:`1px solid ${r.pass ? C.green+"44" : C.coral+"44"}`, background: r.pass ? C.green+"0A" : C.coral+"0A", padding:"10px 12px", marginBottom:6 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                  <span style={{ fontSize:13 }}>{r.pass ? "✅" : "❌"}</span>
+                  <span style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color: r.pass ? C.green : C.coral }}>테스트 {i+1}</span>
+                </div>
+                {!r.pass && (
+                  <div style={{ fontFamily:MONO, fontSize:11, color:C.muted }}>
+                    <div>예상: <span style={{ color:C.green }}>{r.expected}</span></div>
+                    <div>실제: <span style={{ color:C.coral }}>{r.actual}</span></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 오른쪽: 코드 에디터 */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.line}`, display:"flex", alignItems:"center", gap:8, background:C.card2 }}>
+          <span style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.muted }}>Python 3</span>
+          <div style={{ flex:1 }} />
+          {!pyReady && <span style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>환경 초기화 중…</span>}
+          <button onClick={run} disabled={!pyReady || running} style={{
+            padding:"7px 20px", borderRadius:8, border:"none",
+            background: pyReady && !running ? C.blue : C.line,
+            color:"#fff", fontFamily:SANS, fontSize:13, fontWeight:700, cursor: pyReady && !running ? "pointer" : "not-allowed",
+            display:"flex", alignItems:"center", gap:6, transition:"all .15s",
+          }}>
+            {running ? <><span style={{ animation:"si-pulse 1s infinite" }}>⏳</span> 실행 중…</> : "▶ 실행"}
+          </button>
+        </div>
+        <textarea
+          ref={edRef}
+          value={code}
+          onChange={e => setCode(e.target.value)}
+          onKeyDown={handleTabKey}
+          spellCheck={false}
+          style={{
+            flex:1, resize:"none", border:"none", outline:"none",
+            background:"#0D1117", color:"#E6EDF3",
+            fontFamily:MONO, fontSize:14, lineHeight:1.8,
+            padding:"20px 24px", tabSize:4,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── 개발학습 통합 화면 (학습 + 아키텍처 + 코딩테스트) ─
+function DevScreen({ isGuest }) {
+  const [subTab, setSubTab] = useState("learn");
+  const TABS = [
+    { key:"learn", label:"📚 코딩 학습" },
+    { key:"arch",  label:"🏗️ 아키텍처" },
+    { key:"test",  label:"⌨️ 코딩테스트" },
+  ];
+  return (
+    <div style={{ display:"flex", flexDirection:"column", minHeight:"100%" }}>
+      <div style={{ display:"flex", gap:2, padding:"0 32px", borderBottom:`1px solid ${C.line}`, background:C.card, flexShrink:0 }}>
+        {TABS.map(({ key, label }) => {
+          const active = subTab === key;
+          return (
+            <button key={key} onClick={() => setSubTab(key)} style={{
+              padding:"14px 18px", border:"none", borderBottom: active ? `2px solid ${C.blue}` : "2px solid transparent",
+              background:"transparent", color: active ? C.blue : C.muted,
+              fontFamily:SANS, fontSize:13, fontWeight: active ? 700 : 500,
+              cursor:"pointer", transition:"all .15s", marginBottom:-1,
+            }}>{label}</button>
+          );
+        })}
+      </div>
+      {subTab === "learn" && <CodeScreen isGuest={isGuest} />}
+      {subTab === "arch"  && <ArchScreen />}
+      {subTab === "test"  && <CodeTestScreen />}
+    </div>
+  );
+}
+
 // ── 스터디 그룹 ─────────────────────────────────
 function StudyScreen() {
   const [groups, setGroups] = useState([]);
@@ -6264,10 +6654,9 @@ export default function App() {
       <StudyIsland />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
-        {tab === "code"  && <CodeScreen key={screenKeys.code} isGuest={isGuest} />}
+        {tab === "code"  && <DevScreen key={screenKeys.code} isGuest={isGuest} />}
         {tab === "cert"  && <CertScreen key={screenKeys.cert} />}
         {tab === "notes" && <NoteScreen key={screenKeys.notes} isGuest={isGuest} onLogin={handleBackToLogin} nickname={nickname} />}
-        {tab === "arch"  && <ArchScreen key={screenKeys.arch} />}
         {tab === "study" && !isGuest && <StudyScreen key={screenKeys.study} />}
       </div>
     </div>
