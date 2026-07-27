@@ -5233,8 +5233,17 @@ function StudyScreen() {
   const renderRoom = () => {
     const g = selectedGroup;
     if (!g) return null;
-    const onlineCnt = g.members.filter(m=>m.online).length;
-    const runningCnt = g.members.filter(m=>m.online&&m.timer_running).length;
+    const myNick = localStorage.getItem("nickname") || "";
+    // 본인 멤버 데이터 보정 (presence 아직 미반영 시 optimistic으로 online 표시)
+    const members = g.members.map(m => {
+      if (m.nickname === myNick && !m.online) {
+        const secs = (() => { try { const d=JSON.parse(localStorage.getItem("study_today")||"{}"); return d.date===new Date().toDateString()?(d.s||d.secs||0):0; } catch{return 0;} })();
+        return { ...m, online:true, timer_running:window._siRunning||false, timer_seconds:secs };
+      }
+      return m;
+    });
+    const onlineCnt = members.filter(m=>m.online).length;
+    const runningCnt = members.filter(m=>m.online&&m.timer_running).length;
     return (
       <div style={{paddingBottom:80}}>
         {/* 뒤로 + 그룹명 */}
@@ -5271,7 +5280,7 @@ function StudyScreen() {
 
         {/* 멤버 그리드 */}
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr)",gap:10,marginBottom:22}}>
-          {g.members.map((m,i)=>{
+          {members.map((m,i)=>{
             const online=m.online, running=online&&m.timer_running;
             const bCol=online?(running?C.blue:C.green):C.line;
             const bg=online?(running?C.blue+"10":C.green+"10"):C.card2;
@@ -5306,7 +5315,7 @@ function StudyScreen() {
         </div>
 
         {/* 액션 */}
-        <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:14,padding:"14px 16px"}}>
+        <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:14,padding:"14px 16px",marginTop:4}}>
           {!g.is_member?(
             <button onClick={()=>handleJoin(g)} style={{width:"100%",padding:"12px 0",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:14,fontWeight:700,cursor:"pointer"}}>
               {g.has_password?"🔒 비밀번호로 참가하기":"참가하기"}
@@ -5338,7 +5347,13 @@ function StudyScreen() {
   // ── 목록 카드 (요약만 표시) ─────────────────────────
   const renderCard = (g) => {
     const onlineCnt = g.members.filter(m=>m.online).length;
-    const enterRoom = () => { setSelectedGroup(g); selectedIdRef.current=g.id; };
+    const enterRoom = () => {
+      setSelectedGroup(g); selectedIdRef.current=g.id;
+      if (g.is_member) {
+        broadcast(); // 룸 진입 즉시 presence 전송
+        setTimeout(()=>load(true), 900); // 900ms 뒤 갱신 → 본인 초록불 즉시 표시
+      }
+    };
     return (
       <div key={g.id} onClick={enterRoom}
         style={{background:C.card,border:`1px solid ${g.is_member?C.blue+"44":C.line}`,borderRadius:16,overflow:"hidden",cursor:"pointer",boxShadow:"0 1px 8px #0001",transition:"box-shadow .15s,border-color .15s"}}
