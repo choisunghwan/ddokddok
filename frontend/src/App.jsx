@@ -5482,7 +5482,7 @@ function StudyScreen() {
               })()}
               {/* ⋯ 설정 드롭다운 */}
               <div style={{position:"relative"}}>
-                <button onClick={()=>setSettingsOpen(v=>v===g.id?false:g.id)}
+                <button onClick={(e)=>{e.stopPropagation();setSettingsOpen(v=>v===g.id?false:g.id);}}
                   style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
                   ⋯
                 </button>
