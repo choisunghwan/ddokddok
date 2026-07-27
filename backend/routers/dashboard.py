@@ -92,12 +92,13 @@ def get_stats(db: Session = Depends(get_db), current_user: User = Depends(get_cu
     ]
     streak = calc_streak(session_dates + aice_dates + timer_dates)
 
-    # 오늘 타이머 누적 초
+    # 오늘 공부 시간 = 타이머 초 + 오늘 세션 분(초 환산) 합산 (차트와 동일 기준)
     today_timer = db.query(StudyTimerStat).filter(
         StudyTimerStat.user_id == current_user.id,
         StudyTimerStat.date == today,
     ).first()
-    today_seconds = today_timer.total_seconds if today_timer else 0
+    today_session_secs = sum(s.duration_minutes * 60 for s in weekly_sessions if s.date == today)
+    today_seconds = (today_timer.total_seconds if today_timer else 0) + today_session_secs
 
     # 코스별 진행률
     progress_rows = db.query(CourseProgress).filter(

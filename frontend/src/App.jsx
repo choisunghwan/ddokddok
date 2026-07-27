@@ -1156,7 +1156,7 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
   const getLocalTimer = () => {
     try {
       const d = JSON.parse(localStorage.getItem("study_today") || "{}");
-      return d.date === new Date().toDateString() ? (d.secs || 0) : 0;
+      return d.date === new Date().toDateString() ? (d.s || d.secs || 0) : 0;
     } catch { return 0; }
   };
 
@@ -5126,41 +5126,54 @@ function StudyScreen() {
   const [groups,     setGroups]     = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [form,       setForm]       = useState({ name:"", topic:"", is_public:true });
+  const [form,       setForm]       = useState({ name:"", topic:"", password:"" });
   const [formErr,    setFormErr]    = useState("");
   const [creating,   setCreating]   = useState(false);
-  const [stTab,      setStTab]      = useState("mine");
+  const [search,     setSearch]     = useState("");
+  const [joinTarget, setJoinTarget] = useState(null);
+  const [joinPw,     setJoinPw]     = useState("");
+  const [joinErr,    setJoinErr]    = useState("");
+  const [joining,    setJoining]    = useState(false);
+  const [showPw,     setShowPw]     = useState(false);
   const groupsRef = useRef([]);
   const isMobile  = useIsMobile();
 
   const fmtSec = (s) => {
-    const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sc=s%60;
+    const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;
     return h>0?`${h}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`;
   };
 
-  const load = (quiet=false) => {
-    if (!quiet) setLoading(true);
-    fetch(`${API}/api/study/groups`, { headers: authHeader() })
-      .then(r=>r.json())
-      .then(data=>{ const arr=Array.isArray(data)?data:[]; setGroups(arr); groupsRef.current=arr; setLoading(false); })
-      .catch(()=>setLoading(false));
-  };
-
   const broadcast = () => {
+    if (!groupsRef.current.length) return;
     const running = window._siRunning||false;
     let secs=0;
-    try { const d=JSON.parse(localStorage.getItem("study_today")||"{}"); if(d.date===new Date().toDateString()) secs=d.s||d.secs||0; } catch{}
+    try{const d=JSON.parse(localStorage.getItem("study_today")||"{}");if(d.date===new Date().toDateString())secs=d.s||d.secs||0;}catch{}
     groupsRef.current.filter(g=>g.is_member).forEach(g=>{
       fetch(`${API}/api/study/groups/${g.id}/presence`,{
-        method:"POST", headers:{"Content-Type":"application/json",...authHeader()},
+        method:"POST",headers:{"Content-Type":"application/json",...authHeader()},
         body:JSON.stringify({timer_running:running,timer_seconds:secs}),
       }).catch(()=>{});
     });
   };
 
+  const load = (quiet=false) => {
+    if (!quiet) setLoading(true);
+    fetch(`${API}/api/study/groups`,{headers:authHeader()})
+      .then(r=>r.json())
+      .then(data=>{
+        const arr=Array.isArray(data)?data:[];
+        setGroups(arr); groupsRef.current=arr; setLoading(false);
+        broadcast(); // broadcast immediately after we know our groups
+      }).catch(()=>setLoading(false));
+  };
+
   useEffect(()=>{
-    load(); broadcast();
-    const iv = setInterval(()=>{ load(true); broadcast(); }, 10000);
+    load();
+    // Every 10s: broadcast first, then reload 1.5s later so reload sees updated presence
+    const iv = setInterval(()=>{
+      broadcast();
+      setTimeout(()=>load(true), 1500);
+    }, 10000);
     return ()=>clearInterval(iv);
   },[]);
 
@@ -5169,45 +5182,59 @@ function StudyScreen() {
     setCreating(true);
     try{
       const res=await fetch(`${API}/api/study/groups`,{
-        method:"POST", headers:{"Content-Type":"application/json",...authHeader()},
-        body:JSON.stringify({name:form.name.trim(),topic:form.topic.trim(),is_public:form.is_public}),
+        method:"POST",headers:{"Content-Type":"application/json",...authHeader()},
+        body:JSON.stringify({name:form.name.trim(),topic:form.topic.trim(),password:form.password}),
       });
-      if(!res.ok){const d=await res.json(); setFormErr(d.detail||"오류"); return;}
-      setForm({name:"",topic:"",is_public:true}); setFormErr(""); setShowCreate(false); load();
+      if(!res.ok){const d=await res.json();setFormErr(d.detail||"오류");return;}
+      setForm({name:"",topic:"",password:""}); setFormErr(""); setShowCreate(false); setShowPw(false); load();
     }catch{setFormErr("서버에 연결할 수 없습니다");}
     finally{setCreating(false);}
   };
 
-  const joinGroup  = async(id)=>{ await fetch(`${API}/api/study/groups/${id}/join`,{method:"POST",headers:authHeader()}); load(); };
-  const checkin    = async(id)=>{ await fetch(`${API}/api/study/groups/${id}/checkin`,{method:"POST",headers:authHeader()}); load(); };
-  const leaveGroup = async(id)=>{ if(!window.confirm("그룹에서 탈퇴하시겠습니까?")) return; await fetch(`${API}/api/study/groups/${id}/leave`,{method:"DELETE",headers:authHeader()}); load(); };
-  const deleteGroup= async(id,n)=>{ if(!window.confirm(`"${n}" 그룹을 삭제하시겠습니까?`)) return; await fetch(`${API}/api/study/groups/${id}`,{method:"DELETE",headers:authHeader()}); load(); };
+  const handleJoin = (g) => {
+    if (g.has_password) { setJoinTarget({id:g.id,name:g.name}); setJoinPw(""); setJoinErr(""); }
+    else doJoin(g.id, "");
+  };
+  const doJoin = async(id,pw)=>{
+    setJoining(true);
+    const res=await fetch(`${API}/api/study/groups/${id}/join`,{
+      method:"POST",headers:{"Content-Type":"application/json",...authHeader()},
+      body:JSON.stringify({password:pw||""}),
+    }).catch(()=>null);
+    setJoining(false);
+    if(!res){setJoinErr("서버에 연결할 수 없습니다");return;}
+    if(!res.ok){const d=await res.json();setJoinErr(d.detail||"참가 실패");return;}
+    setJoinTarget(null); load();
+  };
 
-  const myGroups  = groups.filter(g=>g.is_member);
-  const allGroups = groups.filter(g=>!g.is_member&&(g.is_public!==false));
+  const checkin    = async(id)=>{ await fetch(`${API}/api/study/groups/${id}/checkin`,{method:"POST",headers:authHeader()}); load(); };
+  const leaveGroup = async(id)=>{ if(!window.confirm("탈퇴하시겠습니까?"))return; await fetch(`${API}/api/study/groups/${id}/leave`,{method:"DELETE",headers:authHeader()}); load(); };
+  const deleteGroup= async(id,n)=>{ if(!window.confirm(`"${n}" 그룹을 삭제하시겠습니까?`))return; await fetch(`${API}/api/study/groups/${id}`,{method:"DELETE",headers:authHeader()}); load(); };
+
+  const q = search.trim().toLowerCase();
+  const visible = groups
+    .filter(g=>!q||g.name.toLowerCase().includes(q)||(g.topic||"").toLowerCase().includes(q))
+    .sort((a,b)=>(b.is_member?1:0)-(a.is_member?1:0));
 
   const renderCard = (g) => {
     const onlineCnt = g.members.filter(m=>m.online).length;
-    const isPublic  = g.is_public!==false;
     return (
-      <div key={g.id} style={{background:C.card,border:`1px solid ${g.is_member?C.blue+"33":C.line}`,borderRadius:18,overflow:"hidden",boxShadow:"0 2px 12px #0001"}}>
-        {g.is_member && <div style={{height:3,background:`linear-gradient(90deg,${C.blue},${C.purple})`}} />}
+      <div key={g.id} style={{background:C.card,border:`1px solid ${g.is_member?C.blue+"33":C.line}`,borderRadius:18,overflow:"hidden",boxShadow:"0 2px 14px #0001"}}>
+        {g.is_member && <div style={{height:3,background:`linear-gradient(90deg,${C.blue},${C.purple})`}}/>}
         <div style={{padding:"18px 20px"}}>
-          {/* Header */}
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
                 <span style={{fontFamily:SANS,fontSize:15,fontWeight:800,color:C.text}}>{g.name}</span>
-                <span style={{fontFamily:SANS,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,color:isPublic?C.blue:C.muted,background:isPublic?C.blue+"15":C.card2,border:`1px solid ${isPublic?C.blue+"44":C.line}`}}>{isPublic?"🌐 공개":"🔒 비공개"}</span>
+                {g.has_password&&<span style={{fontFamily:SANS,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,color:C.muted,background:C.card2,border:`1px solid ${C.line}`}}>🔒 비번방</span>}
               </div>
               {g.topic&&<div style={{fontFamily:MONO,fontSize:11,color:C.muted}}>📌 {g.topic}</div>}
             </div>
             <div style={{display:"flex",alignItems:"center",gap:4,fontFamily:MONO,fontSize:12,color:C.yellow,flexShrink:0,marginLeft:8}}>🔥 {g.streak}일</div>
           </div>
 
-          {/* Members row */}
           <div style={{marginBottom:16}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
               <span style={{fontFamily:SANS,fontSize:10,fontWeight:700,color:C.muted,letterSpacing:".06em"}}>멤버 {g.member_count}명</span>
               {onlineCnt>0&&(
                 <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:SANS,fontSize:10,fontWeight:700,color:C.green}}>
@@ -5218,30 +5245,20 @@ function StudyScreen() {
             </div>
             <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
               {g.members.map((m,i)=>{
-                const online = m.online;
-                const running = online&&m.timer_running;
-                const dotCol = online?(running?C.blue:C.green):"#888";
-                return (
-                  <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:50}}>
+                const online=m.online,running=online&&m.timer_running;
+                const dotCol=online?(running?C.blue:C.green):"#777";
+                return(
+                  <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,width:52}}>
                     <div style={{position:"relative"}}>
-                      <div style={{
-                        width:44,height:44,borderRadius:14,
+                      <div style={{width:44,height:44,borderRadius:14,
                         background:online?(running?C.blue+"1A":C.green+"1A"):C.card2,
                         border:`2px solid ${online?(running?C.blue:C.green):C.line}`,
                         display:"flex",alignItems:"center",justifyContent:"center",
                         fontFamily:MONO,fontSize:15,fontWeight:700,
                         color:online?(running?C.blue:C.green):C.muted,
                         transition:"all .4s",
-                      }}>
-                        {m.checked_in_today?"✓":m.nickname[0]?.toUpperCase()}
-                      </div>
-                      <div style={{
-                        position:"absolute",bottom:-2,right:-2,
-                        width:12,height:12,borderRadius:"50%",
-                        background:dotCol,border:`2px solid ${C.card}`,
-                        animation:running?"si-pulse 2s ease-in-out infinite":"none",
-                        transition:"background .4s",
-                      }}/>
+                      }}>{m.checked_in_today?"✓":m.nickname[0]?.toUpperCase()}</div>
+                      <div style={{position:"absolute",bottom:-2,right:-2,width:12,height:12,borderRadius:"50%",background:dotCol,border:`2px solid ${C.card}`,animation:running?"si-pulse 2s ease-in-out infinite":"none",transition:"background .4s"}}/>
                     </div>
                     {online&&m.timer_seconds>0&&(
                       <div style={{fontFamily:MONO,fontSize:9,fontWeight:700,color:running?C.blue:C.green,textAlign:"center",lineHeight:1.2}}>
@@ -5255,12 +5272,13 @@ function StudyScreen() {
             </div>
           </div>
 
-          {/* Footer */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
             <div style={{fontFamily:MONO,fontSize:10.5,color:C.muted}}>{g.members.filter(m=>m.checked_in_today).length}/{g.member_count}명 오늘 완료</div>
             <div style={{display:"flex",gap:8}}>
               {!g.is_member?(
-                <button onClick={()=>joinGroup(g.id)} style={{padding:"8px 18px",borderRadius:9,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:12,fontWeight:700,cursor:"pointer"}}>참가하기</button>
+                <button onClick={()=>handleJoin(g)} style={{padding:"8px 18px",borderRadius:9,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                  {g.has_password?"🔒 참가":"참가하기"}
+                </button>
               ):(
                 <>
                   <button onClick={()=>checkin(g.id)} disabled={g.checked_in_today} style={{padding:"8px 16px",borderRadius:9,border:"none",background:g.checked_in_today?C.green+"22":C.green,color:g.checked_in_today?C.green:"#fff",fontFamily:SANS,fontSize:12,fontWeight:700,cursor:g.checked_in_today?"default":"pointer"}}>
@@ -5284,7 +5302,34 @@ function StudyScreen() {
     <div style={{padding:`28px ${isMobile?"16px":"24px"} 80px`}}>
       <style>{`@keyframes online-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}`}</style>
 
-      {/* Create modal */}
+      {/* 비번 참가 모달 */}
+      {joinTarget&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
+          onClick={e=>e.target===e.currentTarget&&setJoinTarget(null)}>
+          <div style={{width:"100%",maxWidth:340,background:C.card,borderRadius:20,padding:"28px 24px",border:`1px solid ${C.line}`}}>
+            <div style={{fontFamily:SANS,fontSize:16,fontWeight:800,color:C.text,marginBottom:4}}>🔒 비밀번호 입력</div>
+            <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginBottom:18}}>{joinTarget.name}</div>
+            <div style={{position:"relative",marginBottom:12}}>
+              <input type={showPw?"text":"password"} placeholder="비밀번호"
+                value={joinPw} onChange={e=>{setJoinPw(e.target.value);setJoinErr("");}}
+                onKeyDown={e=>e.key==="Enter"&&joinPw&&doJoin(joinTarget.id,joinPw)}
+                autoFocus
+                style={{width:"100%",padding:"10px 40px 10px 14px",borderRadius:9,border:`1px solid ${joinErr?C.coral:C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box"}}
+              />
+              <button onClick={()=>setShowPw(v=>!v)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:14,padding:2}}>{showPw?"🙈":"👁"}</button>
+            </div>
+            {joinErr&&<div style={{fontFamily:SANS,fontSize:12,color:C.coral,marginBottom:10}}>{joinErr}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setJoinTarget(null)} style={{flex:1,padding:"10px 0",borderRadius:9,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontFamily:SANS,fontSize:13,cursor:"pointer"}}>취소</button>
+              <button onClick={()=>doJoin(joinTarget.id,joinPw)} disabled={joining||!joinPw} style={{flex:2,padding:"10px 0",borderRadius:9,border:"none",background:joinPw?C.blue:C.line,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:joinPw?"pointer":"not-allowed"}}>
+                {joining?"확인 중…":"참가하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 그룹 만들기 모달 */}
       {showCreate&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
           onClick={e=>e.target===e.currentTarget&&setShowCreate(false)}>
@@ -5297,21 +5342,18 @@ function StudyScreen() {
               onChange={e=>{setForm(f=>({...f,name:e.target.value}));setFormErr("");}}
               style={{width:"100%",padding:"10px 14px",borderRadius:9,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:10}}
             />
-            <input placeholder="오늘의 주제 (선택)" value={form.topic}
+            <input placeholder="주제 (선택)" value={form.topic}
               onChange={e=>setForm(f=>({...f,topic:e.target.value}))}
-              style={{width:"100%",padding:"10px 14px",borderRadius:9,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:14}}
+              style={{width:"100%",padding:"10px 14px",borderRadius:9,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:10}}
             />
-            <div style={{display:"flex",gap:8,marginBottom:16}}>
-              {[[true,"🌐 공개"],[false,"🔒 비공개"]].map(([val,label])=>(
-                <button key={String(val)} onClick={()=>setForm(f=>({...f,is_public:val}))} style={{
-                  flex:1,padding:"9px 0",borderRadius:9,cursor:"pointer",
-                  border:`1px solid ${form.is_public===val?C.blue:C.line}`,
-                  background:form.is_public===val?C.blue+"18":"transparent",
-                  color:form.is_public===val?C.blue:C.muted,
-                  fontFamily:SANS,fontSize:13,fontWeight:form.is_public===val?700:400,
-                }}>{label}</button>
-              ))}
+            <div style={{position:"relative",marginBottom:8}}>
+              <input type={showPw?"text":"password"} placeholder="🔒 비밀번호 (없으면 공개방)"
+                value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))}
+                style={{width:"100%",padding:"10px 40px 10px 14px",borderRadius:9,border:`1px solid ${form.password?C.blue+"66":C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box"}}
+              />
+              <button onClick={()=>setShowPw(v=>!v)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:14,padding:2}}>{showPw?"🙈":"👁"}</button>
             </div>
+            <div style={{fontFamily:SANS,fontSize:11,color:C.muted,marginBottom:16}}>비밀번호 없으면 누구나 참가 가능한 공개방</div>
             {formErr&&<div style={{fontFamily:SANS,fontSize:12,color:C.coral,marginBottom:10}}>{formErr}</div>}
             <button onClick={createGroup} disabled={creating} style={{width:"100%",padding:"11px 0",borderRadius:9,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
               {creating?"만드는 중…":"그룹 만들기"}
@@ -5320,59 +5362,41 @@ function StudyScreen() {
         </div>
       )}
 
-      {/* Header */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22}}>
+      {/* 헤더 */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
         <div>
           <div style={{fontFamily:SANS,fontSize:20,fontWeight:800,color:C.text}}>스터디 그룹</div>
-          <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginTop:2}}>실시간으로 함께 공부하고 서로 자극받아요</div>
+          <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginTop:2}}>온라인 스터디 카페 — 실시간으로 함께 공부해요</div>
         </div>
         <button onClick={()=>setShowCreate(true)} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
           <Plus size={15}/> 만들기
         </button>
       </div>
 
-      {/* Tabs */}
-      <div style={{display:"flex",gap:4,marginBottom:20,background:C.card2,borderRadius:12,padding:4}}>
-        {[["mine",`내 그룹${myGroups.length?` (${myGroups.length})`:""}`],["all","둘러보기"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setStTab(k)} style={{
-            flex:1,padding:"8px 0",borderRadius:9,border:"none",cursor:"pointer",
-            background:stTab===k?C.card:"transparent",
-            color:stTab===k?C.text:C.muted,
-            fontFamily:SANS,fontSize:13,fontWeight:stTab===k?700:400,
-            boxShadow:stTab===k?"0 1px 6px #0002":"none",transition:"all .15s",
-          }}>{l}</button>
-        ))}
+      {/* 검색 */}
+      <div style={{position:"relative",marginBottom:20}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder="스터디 그룹 검색..."
+          style={{width:"100%",boxSizing:"border-box",padding:"10px 16px 10px 40px",borderRadius:11,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none"}}
+        />
+        <svg style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",color:C.muted,pointerEvents:"none"}} width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <circle cx={11} cy={11} r={8}/><line x1={21} y1={21} x2={16.65} y2={16.65}/>
+        </svg>
+        {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,padding:2,display:"flex"}}><X size={14}/></button>}
       </div>
 
       {loading?(
         <div style={{textAlign:"center",color:C.muted,fontFamily:SANS,fontSize:14,padding:"60px 0"}}>불러오는 중…</div>
+      ):visible.length===0?(
+        <div style={{textAlign:"center",padding:"60px 0"}}>
+          <div style={{fontSize:48,marginBottom:16}}>{search?"🔍":"👥"}</div>
+          <div style={{fontFamily:SANS,fontSize:16,fontWeight:700,color:C.text,marginBottom:8}}>
+            {search?`"${search}" 검색 결과가 없어요`:"아직 스터디 그룹이 없어요"}
+          </div>
+          {!search&&<button onClick={()=>setShowCreate(true)} style={{padding:"10px 24px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer",marginTop:8}}>첫 그룹 만들기</button>}
+        </div>
       ):(
-        stTab==="mine"?(
-          myGroups.length===0?(
-            <div style={{textAlign:"center",padding:"60px 0"}}>
-              <div style={{fontSize:48,marginBottom:16}}>👥</div>
-              <div style={{fontFamily:SANS,fontSize:16,fontWeight:700,color:C.text,marginBottom:8}}>아직 참여한 그룹이 없어요</div>
-              <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginBottom:24}}>그룹을 만들거나 공개 그룹에 참여해보세요</div>
-              <div style={{display:"flex",gap:10,justifyContent:"center"}}>
-                <button onClick={()=>setStTab("all")} style={{padding:"10px 20px",borderRadius:10,border:`1px solid ${C.blue}`,background:C.blue+"18",color:C.blue,fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>둘러보기</button>
-                <button onClick={()=>setShowCreate(true)} style={{padding:"10px 20px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>그룹 만들기</button>
-              </div>
-            </div>
-          ):(
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>{myGroups.map(g=>renderCard(g))}</div>
-          )
-        ):(
-          allGroups.length===0?(
-            <div style={{textAlign:"center",padding:"60px 0"}}>
-              <div style={{fontSize:48,marginBottom:16}}>🔍</div>
-              <div style={{fontFamily:SANS,fontSize:16,fontWeight:700,color:C.text,marginBottom:8}}>공개 그룹이 없어요</div>
-              <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginBottom:24}}>첫 번째 공개 그룹을 만들어보세요!</div>
-              <button onClick={()=>setShowCreate(true)} style={{padding:"10px 24px",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>그룹 만들기</button>
-            </div>
-          ):(
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>{allGroups.map(g=>renderCard(g))}</div>
-          )
-        )
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>{visible.map(g=>renderCard(g))}</div>
       )}
     </div>
   );

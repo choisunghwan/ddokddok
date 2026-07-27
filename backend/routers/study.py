@@ -5,14 +5,23 @@ from datetime import date, datetime, timedelta, timezone
 from database import get_db
 from models import StudyGroup, StudyMember, StudyCheckin, StudyPresence, User
 from deps import get_current_user
+import hashlib
 
 router = APIRouter(prefix="/api/study", tags=["study"])
+
+
+def _hash_pw(pw: str) -> str:
+    return hashlib.sha256(pw.encode()).hexdigest()
 
 
 class GroupCreate(BaseModel):
     name: str
     topic: str = ""
-    is_public: bool = True
+    password: str = ""
+
+
+class JoinGroup(BaseModel):
+    password: str = ""
 
 
 class PresenceUpdate(BaseModel):
@@ -84,7 +93,7 @@ def _group_dict(g: StudyGroup, current_user_id: int, db: Session) -> dict:
         "id": g.id,
         "name": g.name,
         "topic": g.topic or "",
-        "is_public": bool(getattr(g, "is_public", True)),
+        "has_password": bool(getattr(g, "password_hash", None)),
         "member_count": len(member_ids),
         "members": member_list,
         "is_member": current_user_id in member_ids,
@@ -111,10 +120,11 @@ def create_group(
 ):
     if not body.name.strip():
         raise HTTPException(status_code=400, detail="그룹 이름을 입력하세요")
+    pw = body.password.strip() if body.password else ""
     group = StudyGroup(
         name=body.name.strip(),
         topic=body.topic.strip(),
-        is_public=body.is_public,
+        password_hash=_hash_pw(pw) if pw else None,
         created_by=current_user.id,
     )
     db.add(group)
@@ -164,16 +174,21 @@ def update_presence(
 @router.post("/groups/{group_id}/join")
 def join_group(
     group_id: int,
+    body: JoinGroup,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if not db.query(StudyGroup).filter(StudyGroup.id == group_id).first():
+    group = db.query(StudyGroup).filter(StudyGroup.id == group_id).first()
+    if not group:
         raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
     if db.query(StudyMember).filter(
         StudyMember.group_id == group_id,
         StudyMember.user_id == current_user.id,
     ).first():
         raise HTTPException(status_code=400, detail="이미 참가한 그룹입니다")
+    if group.password_hash:
+        if not body.password or _hash_pw(body.password.strip()) != group.password_hash:
+            raise HTTPException(status_code=403, detail="비밀번호가 틀렸습니다")
     db.add(StudyMember(group_id=group_id, user_id=current_user.id))
     db.commit()
     return {"ok": True}
