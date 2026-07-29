@@ -6824,6 +6824,34 @@ function StudyIsland() {
   const ctxRef  = useRef(null);
   const nodeRef = useRef(null);
 
+  // ── Lo-fi 라디오 ──
+  const [lofiOn,  setLofiOn]  = useState(false);
+  const [lofiErr, setLofiErr] = useState(false);
+  const lofiRef = useRef(null);
+  const LOFI_STREAMS = [
+    "https://streams.ilovemusic.de/iloveradio17.mp3",
+    "https://ice6.somafm.com/groovesalad-256-mp3",
+  ];
+  const toggleLofi = () => {
+    if (lofiOn) {
+      if (lofiRef.current) { lofiRef.current.pause(); lofiRef.current.src = ""; lofiRef.current = null; }
+      setLofiOn(false); setLofiErr(false);
+    } else {
+      const audio = new Audio(LOFI_STREAMS[0]);
+      audio.volume = vol * 0.75;
+      audio.play().then(() => { lofiRef.current = audio; setLofiOn(true); setLofiErr(false); })
+        .catch(() => {
+          // fallback 스트림
+          const a2 = new Audio(LOFI_STREAMS[1]);
+          a2.volume = vol * 0.75;
+          a2.play().then(() => { lofiRef.current = a2; setLofiOn(true); setLofiErr(false); })
+            .catch(() => setLofiErr(true));
+        });
+    }
+  };
+  useEffect(() => { if (lofiRef.current) lofiRef.current.volume = vol * 0.75; }, [vol]);
+  useEffect(() => () => { if (lofiRef.current) { lofiRef.current.pause(); lofiRef.current = null; } }, []);
+
   const wrapperRef = useRef(null);
 
   // ── 모바일 드래그 ──
@@ -7037,7 +7065,13 @@ function StudyIsland() {
                   </button>
                 ))}
               </div>
-              {active && <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e => changeVol(parseFloat(e.target.value))} style={{ width:"100%", marginTop:14, accentColor:cur?.color||C.blue }} />}
+              <button onClick={toggleLofi} style={{ width:"100%", marginTop:8, display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:lofiOn?`${C.purple}22`:"transparent", border:`1px solid ${lofiErr?"#E07070":lofiOn?C.purple:C.line}`, borderRadius:12, padding:"11px 0", cursor:"pointer", transition:"all .2s" }}>
+                <span style={{ fontSize:18 }}>{lofiOn ? "🎶" : "📻"}</span>
+                <span style={{ fontFamily:SANS, fontSize:12, color:lofiErr?"#E07070":lofiOn?C.purple:C.muted, fontWeight:lofiOn?700:400 }}>
+                  {lofiErr ? "연결 실패" : lofiOn ? "Lo-fi 재생 중" : "Lo-fi Radio"}
+                </span>
+              </button>
+              {(active || lofiOn) && <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e => changeVol(parseFloat(e.target.value))} style={{ width:"100%", marginTop:14, accentColor:lofiOn&&!active?C.purple:cur?.color||C.blue }} />}
             </div>
           </>
         )}
@@ -7057,6 +7091,7 @@ function StudyIsland() {
             {running && <span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:C.blue, marginLeft:6, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
           </span>
           {active && <span style={{ fontSize:17 }}>{cur?.emoji}</span>}
+          {lofiOn && <span style={{ fontSize:15 }}>🎶</span>}
           <button onClick={e => { e.stopPropagation(); running ? handlePause() : handleStart(); }} style={{
             width:36, height:36, borderRadius:9, border:"none", cursor:"pointer",
             background:running?`${C.coral}22`:`${C.blue}22`, color:running?C.coral:C.blue,
@@ -7085,7 +7120,13 @@ function StudyIsland() {
             </button>
           ))}
         </div>
-        {active && <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e => changeVol(parseFloat(e.target.value))} style={{ width:"100%", marginTop:9, accentColor:cur?.color||C.blue }} />}
+        <button onClick={toggleLofi} style={{ width:"100%", marginTop:6, display:"flex", alignItems:"center", justifyContent:"center", gap:7, background:lofiOn?`${C.purple}22`:"transparent", border:`1px solid ${lofiErr?"#E07070":lofiOn?C.purple:C.line}`, borderRadius:9, padding:"7px 0", cursor:"pointer", transition:"all .2s" }}>
+          <span style={{ fontSize:14 }}>{lofiOn ? "🎶" : "📻"}</span>
+          <span style={{ fontFamily:SANS, fontSize:10, color:lofiErr?"#E07070":lofiOn?C.purple:C.muted, fontWeight:lofiOn?700:400 }}>
+            {lofiErr ? "연결 실패" : lofiOn ? "Lo-fi 재생 중" : "Lo-fi Radio"}
+          </span>
+        </button>
+        {(active || lofiOn) && <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e => changeVol(parseFloat(e.target.value))} style={{ width:"100%", marginTop:8, accentColor:lofiOn&&!active?C.purple:cur?.color||C.blue }} />}
       </div>
 
       {/* ⏱ 타이머 카드 */}
