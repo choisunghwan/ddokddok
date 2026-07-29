@@ -6729,7 +6729,7 @@ function NoteScreen({ isGuest, onLogin, nickname }) {
   const [loading, setLoading]     = useState(true);
   const [view, setView]           = useState("list"); // list | edit | read
   const [current, setCurrent]     = useState(null);
-  const [form, setForm]           = useState({ title: "", content: "", tags: "", category: "" });
+  const [form, setForm]           = useState({ title: "", content: "", tags: "", category: "", is_private: false });
   const [saving, setSaving]       = useState(false);
   const [saveError, setSaveError] = useState("");
   const [preview, setPreview]     = useState(false);
@@ -6748,10 +6748,10 @@ function NoteScreen({ isGuest, onLogin, nickname }) {
 
   useEffect(() => { if (!isGuest) load(); }, [isGuest]);
 
-  const openNew = () => { setForm({ title: "", content: "", tags: "", category: filterCat }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
+  const openNew = () => { setForm({ title: "", content: "", tags: "", category: filterCat, is_private: false }); setCurrent(null); setPreview(false); setSaveError(""); setView("edit"); };
   const openEdit = (n) => {
     const content = isHtml(n.content) ? n.content : marked.parse(n.content || "", MD_OPTS);
-    setForm({ title: n.title, content, tags: n.tags, category: n.category || "" });
+    setForm({ title: n.title, content, tags: n.tags, category: n.category || "", is_private: !!n.is_private });
     setCurrent(n); setPreview(false); setSaveError(""); setView("edit");
   };
   const openRead = (n) => { setCurrent(n); setView("read"); };
@@ -6817,7 +6817,10 @@ function NoteScreen({ isGuest, onLogin, nickname }) {
           </button>
         </>}
       </div>
-      <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:8 }}>{current.title}</div>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+        <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text }}>{current.title}</div>
+        {current.is_private && <span style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.yellow, background:C.yellow+"18", border:`1px solid ${C.yellow}44`, padding:"2px 10px", borderRadius:99, flexShrink:0 }}>🔒 비밀글</span>}
+      </div>
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
         <span style={{ fontFamily:MONO, fontSize:11, color:C.muted }}>{fmtDate(current.updated_at)}</span>
         {current.category && (
@@ -6885,6 +6888,19 @@ function NoteScreen({ isGuest, onLogin, nickname }) {
           placeholder="태그 (쉼표로 구분: 알고리즘, 정렬)"
           style={{ flex:1, background:C.card, border:`1px solid ${C.line}`, borderRadius:10, padding:"9px 16px", fontFamily:MONO, fontSize:12, color:C.muted, outline:"none" }}
         />
+        <button
+          onClick={() => setForm(f => ({ ...f, is_private: !f.is_private }))}
+          title={form.is_private ? "비밀글 (나만 보기)" : "공개글"}
+          style={{
+            flexShrink:0, display:"flex", alignItems:"center", gap:6, padding:"9px 14px",
+            borderRadius:10, border:`1px solid ${form.is_private ? C.yellow+"88" : C.line}`,
+            background: form.is_private ? C.yellow+"18" : "transparent",
+            color: form.is_private ? C.yellow : C.muted,
+            fontFamily:SANS, fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap",
+          }}
+        >
+          {form.is_private ? "🔒 비밀글" : "🌐 공개"}
+        </button>
       </div>
       <RichEditor value={form.content} onChange={v => setForm(f => ({ ...f, content: v }))} />
     </div>
@@ -6980,6 +6996,7 @@ function NoteScreen({ isGuest, onLogin, nickname }) {
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                         {n.category && <span style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:catColor, background:catColor+"22", padding:"1px 8px", borderRadius:99, flexShrink:0 }}>{n.category}</span>}
+                        {n.is_private && <span style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.yellow, background:C.yellow+"18", padding:"1px 8px", borderRadius:99, flexShrink:0 }}>🔒</span>}
                         <div style={{ fontFamily:SANS, fontSize:15, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
                       </div>
                       <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>

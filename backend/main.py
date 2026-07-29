@@ -18,6 +18,7 @@ try:
         _conn.execute(text("ALTER TABLE study_groups ADD COLUMN IF NOT EXISTS password_hash VARCHAR(64)"))
         _conn.execute(text("ALTER TABLE study_groups ADD COLUMN IF NOT EXISTS max_members INTEGER"))
         _conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ"))
+        _conn.execute(text("ALTER TABLE study_notes ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT FALSE"))
         # study_presence upsert needs this index; safe to run even if it already exists
         _conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_presence_user_group "

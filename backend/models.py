@@ -118,5 +118,6 @@ class StudyNote(Base):
     content = Column(Text, default="")
     tags = Column(String(300), default="")
     category = Column(String(50), default="")
+    is_private = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -16,6 +16,7 @@ class NoteCreate(BaseModel):
     content: str = ""
     tags: str = ""
     category: str = ""
+    is_private: bool = False
 
 
 class NoteUpdate(BaseModel):
@@ -23,6 +24,7 @@ class NoteUpdate(BaseModel):
     content: str = ""
     tags: str = ""
     category: str = ""
+    is_private: bool = False
 
 
 def _serialize(note: StudyNote, author: str = "", is_mine: bool = False):
@@ -32,6 +34,7 @@ def _serialize(note: StudyNote, author: str = "", is_mine: bool = False):
         "content": note.content,
         "tags": note.tags,
         "category": note.category or "",
+        "is_private": bool(note.is_private),
         "author": author,
         "is_mine": is_mine,
         "created_at": note.created_at.isoformat() if note.created_at else None,
@@ -48,6 +51,9 @@ def list_notes(
     q = db.query(StudyNote, User.nickname).join(User, StudyNote.user_id == User.id)
     if category:
         q = q.filter(StudyNote.category == category)
+    # 비밀글은 본인 것만 조회
+    from sqlalchemy import or_
+    q = q.filter(or_(StudyNote.is_private == False, StudyNote.user_id == current_user.id))
     results = q.order_by(StudyNote.updated_at.desc()).all()
     return [_serialize(note, author=nickname, is_mine=(note.user_id == current_user.id)) for note, nickname in results]
 
@@ -62,6 +68,8 @@ def get_note(
     if not result:
         raise HTTPException(status_code=404, detail="노트를 찾을 수 없습니다")
     note, nickname = result
+    if note.is_private and note.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="비밀글입니다")
     return _serialize(note, author=nickname, is_mine=(note.user_id == current_user.id))
 
 
@@ -77,6 +85,7 @@ def create_note(
         content=body.content,
         tags=body.tags,
         category=body.category,
+        is_private=body.is_private,
     )
     db.add(note)
     db.commit()
@@ -101,6 +110,7 @@ def update_note(
     note.content = body.content
     note.tags = body.tags
     note.category = body.category
+    note.is_private = body.is_private
     db.commit()
     db.refresh(note)
     return _serialize(note, author=current_user.nickname, is_mine=True)
