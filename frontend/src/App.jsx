@@ -4,39 +4,42 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, R
 import { marked } from "marked";
 
 // ── 디자인 토큰 ──────────────────────────────────
+// Lo-fi Amber — 따뜻한 다크, 앰버 단일 포인트
 const DARK = {
-  bg:    "#0F1117",
-  card:  "#1A1D27",
-  card2: "#22263A",
-  line:  "#2E3350",
-  blue:  "#4F8EF7",
-  green: "#34D399",
-  coral: "#F87171",
-  yellow:"#FBBF24",
-  purple:"#A78BFA",
-  text:  "#E8EAFF",
-  muted: "#6B7280",
+  bg:    "#13100D",
+  card:  "#1D1916",
+  card2: "#252019",
+  line:  "#302820",
+  blue:  "#D4854A",  // 앰버 (메인 포인트)
+  green: "#6DBF88",  // 세이지 그린 (완료/긍정)
+  coral: "#E07070",  // 소프트 레드 (경고/삭제)
+  yellow:"#E8C56A",  // 머트 골드 (연속 학습)
+  purple:"#9B8AE0",
+  text:  "#EDE8E2",  // 따뜻한 오프화이트
+  muted: "#7A6E66",  // 따뜻한 뮤트
   white: "#FFFFFF",
+  accent:"#D4854A",
 };
 const LIGHT = {
-  bg:    "#F5F7FF",
+  bg:    "#F4EFE6",
   card:  "#FFFFFF",
-  card2: "#EEF1FF",
-  line:  "#DDE3F5",
-  blue:  "#3B7FF5",
-  green: "#059669",
-  coral: "#DC2626",
-  yellow:"#B45309",
-  purple:"#7C3AED",
-  text:  "#0F1117",
-  muted: "#64748B",
+  card2: "#EDE8DE",
+  line:  "#E0D8CD",
+  blue:  "#C47122",  // 번트 앰버
+  green: "#4A9E6A",
+  coral: "#C45050",
+  yellow:"#A07B20",
+  purple:"#7B5EA8",
+  text:  "#1A1410",
+  muted: "#8C7E72",
   white: "#FFFFFF",
+  accent:"#C47122",
 };
 const _savedTheme = typeof localStorage !== "undefined" ? localStorage.getItem("ddok_theme") : "dark";
 const C = { ...(_savedTheme === "light" ? LIGHT : DARK) };
 const SANS = "'Pretendard','Inter',system-ui,sans-serif";
 const MONO = "'JetBrains Mono','Fira Code',monospace";
-const GRAD = "linear-gradient(135deg, #2563EB 0%, #6D28D9 100%)";
+const GRAD = "linear-gradient(135deg, #D4854A 0%, #B86030 100%)";
 
 // ── 목 데이터 ──────────────────────────────────
 const WEEKLY = [
@@ -1111,20 +1114,27 @@ function authHeader() {
 }
 
 function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }) {
-  const [stats, setStats]       = useState(null);
-  const [activity, setActivity] = useState([]);
-  const [loading, setLoading]   = useState(!isGuest);
-  const [error, setError]       = useState(false);
+  const [stats, setStats]             = useState(null);
+  const [activity, setActivity]       = useState([]);
+  const [studyGroups, setStudyGroups] = useState([]);
+  const [loading, setLoading]         = useState(!isGuest);
+  const [error, setError]             = useState(false);
   const isMobile = useIsMobile();
 
   const fetchStats = () => {
     if (isGuest) return;
     setLoading(true); setError(false);
     Promise.all([
-      fetch(`${API}/api/dashboard/stats`,    { headers: authHeader() }).then(r => r.json()),
+      fetch(`${API}/api/dashboard/stats`,      { headers: authHeader() }).then(r => r.json()),
       fetch(`${API}/api/dashboard/activity?weeks=52`, { headers: authHeader() }).then(r => r.json()),
+      fetch(`${API}/api/study/groups`,         { headers: authHeader() }).then(r => r.json()),
     ])
-      .then(([s, a]) => { setStats(s); setActivity(Array.isArray(a) ? a : []); setLoading(false); })
+      .then(([s, a, g]) => {
+        setStats(s);
+        setActivity(Array.isArray(a) ? a : []);
+        setStudyGroups(Array.isArray(g) ? g.filter(x => x.is_member) : []);
+        setLoading(false);
+      })
       .catch(() => { setError(true); setLoading(false); });
   };
 
@@ -1439,42 +1449,57 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         );
       })()}
 
-      {/* 최근 학습 */}
-      <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>최근 학습</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-        {courses.map((c) => {
-          const pct = c.total > 0 ? Math.min((c.progress / c.total) * 100, 100) : 0;
-          const isAice = c.id === "aice";
-          const hasProgress = c.progress > 0;
-          return (
-            <button key={c.id} onClick={() => setTab(isAice ? "cert" : "code")} style={{
-              textAlign:"left", padding:"16px", borderRadius:14,
-              border:`1px solid ${hasProgress ? c.color+"33" : C.line+"88"}`,
-              background: hasProgress ? c.color+"0C" : C.card,
-              cursor:"pointer", position:"relative", overflow:"hidden",
-              boxShadow:`0 2px 12px ${C.bg}66`,
-            }}>
-              {/* 배경 아이콘 */}
-              <div style={{ position:"absolute", right:-6, bottom:-8, fontSize:58, opacity:0.06, lineHeight:1, pointerEvents:"none", userSelect:"none" }}>{c.icon}</div>
-              {/* 아이콘 + % */}
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-                <span style={{ fontSize:26 }}>{c.icon}</span>
-                <span style={{ fontFamily:MONO, fontSize:20, fontWeight:900, color: hasProgress ? c.color : C.line, lineHeight:1 }}>
-                  {Math.round(pct)}%
-                </span>
-              </div>
-              <div style={{ fontFamily:SANS, fontSize:12, fontWeight:800, color:C.text, marginBottom:8 }}>{c.lang}</div>
-              {c.badge && <div style={{ fontFamily:MONO, fontSize:9, color:c.color, background:c.color+"22", padding:"2px 7px", borderRadius:4, fontWeight:700, display:"inline-block", marginBottom:8 }}>{c.badge}</div>}
-              <div style={{ height:5, background:C.line+"88", borderRadius:3, overflow:"hidden" }}>
-                <div style={{ height:"100%", width:`${pct}%`, background:c.color, borderRadius:3, transition:"width .5s" }} />
-              </div>
-              <div style={{ fontFamily:MONO, fontSize:9, color: hasProgress ? c.color : C.muted, marginTop:6, fontWeight: hasProgress ? 700 : 400 }}>
-                {isAice ? (hasProgress ? `${c.progress}문제 정답` : "도전해보세요") : `${c.progress} / ${c.total} 완료`}
-              </div>
-            </button>
-          );
-        })}
+      {/* 온라인 도서관 */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+        <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.muted, letterSpacing:"0.1em", textTransform:"uppercase" }}>📚 온라인 도서관</div>
+        <button onClick={() => setTab("study")} style={{ fontFamily:SANS, fontSize:11, color:C.blue, background:"none", border:"none", cursor:"pointer", fontWeight:700 }}>전체 보기 →</button>
       </div>
+
+      {!isGuest && studyGroups.length > 0 ? (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {studyGroups.slice(0, 4).map(g => {
+            const onlineCnt = (g.members||[]).filter(m => m.online).length;
+            const hasOnline = onlineCnt > 0;
+            return (
+              <button key={g.id} onClick={() => setTab("study")} style={{
+                display:"flex", alignItems:"center", justifyContent:"space-between",
+                padding:"14px 16px", borderRadius:14, textAlign:"left", cursor:"pointer",
+                background: hasOnline ? C.blue+"0C" : C.card,
+                border:`1px solid ${hasOnline ? C.blue+"40" : C.line}`,
+                boxShadow: hasOnline ? `0 2px 20px ${C.blue}18` : "none",
+                transition:"all .2s",
+              }}>
+                <div>
+                  <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{g.name}</div>
+                  <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{g.member_count}명 참여</div>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  {hasOnline ? (<>
+                    <div style={{ width:7, height:7, borderRadius:"50%", background:C.green, boxShadow:`0 0 8px ${C.green}99` }}/>
+                    <div style={{ fontFamily:MONO, fontSize:12, fontWeight:800, color:C.green }}>{onlineCnt}명 공부 중</div>
+                  </>) : (
+                    <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>조용해요</div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+          {studyGroups.length > 4 && (
+            <button onClick={() => setTab("study")} style={{ padding:"12px", borderRadius:12, border:`1px solid ${C.line}`, background:"none", color:C.muted, fontFamily:SANS, fontSize:12, cursor:"pointer" }}>
+              +{studyGroups.length - 4}개 그룹 더 보기
+            </button>
+          )}
+        </div>
+      ) : (
+        <button onClick={() => setTab("study")} style={{
+          width:"100%", padding:"28px 20px", borderRadius:16,
+          border:`2px dashed ${C.line}`, background:"none", cursor:"pointer", textAlign:"center",
+        }}>
+          <div style={{ fontSize:32, marginBottom:10 }}>📚</div>
+          <div style={{ fontFamily:SANS, fontSize:14, fontWeight:800, color:C.text, marginBottom:6 }}>스터디 그룹 참가하기</div>
+          <div style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>함께 공부하면 더 오래 집중돼요</div>
+        </button>
+      )}
     </div>
   );
 }
