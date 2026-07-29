@@ -5566,17 +5566,16 @@ function StudyScreen() {
                   ⋯
                 </button>
                 {settingsOpen===g.id&&(
-                  <div style={{position:"absolute",right:0,bottom:42,background:C.card,border:`1px solid ${C.line}`,borderRadius:10,boxShadow:"0 4px 16px #0002",minWidth:120,zIndex:100}}
+                  <div style={{position:"absolute",right:0,bottom:42,background:C.card,border:`1px solid ${C.line}`,borderRadius:12,boxShadow:"0 6px 24px #0003",minWidth:148,zIndex:100,overflow:"hidden"}}
                     onClick={e=>e.stopPropagation()}>
-                    {g.is_creator?(
+                    <button onClick={()=>{setSettingsOpen(false);leaveGroup(g.id);}}
+                      style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.text,cursor:"pointer",borderBottom:`1px solid ${C.line}`}}>
+                      <span style={{fontSize:15}}>🚪</span> 나가기
+                    </button>
+                    {g.is_creator&&(
                       <button onClick={()=>{setSettingsOpen(false);deleteGroup(g.id,g.name);}}
-                        style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.coral,cursor:"pointer"}}>
-                        그룹 삭제
-                      </button>
-                    ):(
-                      <button onClick={()=>{setSettingsOpen(false);leaveGroup(g.id);}}
-                        style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.muted,cursor:"pointer"}}>
-                        탈퇴하기
+                        style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.coral,cursor:"pointer"}}>
+                        <span style={{fontSize:15}}>🗑</span> 방 삭제
                       </button>
                     )}
                   </div>
