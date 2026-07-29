@@ -98,6 +98,28 @@ def list_users(
     return result
 
 
+class NicknameUpdate(BaseModel):
+    nickname: str
+
+
+@router.patch("/users/{user_id}/nickname")
+def update_nickname(
+    user_id: int,
+    body: NicknameUpdate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin),
+):
+    nickname = body.nickname.strip()
+    if not nickname:
+        raise HTTPException(status_code=400, detail="닉네임을 입력하세요")
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="회원을 찾을 수 없습니다")
+    target.nickname = nickname
+    db.commit()
+    return {"ok": True, "nickname": target.nickname}
+
+
 @router.delete("/users/{user_id}")
 def delete_user(
     user_id: int,

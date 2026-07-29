@@ -5315,6 +5315,8 @@ function AdminScreen() {
   const [sortDesc, setSortDesc] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, nickname }
   const [deleting, setDeleting] = useState(false);
+  const [editNick, setEditNick] = useState(null); // { id, value }
+  const [savingNick, setSavingNick] = useState(false);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -5333,6 +5335,21 @@ function AdminScreen() {
     setDeleting(false);
     setDeleteTarget(null);
     if (r?.ok) setUsers(us => us.filter(u => u.id !== deleteTarget.id));
+  };
+
+  const saveNickname = async () => {
+    if (!editNick || !editNick.value.trim()) return;
+    setSavingNick(true);
+    const r = await fetch(`${API}/api/admin/users/${editNick.id}/nickname`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeader() },
+      body: JSON.stringify({ nickname: editNick.value.trim() }),
+    }).catch(() => null);
+    setSavingNick(false);
+    if (r?.ok) {
+      setUsers(us => us.map(u => u.id === editNick.id ? { ...u, nickname: editNick.value.trim() } : u));
+    }
+    setEditNick(null);
   };
 
   useEffect(() => { fetchUsers(); }, []);
@@ -5468,10 +5485,31 @@ function AdminScreen() {
                       <div style={{ width:28, height:28, borderRadius:"50%", background: u.is_admin ? C.yellow+"33" : GRAD, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:11, color: u.is_admin ? C.yellow : "#fff", fontWeight:700, flexShrink:0 }}>
                         {u.nickname?.[0]?.toUpperCase()}
                       </div>
-                      <div>
-                        <div style={{ fontFamily:SANS, fontSize:13, fontWeight:600, color:C.text }}>{u.nickname}</div>
-                        {u.is_admin && <span style={{ fontFamily:SANS, fontSize:9, color:C.yellow, fontWeight:700 }}>관리자</span>}
-                        {u.kakao_linked && <span style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginLeft:4 }}>카카오</span>}
+                      <div style={{ flex:1, minWidth:0 }}>
+                        {editNick?.id === u.id ? (
+                          <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                            <input
+                              autoFocus
+                              value={editNick.value}
+                              onChange={e => setEditNick(n => ({ ...n, value: e.target.value }))}
+                              onKeyDown={e => { if (e.key === "Enter") saveNickname(); if (e.key === "Escape") setEditNick(null); }}
+                              style={{ width:90, background:C.card2, border:`1px solid ${C.accent}`, borderRadius:6, padding:"3px 7px", fontFamily:SANS, fontSize:12, color:C.text, outline:"none" }}
+                            />
+                            <button onClick={saveNickname} disabled={savingNick} style={{ background:C.accent, border:"none", borderRadius:5, padding:"3px 8px", color:"#fff", fontFamily:SANS, fontSize:11, fontWeight:700, cursor:"pointer" }}>저장</button>
+                            <button onClick={() => setEditNick(null)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", padding:"3px 4px" }}>✕</button>
+                          </div>
+                        ) : (
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ fontFamily:SANS, fontSize:13, fontWeight:600, color:C.text }}>{u.nickname}</span>
+                            <button onClick={() => setEditNick({ id: u.id, value: u.nickname })} title="닉네임 수정" style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", padding:2, display:"flex", opacity:0.6 }}>
+                              <PenLine size={11} />
+                            </button>
+                          </div>
+                        )}
+                        <div>
+                          {u.is_admin && <span style={{ fontFamily:SANS, fontSize:9, color:C.yellow, fontWeight:700 }}>관리자</span>}
+                          {u.kakao_linked && <span style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginLeft:4 }}>카카오</span>}
+                        </div>
                       </div>
                     </div>
                   </td>
