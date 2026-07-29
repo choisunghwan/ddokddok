@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func as sqlfunc
 from datetime import date, datetime, timedelta, timezone
 from database import get_db
-from models import User, StudyMember, StudyPresence, AiceSubmission, StudyTimerStat, StudySession
+from models import User, StudyMember, StudyPresence, AiceSubmission, StudyTimerStat, StudySession, StudyCheckin, StudyNote, CourseProgress
 from deps import get_current_user
 from collections import defaultdict
 import os
@@ -96,3 +96,25 @@ def list_users(
         })
 
     return result
+
+
+@router.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(_require_admin),
+):
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="본인 계정은 탈퇴시킬 수 없습니다")
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="회원을 찾을 수 없습니다")
+    if target.email.lower() in ADMIN_EMAILS:
+        raise HTTPException(status_code=400, detail="다른 관리자 계정은 탈퇴시킬 수 없습니다")
+
+    for model in [AiceSubmission, StudySession, CourseProgress, StudyNote, StudyTimerStat,
+                  StudyPresence, StudyCheckin, StudyMember]:
+        db.query(model).filter(model.user_id == user_id).delete(synchronize_session=False)
+    db.delete(target)
+    db.commit()
+    return {"ok": True}

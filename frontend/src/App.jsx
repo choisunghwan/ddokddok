@@ -5313,6 +5313,8 @@ function AdminScreen() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("created_at");
   const [sortDesc, setSortDesc] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, nickname }
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -5320,6 +5322,17 @@ function AdminScreen() {
       .then(r => r.json())
       .then(d => { setUsers(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const r = await fetch(`${API}/api/admin/users/${deleteTarget.id}`, {
+      method: "DELETE", headers: authHeader(),
+    }).catch(() => null);
+    setDeleting(false);
+    setDeleteTarget(null);
+    if (r?.ok) setUsers(us => us.filter(u => u.id !== deleteTarget.id));
   };
 
   useEffect(() => { fetchUsers(); }, []);
@@ -5441,11 +5454,12 @@ function AdminScreen() {
                 <ThCol k="weekly_minutes" label="이번 주 학습" />
                 <ThCol k="study_groups" label="스터디" />
                 <ThCol k="solved_problems" label="문제 수" />
+                <th style={{ padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}` }} />
               </tr>
             </thead>
             <tbody>
               {sorted.length === 0 && (
-                <tr><td colSpan={7} style={{ padding:32, textAlign:"center", fontFamily:SANS, fontSize:13, color:C.muted }}>회원이 없습니다</td></tr>
+                <tr><td colSpan={8} style={{ padding:32, textAlign:"center", fontFamily:SANS, fontSize:13, color:C.muted }}>회원이 없습니다</td></tr>
               )}
               {sorted.map((u, i) => (
                 <tr key={u.id} style={{ background: i%2===0 ? C.card : C.card2+"88", borderBottom:`1px solid ${C.line}` }}>
@@ -5475,6 +5489,13 @@ function AdminScreen() {
                   <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.solved_problems>0 ? C.text : C.muted, textAlign:"center" }}>
                     {u.solved_problems || "—"}
                   </td>
+                  <td style={{ padding:"6px 10px", textAlign:"center" }}>
+                    {!u.is_admin && (
+                      <button onClick={() => setDeleteTarget({ id: u.id, nickname: u.nickname })} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.coral}44`, background:C.coral+"11", color:C.coral, fontFamily:SANS, fontSize:11, fontWeight:600, cursor:"pointer" }}>
+                        탈퇴
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -5484,6 +5505,27 @@ function AdminScreen() {
       <div style={{ marginTop:12, fontFamily:SANS, fontSize:11, color:C.muted, textAlign:"right" }}>
         {filtered.length}명 / 전체 {totalUsers}명
       </div>
+
+      {/* 탈퇴 확인 모달 */}
+      {deleteTarget && (
+        <div style={{ position:"fixed", inset:0, background:"#00000090", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:C.card, borderRadius:16, padding:"28px 32px", width:320, textAlign:"center" }}>
+            <div style={{ fontSize:32, marginBottom:12 }}>⚠️</div>
+            <div style={{ fontFamily:SANS, fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>
+              {deleteTarget.nickname} 회원을 탈퇴시킬까요?
+            </div>
+            <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:24, lineHeight:1.6 }}>
+              모든 학습 데이터, 노트, 스터디 기록이<br/>영구 삭제됩니다.
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setDeleteTarget(null)} disabled={deleting} style={{ flex:1, padding:"10px 0", borderRadius:10, border:`1px solid ${C.line}`, background:"none", color:C.muted, fontFamily:SANS, fontSize:14, cursor:"pointer" }}>취소</button>
+              <button onClick={handleDelete} disabled={deleting} style={{ flex:1, padding:"10px 0", borderRadius:10, border:"none", background:C.coral, color:"#fff", fontFamily:SANS, fontSize:14, fontWeight:700, cursor:"pointer", opacity:deleting?0.6:1 }}>
+                {deleting ? "처리 중…" : "탈퇴 처리"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
