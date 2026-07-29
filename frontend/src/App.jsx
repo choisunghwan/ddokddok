@@ -659,7 +659,7 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
         return (
           <button key={key} onClick={() => setTab(key)} style={{
             display:"flex", alignItems:"center", gap:10, padding:"11px 12px", borderRadius:10, border:"none",
-            background: active ? "linear-gradient(135deg, rgba(37,99,235,0.15), rgba(109,40,217,0.15))" : "transparent",
+            background: active ? `${C.blue}1a` : "transparent",
             color: locked ? C.muted+"88" : active ? "#5B8DEF" : C.muted,
             cursor:"pointer", fontFamily:SANS, fontSize:14, fontWeight: active ? 700 : 500,
             marginBottom:4, transition:"all 0.15s",
@@ -5653,10 +5653,17 @@ function StudyScreen() {
   const [editErr,       setEditErr]       = useState("");
   const [editSaving,    setEditSaving]    = useState(false);
   const [editShowPw,    setEditShowPw]    = useState(false);
-  const groupsRef     = useRef([]);
-  const selectedIdRef = useRef(null);
-  const firstLoadRef  = useRef(true);
-  const isMobile      = useIsMobile();
+  const groupsRef       = useRef([]);
+  const selectedIdRef   = useRef(null);
+  const firstLoadRef    = useRef(true);
+  const nickConfirmedRef = useRef(false);
+  const [nickCheckPending, setNickCheckPending] = useState(null);
+  const isMobile        = useIsMobile();
+
+  const gateEnterRoom = (proceed) => {
+    if (nickConfirmedRef.current) { proceed(); return; }
+    setNickCheckPending(() => proceed);
+  };
 
   const fmtSec = (s) => {
     const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;
@@ -5937,11 +5944,13 @@ function StudyScreen() {
   const renderCard = (g) => {
     const onlineCnt = g.members.filter(m=>m.online).length;
     const enterRoom = () => {
-      setSelectedGroup(g); selectedIdRef.current=g.id;
-      if (g.is_member) {
-        broadcast(); // 룸 진입 즉시 presence 전송
-        setTimeout(()=>load(true), 900); // 900ms 뒤 갱신 → 본인 초록불 즉시 표시
-      }
+      gateEnterRoom(() => {
+        setSelectedGroup(g); selectedIdRef.current=g.id;
+        if (g.is_member) {
+          broadcast();
+          setTimeout(()=>load(true), 900);
+        }
+      });
     };
     return (
       <div key={g.id} onClick={enterRoom}
@@ -6098,6 +6107,30 @@ function StudyScreen() {
               style={{width:"100%",padding:"11px 0",borderRadius:9,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
               {editSaving?"저장 중…":"저장하기"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 닉네임 확인 모달 */}
+      {nickCheckPending && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
+          onClick={e=>e.target===e.currentTarget&&setNickCheckPending(null)}>
+          <div style={{width:"100%",maxWidth:320,background:C.card,borderRadius:20,padding:"28px 24px",border:`1px solid ${C.line}`,boxShadow:"0 12px 48px #0006"}}>
+            <div style={{fontFamily:SANS,fontSize:16,fontWeight:800,color:C.text,marginBottom:6}}>닉네임 확인</div>
+            <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginBottom:20,lineHeight:1.6}}>
+              이 닉네임으로 스터디 방에 입장합니다.<br/>실명이라면 설정에서 변경해 주세요.
+            </div>
+            <div style={{fontFamily:SANS,fontSize:22,fontWeight:800,color:C.blue,textAlign:"center",padding:"14px 0",borderRadius:12,background:`${C.blue}12`,marginBottom:24}}>
+              {localStorage.getItem("nickname")||"?"}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setNickCheckPending(null)} style={{flex:1,padding:"11px 0",borderRadius:10,border:`1px solid ${C.line}`,background:"transparent",color:C.muted,fontFamily:SANS,fontSize:14,cursor:"pointer",fontWeight:500}}>
+                취소
+              </button>
+              <button onClick={()=>{nickConfirmedRef.current=true;const fn=nickCheckPending;setNickCheckPending(null);fn();}} style={{flex:2,padding:"11px 0",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                이 닉네임으로 입장
+              </button>
+            </div>
           </div>
         </div>
       )}
