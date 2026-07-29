@@ -1264,7 +1264,7 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         const statItems = [
           { label:"연속 학습일",   value: streak ? `${streak}일`  : "-", icon:"🔥", color:C.yellow },
           { label:"오늘 공부",     value: fmtSec(todaySec),               icon:"⏱️", color:C.blue   },
-          { label:"학습 완료",     value: solved ? `${solved}개`  : "-", icon:"✅", color:C.green  },
+          { label:"참여 스터디",     value: studyGroups.length ? `${studyGroups.length}개` : "-", icon:"📚", color:C.green  },
         ];
         return (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:28 }}>
