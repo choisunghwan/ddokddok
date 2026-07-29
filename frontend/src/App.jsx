@@ -5310,7 +5310,7 @@ function StudyScreen() {
   const [groups,       setGroups]       = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [showCreate,   setShowCreate]   = useState(false);
-  const [form,         setForm]         = useState({ name:"", topic:"", password:"" });
+  const [form,         setForm]         = useState({ name:"", topic:"", password:"", max_members:"" });
   const [formErr,      setFormErr]      = useState("");
   const [creating,     setCreating]     = useState(false);
   const [search,       setSearch]       = useState("");
@@ -5392,10 +5392,10 @@ function StudyScreen() {
     try{
       const res=await fetch(`${API}/api/study/groups`,{
         method:"POST",headers:{"Content-Type":"application/json",...authHeader()},
-        body:JSON.stringify({name:form.name.trim(),topic:form.topic.trim(),password:form.password}),
+        body:JSON.stringify({name:form.name.trim(),topic:form.topic.trim(),password:form.password,max_members:form.max_members?parseInt(form.max_members):null}),
       });
       if(!res.ok){const d=await res.json();setFormErr(d.detail||"오류");return;}
-      setForm({name:"",topic:"",password:""}); setFormErr(""); setShowCreate(false); setShowPw(false); load();
+      setForm({name:"",topic:"",password:"",max_members:""}); setFormErr(""); setShowCreate(false); setShowPw(false); load();
     }catch{setFormErr("서버에 연결할 수 없습니다");}
     finally{setCreating(false);}
   };
@@ -5471,44 +5471,64 @@ function StudyScreen() {
               <span style={{fontFamily:SANS,fontSize:12,fontWeight:700,color:C.blue}}>{runningCnt}명 타이머 ON</span>
             </div>
           )}
-          <span style={{fontFamily:SANS,fontSize:11,color:C.muted,marginLeft:"auto"}}>전체 {g.member_count}명</span>
+          <span style={{fontFamily:SANS,fontSize:11,color:C.muted,marginLeft:"auto"}}>{g.member_count}{g.max_members?`/${g.max_members}`:""} 명</span>
         </div>
 
-        {/* 멤버 그리드 */}
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr)",gap:10,marginBottom:22}}>
-          {members.map((m,i)=>{
-            const online=m.online, running=online&&m.timer_running;
-            const bCol=online?(running?C.blue:C.green):C.line;
-            const bg=online?(running?C.blue+"10":C.green+"10"):C.card2;
-            const tc=online?(running?C.blue:C.green):C.muted;
-            return(
-              <div key={i} style={{background:bg,border:`1.5px solid ${bCol}`,borderRadius:14,padding:"14px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:7,transition:"all .4s",position:"relative"}}>
-                <div style={{position:"absolute",top:8,right:8,width:10,height:10,borderRadius:"50%",
-                  background:online?(running?C.blue:C.green):"#555",
-                  border:`2px solid ${bg}`,
-                  animation:online?"si-pulse 2s ease-in-out infinite":"none",
-                }}/>
-                <div style={{width:48,height:48,borderRadius:14,background:online?(running?C.blue+"20":C.green+"20"):"transparent",border:`2px solid ${bCol}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontSize:18,fontWeight:800,color:tc}}>
-                  {m.nickname[0]?.toUpperCase()}
-                </div>
-                <div style={{fontFamily:SANS,fontSize:12,fontWeight:700,color:C.text,textAlign:"center",width:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {m.nickname}
-                </div>
-                <div style={{fontFamily:SANS,fontSize:10,color:tc,fontWeight:600}}>
-                  {online?(running?"⏱ 타이머 ON":"● 접속 중"):"○ 오프라인"}
-                </div>
-                {online&&m.timer_seconds>0&&(
-                  <div style={{fontFamily:MONO,fontSize:14,fontWeight:800,color:running?C.blue:C.green,letterSpacing:".02em"}}>
-                    {fmtSec(m.timer_seconds)}
+        {/* 자리 그리드 — max_members 만큼 슬롯 미리 표시 */}
+        {(() => {
+          const cols = isMobile ? 2 : 3;
+          const totalSlots = g.max_members ? Math.max(g.max_members, members.length) : members.length;
+          const slots = Array.from({ length: totalSlots }, (_, i) => members[i] || null);
+          return (
+            <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:10,marginBottom:22}}>
+              {slots.map((m, i) => {
+                if (!m) {
+                  // 빈 자리
+                  return (
+                    <div key={`empty-${i}`} style={{background:C.card2,border:`1.5px dashed ${C.line}`,borderRadius:14,padding:"14px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:7,opacity:0.45}}>
+                      <div style={{width:48,height:48,borderRadius:14,border:`2px dashed ${C.line}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,color:C.muted}}>
+                        +
+                      </div>
+                      <div style={{fontFamily:SANS,fontSize:11,color:C.muted}}>빈 자리</div>
+                    </div>
+                  );
+                }
+                const online=m.online, running=online&&m.timer_running;
+                const bCol=online?(running?C.blue:C.green):C.line;
+                const bg=online?(running?C.blue+"10":C.green+"10"):C.card2;
+                const tc=online?(running?C.blue:C.green):C.muted;
+                return(
+                  <div key={i} style={{background:bg,border:`1.5px solid ${bCol}`,borderRadius:14,padding:"14px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:7,transition:"all .4s",position:"relative",
+                    boxShadow: online ? `0 0 18px ${running?C.blue:C.green}22` : "none",
+                  }}>
+                    <div style={{position:"absolute",top:8,right:8,width:10,height:10,borderRadius:"50%",
+                      background:online?(running?C.blue:C.green):"#555",
+                      border:`2px solid ${bg}`,
+                      animation:online?"si-pulse 2s ease-in-out infinite":"none",
+                    }}/>
+                    <div style={{width:48,height:48,borderRadius:14,background:online?(running?C.blue+"20":C.green+"20"):"transparent",border:`2px solid ${bCol}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:MONO,fontSize:18,fontWeight:800,color:tc}}>
+                      {m.nickname[0]?.toUpperCase()}
+                    </div>
+                    <div style={{fontFamily:SANS,fontSize:12,fontWeight:700,color:C.text,textAlign:"center",width:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {m.nickname}
+                    </div>
+                    <div style={{fontFamily:SANS,fontSize:10,color:tc,fontWeight:600}}>
+                      {online?(running?"⏱ 타이머 ON":"● 접속 중"):"○ 오프라인"}
+                    </div>
+                    {online&&m.timer_seconds>0&&(
+                      <div style={{fontFamily:MONO,fontSize:14,fontWeight:800,color:running?C.blue:C.green,letterSpacing:".02em"}}>
+                        {fmtSec(m.timer_seconds)}
+                      </div>
+                    )}
+                    {m.checked_in_today&&(
+                      <div style={{fontFamily:SANS,fontSize:10,color:C.green,fontWeight:700}}>✅ 오공완</div>
+                    )}
                   </div>
-                )}
-                {m.checked_in_today&&(
-                  <div style={{fontFamily:SANS,fontSize:10,color:C.green,fontWeight:700}}>✅ 오공완</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* 액션 */}
         <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:14,padding:"14px 16px",marginTop:4}}>
@@ -5595,7 +5615,7 @@ function StudyScreen() {
             </div>
             {g.topic&&<div style={{fontFamily:MONO,fontSize:11,color:C.muted,marginBottom:6}}>📌 {g.topic}</div>}
             <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <span style={{fontFamily:SANS,fontSize:12,color:C.muted}}>👥 {g.member_count}명</span>
+              <span style={{fontFamily:SANS,fontSize:12,color:C.muted}}>👥 {g.member_count}{g.max_members?`/${g.max_members}`:""}</span>
               {onlineCnt>0&&(
                 <span style={{display:"flex",alignItems:"center",gap:5,fontFamily:SANS,fontSize:12,fontWeight:700,color:C.green}}>
                   <span style={{width:7,height:7,borderRadius:"50%",background:C.green,display:"inline-block",animation:"si-pulse 2s ease-in-out infinite"}}/>
@@ -5663,14 +5683,20 @@ function StudyScreen() {
               onChange={e=>setForm(f=>({...f,topic:e.target.value}))}
               style={{width:"100%",padding:"10px 14px",borderRadius:9,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:10}}
             />
-            <div style={{position:"relative",marginBottom:8}}>
-              <input type={showPw?"text":"password"} placeholder="🔒 비밀번호 (없으면 공개방)"
-                value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))}
-                style={{width:"100%",padding:"10px 40px 10px 14px",borderRadius:9,border:`1px solid ${form.password?C.blue+"66":C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box"}}
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              <div style={{position:"relative",flex:1}}>
+                <input type={showPw?"text":"password"} placeholder="🔒 비밀번호 (없으면 공개)"
+                  value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))}
+                  style={{width:"100%",padding:"10px 36px 10px 14px",borderRadius:9,border:`1px solid ${form.password?C.blue+"66":C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box"}}
+                />
+                <button onClick={()=>setShowPw(v=>!v)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,padding:2}}>{showPw?"🙈":"👁"}</button>
+              </div>
+              <input type="number" placeholder="최대 인원" min={2} max={50}
+                value={form.max_members} onChange={e=>setForm(f=>({...f,max_members:e.target.value}))}
+                style={{width:88,padding:"10px 10px",borderRadius:9,border:`1px solid ${form.max_members?C.blue+"66":C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box"}}
               />
-              <button onClick={()=>setShowPw(v=>!v)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:14,padding:2}}>{showPw?"🙈":"👁"}</button>
             </div>
-            <div style={{fontFamily:SANS,fontSize:11,color:C.muted,marginBottom:16}}>비밀번호 없으면 누구나 참가 가능한 공개방</div>
+            <div style={{fontFamily:SANS,fontSize:11,color:C.muted,marginBottom:16}}>비밀번호 없으면 공개방 · 최대 인원 미입력 시 제한 없음</div>
             {formErr&&<div style={{fontFamily:SANS,fontSize:12,color:C.coral,marginBottom:10}}>{formErr}</div>}
             <button onClick={createGroup} disabled={creating} style={{width:"100%",padding:"11px 0",borderRadius:9,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
               {creating?"만드는 중…":"그룹 만들기"}

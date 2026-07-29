@@ -56,6 +56,7 @@ class StudyGroup(Base):
     topic = Column(String(200), default="")
     is_public = Column(Boolean, default=True, nullable=False, server_default="true")
     password_hash = Column(String(64), nullable=True)
+    max_members = Column(Integer, nullable=True)  # None = 제한 없음
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

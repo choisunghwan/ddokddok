@@ -19,6 +19,7 @@ class GroupCreate(BaseModel):
     name: str
     topic: str = ""
     password: str = ""
+    max_members: int | None = None
 
 
 class JoinGroup(BaseModel):
@@ -115,6 +116,7 @@ def _group_dict(g: StudyGroup, current_user_id: int, db: Session) -> dict:
         "is_creator": g.created_by == current_user_id,
         "checked_in_today": current_user_id in today_checkin_ids,
         "streak": _calc_streak(g.id, db),
+        "max_members": g.max_members,
     }
 
 
@@ -194,6 +196,7 @@ def list_groups(
             "is_creator":     g.created_by == current_user.id,
             "checked_in_today": current_user.id in today_checkins,
             "streak":         _calc_streak_from_dates(streak_dates_by[g.id]),
+            "max_members":    g.max_members,
         })
 
     return result
@@ -208,10 +211,12 @@ def create_group(
     if not body.name.strip():
         raise HTTPException(status_code=400, detail="그룹 이름을 입력하세요")
     pw = body.password.strip() if body.password else ""
+    max_m = body.max_members if body.max_members and body.max_members > 0 else None
     group = StudyGroup(
         name=body.name.strip(),
         topic=body.topic.strip(),
         password_hash=_hash_pw(pw) if pw else None,
+        max_members=max_m,
         created_by=current_user.id,
     )
     db.add(group)
@@ -276,6 +281,10 @@ def join_group(
     if group.password_hash:
         if not body.password or _hash_pw(body.password.strip()) != group.password_hash:
             raise HTTPException(status_code=403, detail="비밀번호가 틀렸습니다")
+    if group.max_members:
+        current_count = db.query(StudyMember).filter(StudyMember.group_id == group_id).count()
+        if current_count >= group.max_members:
+            raise HTTPException(status_code=400, detail="인원이 꽉 찼습니다")
     db.add(StudyMember(group_id=group_id, user_id=current_user.id))
     db.commit()
     return {"ok": True}

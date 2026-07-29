@@ -16,6 +16,7 @@ try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE study_groups ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT TRUE"))
         _conn.execute(text("ALTER TABLE study_groups ADD COLUMN IF NOT EXISTS password_hash VARCHAR(64)"))
+        _conn.execute(text("ALTER TABLE study_groups ADD COLUMN IF NOT EXISTS max_members INTEGER"))
         # study_presence upsert needs this index; safe to run even if it already exists
         _conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_presence_user_group "
