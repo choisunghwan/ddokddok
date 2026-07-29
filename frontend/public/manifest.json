@@ -1,13 +1,19 @@
 {
   "name": "똑똑 - 공부를 똑똑하게 관리해요",
   "short_name": "똑똑",
-  "description": "IT 자격증 학습과 스터디 그룹을 한 곳에서",
+  "description": "스터디 그룹, 학습 기록, 노트까지 공부의 모든 것을 한 곳에서",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#13100D",
   "theme_color": "#13100D",
   "orientation": "portrait",
   "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",

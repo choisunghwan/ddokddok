@@ -1,48 +1,104 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0E1D36"/>
-      <stop offset="100%" stop-color="#0C0A09"/>
+      <stop offset="0%" stop-color="#0D1A32"/>
+      <stop offset="100%" stop-color="#080608"/>
     </linearGradient>
-    <linearGradient id="chr" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="lp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="rp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="ag" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#60A5FA"/>
       <stop offset="100%" stop-color="#A78BFA"/>
     </linearGradient>
-    <linearGradient id="sub" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#93C5FD" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#C4B5FD" stop-opacity="0.5"/>
-    </linearGradient>
     <linearGradient id="bdr" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#6D28D9" stop-opacity="0.15"/>
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#A78BFA" stop-opacity="0.1"/>
     </linearGradient>
-    <radialGradient id="glow" cx="38%" cy="35%" r="55%">
-      <stop offset="0%" stop-color="#1D4ED8" stop-opacity="0.3"/>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1D4ED8" stop-opacity="0.2"/>
       <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glow2" cx="70%" cy="72%" r="40%">
-      <stop offset="0%" stop-color="#6D28D9" stop-opacity="0.18"/>
+    <radialGradient id="glow2" cx="65%" cy="70%" r="40%">
+      <stop offset="0%" stop-color="#6D28D9" stop-opacity="0.14"/>
       <stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/>
     </radialGradient>
+    <filter id="sh" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="ash" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
   </defs>
 
   <!-- 배경 -->
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
-  <rect width="512" height="512" rx="112" fill="url(#glow2)"/>
-  <!-- 안쪽 테두리 -->
-  <rect x="8" y="8" width="496" height="496" rx="106" fill="none"
-        stroke="url(#bdr)" stroke-width="8"/>
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+  <rect width="100" height="100" rx="22" fill="url(#glow)"/>
+  <rect width="100" height="100" rx="22" fill="url(#glow2)"/>
+  <!-- 내부 테두리 -->
+  <rect x="1.5" y="1.5" width="97" height="97" rx="21" fill="none"
+        stroke="url(#bdr)" stroke-width="1.5"/>
 
-  <!-- 메인: 똑똑 두 글자 -->
-  <text x="256" y="310"
-    font-family="'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif"
-    font-size="240" font-weight="900" text-anchor="middle"
-    fill="url(#chr)" letter-spacing="-8">똑똑</text>
+  <!-- 스터디 그룹 아바타 (책 위, 3명) -->
+  <g filter="url(#ash)">
+    <!-- 왼쪽 -->
+    <circle cx="34" cy="19" r="7" fill="#2563EB" stroke="rgba(13,26,50,0.8)" stroke-width="2"/>
+    <!-- 오른쪽 -->
+    <circle cx="66" cy="19" r="7" fill="#7C3AED" stroke="rgba(13,26,50,0.8)" stroke-width="2"/>
+    <!-- 가운데 (앞) -->
+    <circle cx="50" cy="15" r="9" fill="url(#ag)" stroke="rgba(13,26,50,0.8)" stroke-width="2.5"/>
+  </g>
+  <!-- 아바타 내 사람 아이콘 (흰색 실루엣) -->
+  <!-- 왼쪽 아바타 -->
+  <circle cx="34" cy="17.5" r="2.2" fill="rgba(255,255,255,0.7)"/>
+  <path d="M29.5,24 Q30,20.5 34,20.5 Q38,20.5 38.5,24" fill="rgba(255,255,255,0.5)" stroke="none"/>
+  <!-- 오른쪽 아바타 -->
+  <circle cx="66" cy="17.5" r="2.2" fill="rgba(255,255,255,0.7)"/>
+  <path d="M61.5,24 Q62,20.5 66,20.5 Q70,20.5 70.5,24" fill="rgba(255,255,255,0.5)" stroke="none"/>
+  <!-- 가운데 아바타 -->
+  <circle cx="50" cy="13" r="2.8" fill="rgba(255,255,255,0.85)"/>
+  <path d="M44.5,20 Q45.5,16 50,16 Q54.5,16 55.5,20" fill="rgba(255,255,255,0.65)" stroke="none"/>
 
-  <!-- 앱 이름 서브텍스트 -->
-  <text x="256" y="388"
+  <!-- 책 본체 -->
+  <g filter="url(#sh)">
+    <!-- 왼쪽 페이지 -->
+    <path d="M50,34 L16,32 Q12,32 12,36 L12,73 Q12,77 16,77 L50,75 Z"
+          fill="url(#lp)"/>
+    <!-- 오른쪽 페이지 -->
+    <path d="M50,34 L84,32 Q88,32 88,36 L88,73 Q88,77 84,77 L50,75 Z"
+          fill="url(#rp)"/>
+  </g>
+
+  <!-- 상단 shimmer -->
+  <path d="M50,34 L16,32 Q12,32 12,36 L12,39 Q12,35 15.5,35 L50,37 Z"
+        fill="rgba(255,255,255,0.2)"/>
+  <path d="M50,34 L84,32 Q88,32 88,36 L88,39 Q88,35 84.5,35 L50,37 Z"
+        fill="rgba(255,255,255,0.2)"/>
+
+  <!-- 왼쪽 페이지 라인 -->
+  <line x1="17" y1="44" x2="47" y2="43" stroke="rgba(255,255,255,0.30)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="17" y1="52" x2="47" y2="51" stroke="rgba(255,255,255,0.20)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="17" y1="60" x2="47" y2="59" stroke="rgba(255,255,255,0.11)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="17" y1="68" x2="37" y2="67" stroke="rgba(255,255,255,0.06)" stroke-width="1.6" stroke-linecap="round"/>
+
+  <!-- 오른쪽 페이지 라인 -->
+  <line x1="53" y1="43" x2="83" y2="44" stroke="rgba(255,255,255,0.30)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="53" y1="51" x2="83" y2="52" stroke="rgba(255,255,255,0.20)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="53" y1="59" x2="83" y2="60" stroke="rgba(255,255,255,0.11)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="53" y1="67" x2="73" y2="68" stroke="rgba(255,255,255,0.06)" stroke-width="1.6" stroke-linecap="round"/>
+
+  <!-- 척추 곡선 -->
+  <path d="M50,34 C48.5,54.5 51.5,54.5 50,75"
+        fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.6" stroke-linecap="round"/>
+
+  <!-- 하단 워드마크 -->
+  <text x="50" y="91"
     font-family="'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif"
-    font-size="42" font-weight="500" text-anchor="middle"
-    fill="url(#sub)" letter-spacing="6">공부를 똑똑하게</text>
+    font-size="9" font-weight="800" text-anchor="middle" letter-spacing="3"
+    fill="rgba(255,255,255,0.38)">똑똑</text>
 </svg>

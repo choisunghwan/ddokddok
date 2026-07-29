@@ -1,34 +1,66 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0E1D36"/>
-      <stop offset="100%" stop-color="#0C0A09"/>
+      <stop offset="0%" stop-color="#0D1A32"/>
+      <stop offset="100%" stop-color="#080608"/>
     </linearGradient>
-    <linearGradient id="chr" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="lp" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#60A5FA"/>
-      <stop offset="100%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="rp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
     </linearGradient>
     <linearGradient id="bdr" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#6D28D9" stop-opacity="0.15"/>
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#A78BFA" stop-opacity="0.1"/>
     </linearGradient>
-    <radialGradient id="glow" cx="38%" cy="38%" r="55%">
-      <stop offset="0%" stop-color="#1D4ED8" stop-opacity="0.28"/>
+    <radialGradient id="glow" cx="50%" cy="52%" r="48%">
+      <stop offset="0%" stop-color="#1D4ED8" stop-opacity="0.22"/>
       <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0"/>
     </radialGradient>
+    <filter id="sh" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
   </defs>
 
   <!-- 배경 -->
   <rect width="100" height="100" rx="22" fill="url(#bg)"/>
-  <!-- 블루 글로우 -->
   <rect width="100" height="100" rx="22" fill="url(#glow)"/>
-  <!-- 안쪽 테두리 (입체감) -->
+  <!-- 내부 테두리 -->
   <rect x="1.5" y="1.5" width="97" height="97" rx="21" fill="none"
         stroke="url(#bdr)" stroke-width="1.5"/>
 
-  <!-- 똑 모노그램 -->
-  <text x="50" y="70"
-    font-family="'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif"
-    font-size="58" font-weight="900" text-anchor="middle"
-    fill="url(#chr)">똑</text>
+  <!-- 책 본체 -->
+  <g filter="url(#sh)">
+    <!-- 왼쪽 페이지 (파랑) -->
+    <path d="M50,26 L16,24 Q12,24 12,28 L12,73 Q12,77 16,77 L50,75 Z"
+          fill="url(#lp)"/>
+    <!-- 오른쪽 페이지 (보라) -->
+    <path d="M50,26 L84,24 Q88,24 88,28 L88,73 Q88,77 84,77 L50,75 Z"
+          fill="url(#rp)"/>
+  </g>
+
+  <!-- 상단 shimmer (페이지 광택) -->
+  <path d="M50,26 L16,24 Q12,24 12,28 L12,31.5 Q12,27.5 15.5,27.5 L50,29.5 Z"
+        fill="rgba(255,255,255,0.22)"/>
+  <path d="M50,26 L84,24 Q88,24 88,28 L88,31.5 Q88,27.5 84.5,27.5 L50,29.5 Z"
+        fill="rgba(255,255,255,0.22)"/>
+
+  <!-- 왼쪽 페이지 라인 -->
+  <line x1="17" y1="38" x2="47" y2="37" stroke="rgba(255,255,255,0.30)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="17" y1="47" x2="47" y2="46" stroke="rgba(255,255,255,0.20)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="17" y1="56" x2="47" y2="55" stroke="rgba(255,255,255,0.12)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="17" y1="65" x2="37" y2="64" stroke="rgba(255,255,255,0.06)" stroke-width="1.6" stroke-linecap="round"/>
+
+  <!-- 오른쪽 페이지 라인 -->
+  <line x1="53" y1="37" x2="83" y2="38" stroke="rgba(255,255,255,0.30)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="53" y1="46" x2="83" y2="47" stroke="rgba(255,255,255,0.20)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="53" y1="55" x2="83" y2="56" stroke="rgba(255,255,255,0.12)" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="53" y1="64" x2="73" y2="65" stroke="rgba(255,255,255,0.06)" stroke-width="1.6" stroke-linecap="round"/>
+
+  <!-- 척추 곡선 -->
+  <path d="M50,26 C48.5,50.5 51.5,50.5 50,75"
+        fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.6" stroke-linecap="round"/>
 </svg>
