@@ -6993,55 +6993,114 @@ function StudyIsland() {
   const pct        = Math.min((todayTotal / goalSecs) * 100, 100);
   const cur        = SOUNDS.find(s => s.id === active);
 
-  // 모바일 + 데스크탑 공통: 항상 표시
-  const mPos = isMobile ? (mobilePos || getDefaultPos()) : null;
-  const wrapStyle = isMobile
-    ? { position:"fixed", top: mPos.y, left: mPos.x, zIndex:9999, display:"flex", flexDirection:"column", gap:6, userSelect:"none", WebkitUserSelect:"none", transition: isDragging ? "none" : "none" }
-    : { position:"fixed", left:10, bottom:88, width:180, zIndex:9999, display:"flex", flexDirection:"column", gap:8 };
+  // 모바일: Spotify 미니 플레이어
+  if (isMobile) {
+    return (
+      <>
+        <style>{`@keyframes si-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
 
-  if (false) { /* mobile popup 제거 */ }
+        {/* 바텀시트 풀 패널 */}
+        {open && (
+          <>
+            <div onClick={() => setOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:10000 }} />
+            <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:10001, background:C.card, borderRadius:"20px 20px 0 0", padding:"16px 20px 80px", boxShadow:"0 -8px 40px #0009" }}>
+              <div style={{ width:36, height:4, borderRadius:2, background:C.line, margin:"0 auto 20px" }} />
 
-  // 데스크탑: 타이머 + 사운드 항상 표시 (분리)
+              {/* 타이머 */}
+              <div style={{ fontFamily:MONO, fontSize:52, fontWeight:800, color:running?C.blue:C.text, textAlign:"center", letterSpacing:"-.03em", lineHeight:1, marginBottom:18, transition:"color .3s" }}>
+                {fmt(sessionSecs)}
+                {running && <span style={{ display:"inline-block", width:9, height:9, borderRadius:"50%", background:C.blue, marginLeft:8, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
+              </div>
+              <div style={{ display:"flex", gap:10, marginBottom:18 }}>
+                <button onClick={running ? handlePause : handleStart} style={{ flex:1, height:48, borderRadius:12, border:"none", cursor:"pointer", background:running?`${C.coral}22`:`${C.blue}22`, color:running?C.coral:C.blue, fontFamily:SANS, fontSize:15, fontWeight:700 }}>
+                  {running ? "⏸ 일시정지" : sessionSecs>0 ? "▶ 재개" : "▶ 시작"}
+                </button>
+                <button onClick={handleReset} style={{ width:48, height:48, borderRadius:12, border:`1px solid ${C.line}`, cursor:"pointer", background:C.card2, color:C.muted, fontSize:18 }}>⟳</button>
+              </div>
+              <div style={{ background:C.card2, borderRadius:10, padding:"10px 14px", marginBottom:18 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                  <span style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>오늘 총 공부</span>
+                  <span style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:pct>=100?C.yellow:C.green }}>{fmtH(todayTotal)}</span>
+                </div>
+                <div style={{ background:C.line, borderRadius:99, height:4, overflow:"hidden" }}>
+                  <div style={{ width:`${pct}%`, height:"100%", background:pct>=100?C.yellow:C.blue, borderRadius:99, transition:"width .5s" }} />
+                </div>
+              </div>
+
+              {/* 사운드 */}
+              <div style={{ fontFamily:SANS, fontSize:11, fontWeight:700, color:C.muted, letterSpacing:".06em", marginBottom:10 }}>🎵 집중 사운드</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
+                {SOUNDS.map(s => (
+                  <button key={s.id} onClick={() => play(s.id)} style={{ background:active===s.id?`${s.color}22`:"transparent", border:`1px solid ${active===s.id?s.color:C.line}`, borderRadius:12, padding:"12px 0 9px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:5 }}>
+                    <span style={{ fontSize:22 }}>{s.emoji}</span>
+                    <span style={{ fontFamily:SANS, fontSize:10, color:active===s.id?s.color:C.muted, fontWeight:active===s.id?700:400 }}>{s.label}</span>
+                  </button>
+                ))}
+              </div>
+              {active && <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e => changeVol(parseFloat(e.target.value))} style={{ width:"100%", marginTop:14, accentColor:cur?.color||C.blue }} />}
+            </div>
+          </>
+        )}
+
+        {/* 미니 플레이어 바 */}
+        <div onClick={() => setOpen(true)} style={{
+          position:"fixed", bottom:58, left:0, right:0, zIndex:9999,
+          height:52, background:C.card,
+          borderTop:`1px solid ${running ? C.blue+"55" : C.line}`,
+          display:"flex", alignItems:"center", padding:"0 16px", gap:10,
+          cursor:"pointer",
+          boxShadow: running ? `0 -4px 20px ${C.blue}22` : `0 -1px 0 ${C.line}`,
+          transition:"border-color .3s, box-shadow .3s",
+        }}>
+          <span style={{ fontFamily:MONO, fontSize:17, fontWeight:700, color:running?C.blue:C.muted, flex:1, transition:"color .3s" }}>
+            {running ? fmt(sessionSecs) : "00:00"}
+            {running && <span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:C.blue, marginLeft:6, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
+          </span>
+          {active && <span style={{ fontSize:17 }}>{cur?.emoji}</span>}
+          <button onClick={e => { e.stopPropagation(); running ? handlePause() : handleStart(); }} style={{
+            width:36, height:36, borderRadius:9, border:"none", cursor:"pointer",
+            background:running?`${C.coral}22`:`${C.blue}22`, color:running?C.coral:C.blue,
+            fontSize:15, display:"flex", alignItems:"center", justifyContent:"center",
+          }}>
+            {running ? "⏸" : "▶"}
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  // 데스크탑: 타이머 + 사운드 항상 표시
   return (
-    <div ref={wrapperRef} style={wrapStyle}
-      onTouchStart={isMobile ? onPillTouchStart : undefined}
-      onTouchEnd={isMobile ? onPillTouchEnd : undefined}>
+    <div ref={wrapperRef} style={{ position:"fixed", left:10, bottom:88, width:180, zIndex:9999, display:"flex", flexDirection:"column", gap:8 }}>
       <style>{`@keyframes si-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
-      {isMobile && isDragging && <div style={{ position:"absolute", inset:-5, border:`2px dashed ${C.blue}88`, borderRadius:14, pointerEvents:"none" }} />}
 
-      {/* 🎵 사운드 */}
-      <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding: isMobile?"9px 10px 8px":"11px 11px 10px", width: isMobile ? 172 : "auto" }}>
-        <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:7 }}>🎵 사운드</div>
+      {/* 🎵 사운드 카드 */}
+      <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"11px 11px 10px" }}>
+        <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:8 }}>🎵 사운드</div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
           {SOUNDS.map(s => (
-            <button key={s.id} onClick={() => play(s.id)} style={{ background:active===s.id?`${s.color}22`:"transparent", border:`1px solid ${active===s.id?s.color:C.line}`, borderRadius:9, padding:"6px 0 5px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, transition:"all .15s" }}>
-              <span style={{ fontSize:isMobile?15:16 }}>{s.emoji}</span>
+            <button key={s.id} onClick={() => play(s.id)} style={{ background:active===s.id?`${s.color}22`:"transparent", border:`1px solid ${active===s.id?s.color:C.line}`, borderRadius:9, padding:"7px 0 5px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, transition:"all .15s" }}>
+              <span style={{ fontSize:16 }}>{s.emoji}</span>
               <span style={{ fontFamily:SANS, fontSize:9, color:active===s.id?s.color:C.muted, fontWeight:active===s.id?700:400 }}>{s.label}</span>
             </button>
           ))}
         </div>
-        {active && (
-          <input type="range" min={0} max={1} step={0.01} value={vol}
-            onChange={e => changeVol(parseFloat(e.target.value))}
-            style={{ width:"100%", marginTop:8, accentColor:cur?.color||C.blue }} />
-        )}
+        {active && <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e => changeVol(parseFloat(e.target.value))} style={{ width:"100%", marginTop:9, accentColor:cur?.color||C.blue }} />}
       </div>
 
-      {/* ⏱ 타이머 */}
-      <div style={{ background:C.card, border:`1px solid ${running?C.blue+"55":C.line}`, borderRadius:14, padding: isMobile?"9px 10px 8px":"11px 11px 10px", boxShadow:running?`0 0 14px ${C.blue}22`:"none", transition:"border-color .3s, box-shadow .3s", width: isMobile ? 172 : "auto" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:7 }}>
-          <span style={{ fontFamily:MONO, fontSize: isMobile?20:22, fontWeight:800, color:running?C.blue:C.text, letterSpacing:"-.03em", flex:1, transition:"color .3s" }}>
+      {/* ⏱ 타이머 카드 */}
+      <div style={{ background:C.card, border:`1px solid ${running?C.blue+"55":C.line}`, borderRadius:14, padding:"11px 11px 10px", boxShadow:running?`0 0 14px ${C.blue}22`:"none", transition:"border-color .3s, box-shadow .3s" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+          <span style={{ fontFamily:MONO, fontSize:22, fontWeight:800, color:running?C.blue:C.text, letterSpacing:"-.03em", flex:1, transition:"color .3s" }}>
             {fmt(sessionSecs)}
-            {running && <span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:C.blue, marginLeft:5, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
+            {running && <span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:C.blue, marginLeft:6, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
           </span>
           <button onClick={running ? handlePause : handleStart} style={{ width:30, height:30, borderRadius:8, border:"none", cursor:"pointer", background:running?`${C.coral}18`:`${C.blue}18`, color:running?C.coral:C.blue, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>
             {running ? "⏸" : "▶"}
           </button>
-          <button onClick={handleReset} title="저장 & 초기화" style={{ width:30, height:30, borderRadius:8, border:`1px solid ${C.line}`, cursor:"pointer", background:C.card2, color:C.muted, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            ⟳
-          </button>
+          <button onClick={handleReset} title="저장 & 초기화" style={{ width:30, height:30, borderRadius:8, border:`1px solid ${C.line}`, cursor:"pointer", background:C.card2, color:C.muted, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>⟳</button>
         </div>
-        <div style={{ background:C.card2, borderRadius:7, padding:"5px 9px", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+        <div style={{ background:C.card2, borderRadius:7, padding:"6px 9px", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
           <span style={{ fontFamily:SANS, fontSize:10, color:C.muted }}>오늘 {fmtH(todayTotal)}</span>
           <span style={{ fontFamily:SANS, fontSize:10, color:pct>=100?C.yellow:C.green, fontWeight:700 }}>{pct>=100?"🎉 달성":`${Math.round(pct)}%`}</span>
         </div>
@@ -7189,7 +7248,7 @@ export default function App() {
       {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} kakaoLinked={kakaoLinked} onKakaoLink={handleKakaoLink} onKakaoUnlink={() => setKakaoLinked(false)} />}
       <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} darkMode={darkMode} onToggleTheme={toggleTheme} />
       <StudyIsland />
-      <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?70:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
+      <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?122:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
         {tab === "code"  && <DevScreen key={screenKeys.code} isGuest={isGuest} />}
         {tab === "cert"  && <CertScreen key={screenKeys.cert} />}
