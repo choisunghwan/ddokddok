@@ -619,11 +619,9 @@ function useIsMobile() {
 function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, onToggleTheme, isAdmin }) {
   const isMobile = useIsMobile();
   const items = [
-    { key:"home",   icon: Home,    label:"홈"        },
-    { key:"code",   icon: Code2,   label:"코딩 학습" },
-    { key:"cert",   icon: BookOpen,label:"자격증"    },
-    { key:"notes",  icon: PenLine, label:"노트"      },
-    { key:"study",  icon: Users,   label:"스터디"    },
+    { key:"home",   icon: Home,    label:"홈"    },
+    { key:"learn",  icon: BookOpen,label:"학습"  },
+    { key:"study",  icon: Users,   label:"스터디" },
     ...(isAdmin ? [{ key:"admin", icon: Shield, label:"관리자" }] : []),
   ];
 
@@ -5339,6 +5337,39 @@ function DevScreen({ isGuest }) {
   );
 }
 
+// ── 학습 통합 화면 ──────────────────────────────
+function LearnScreen({ subTab, setSubTab, isGuest, onLogin, nickname }) {
+  const isMobile = useIsMobile();
+  const TABS = [
+    { key:"code",  label:"코딩 학습" },
+    { key:"cert",  label:"자격증"    },
+    { key:"notes", label:"노트"      },
+  ];
+  return (
+    <div>
+      {/* 서브탭 바 */}
+      <div style={{
+        display:"flex", gap:4, padding: isMobile ? "12px 16px 0" : "20px 28px 0",
+        borderBottom:`1px solid ${C.line}`, background:C.bg,
+        position:"sticky", top:0, zIndex:5,
+      }}>
+        {TABS.map(t => (
+          <button key={t.key} onClick={() => setSubTab(t.key)} style={{
+            padding:"8px 16px", border:"none", background:"none", cursor:"pointer",
+            fontFamily:SANS, fontSize:13, fontWeight:subTab===t.key?700:400,
+            color:subTab===t.key?C.text:C.muted,
+            borderBottom: subTab===t.key?`2px solid ${C.text}`:"2px solid transparent",
+            marginBottom:-1, transition:"all .15s",
+          }}>{t.label}</button>
+        ))}
+      </div>
+      {subTab === "code"  && <DevScreen isGuest={isGuest} />}
+      {subTab === "cert"  && <CertScreen />}
+      {subTab === "notes" && <NoteScreen isGuest={isGuest} onLogin={onLogin} nickname={nickname} />}
+    </div>
+  );
+}
+
 // ── 관리자 화면 ─────────────────────────────────
 function AdminScreen() {
   const [users, setUsers] = useState([]);
@@ -7639,7 +7670,8 @@ export default function App() {
   const [showStudyModal, setShowStudyModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, notes:0, arch:0, study:0, admin:0 });
+  const [screenKeys, setScreenKeys] = useState({ home:0, learn:0, study:0, admin:0 });
+  const [learnSubTab, setLearnSubTab] = useState("code");
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("ddok_theme") !== "light");
   const [kakaoLoading, setKakaoLoading] = useState(false);
   const [kakaoLinked, setKakaoLinked] = useState(false);
@@ -7769,9 +7801,7 @@ export default function App() {
       <StudyIsland />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?122:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
-        {tab === "code"  && <DevScreen key={screenKeys.code} isGuest={isGuest} />}
-        {tab === "cert"  && <CertScreen key={screenKeys.cert} />}
-        {tab === "notes" && <NoteScreen key={screenKeys.notes} isGuest={isGuest} onLogin={handleBackToLogin} nickname={nickname} />}
+        {tab === "learn" && <LearnScreen key={screenKeys.learn} subTab={learnSubTab} setSubTab={setLearnSubTab} isGuest={isGuest} onLogin={handleBackToLogin} nickname={nickname} />}
         {tab === "study" && !isGuest && <StudyScreen key={screenKeys.study} />}
         {tab === "admin" && isAdmin && <AdminScreen key={screenKeys.admin} />}
       </div>
