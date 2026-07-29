@@ -1214,11 +1214,26 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
           </div>
         </div>
       )}
-      {!isMobile && <>
-        <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text, marginBottom:4 }}>{nickname}님, {greet()}</div>
-        <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>오늘도 30분만 투자해볼까요?</div>
-      </>}
-      {isMobile && <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:28 }}>오늘도 30분만 투자해볼까요?</div>}
+      {!isMobile && (
+        <div style={{ marginBottom:8 }}>
+          <div style={{ fontFamily:SANS, fontSize:24, fontWeight:900, color:C.text, letterSpacing:"-0.5px" }}>{nickname}님, {greet()}</div>
+        </div>
+      )}
+      {/* 웰컴 배너 */}
+      {!isGuest && (
+        <div style={{
+          background:`linear-gradient(135deg, ${C.blue}18 0%, ${C.purple}10 100%)`,
+          border:`1px solid ${C.blue}28`,
+          borderRadius:16, padding:"16px 20px", marginBottom:24,
+          position:"relative", overflow:"hidden",
+        }}>
+          <div style={{ position:"absolute", right:-8, top:-8, fontSize:72, opacity:0.05, lineHeight:1, pointerEvents:"none" }}>📚</div>
+          <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.blue, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:5 }}>{greet()}</div>
+          <div style={{ fontFamily:SANS, fontSize:isMobile?16:18, fontWeight:800, color:C.text }}>오늘도 30분만 투자해볼까요?</div>
+          <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:4 }}>작은 습관이 큰 차이를 만들어요.</div>
+        </div>
+      )}
+      {isGuest && <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginBottom:20 }}>오늘도 30분만 투자해볼까요?</div>}
 
       {/* 스탯 */}
       {error && (
@@ -1241,13 +1256,23 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
           { label:"학습 완료",     value: solved ? `${solved}개`  : "-", icon:"✅", color:C.green  },
         ];
         return (
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:28 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:28 }}>
             {statItems.map((s) => (
-              <div key={s.label} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"16px 18px", position:"relative", overflow:"hidden" }}>
-                {loading && <div style={{ position:"absolute", inset:0, background:C.card+"CC", display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{ width:16, height:16, border:`2px solid ${C.line}`, borderTopColor:C.blue, borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/></div>}
-                <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
-                <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:s.color }}>{s.value}</div>
-                <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:2 }}>{s.label}</div>
+              <div key={s.label} style={{
+                background:C.card, border:`1px solid ${C.line}44`,
+                borderRadius:14, padding:"18px 14px 16px",
+                position:"relative", overflow:"hidden",
+                boxShadow:`0 4px 24px ${C.bg}99`,
+              }}>
+                {/* 상단 컬러 스트라이프 */}
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:s.color, borderRadius:"14px 14px 0 0" }}/>
+                {/* 배경 아이콘 장식 */}
+                <div style={{ position:"absolute", right:-4, bottom:-6, fontSize:52, opacity:0.06, lineHeight:1, pointerEvents:"none", userSelect:"none" }}>{s.icon}</div>
+                {loading && <div style={{ position:"absolute", inset:0, background:C.card+"CC", display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{ width:14, height:14, border:`2px solid ${C.line}`, borderTopColor:s.color, borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/></div>}
+                {/* 라벨 (상단 eyebrow) */}
+                <div style={{ fontFamily:SANS, fontSize:9, color:C.muted, fontWeight:600, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:10 }}>{s.label}</div>
+                {/* 큰 숫자 */}
+                <div style={{ fontFamily:MONO, fontSize:isMobile?24:28, fontWeight:900, color:s.color, lineHeight:1, letterSpacing:"-0.5px" }}>{s.value}</div>
               </div>
             ))}
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -1415,27 +1440,36 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
       })()}
 
       {/* 최근 학습 */}
-      <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:12 }}>최근 학습</div>
+      <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>최근 학습</div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         {courses.map((c) => {
           const pct = c.total > 0 ? Math.min((c.progress / c.total) * 100, 100) : 0;
           const isAice = c.id === "aice";
+          const hasProgress = c.progress > 0;
           return (
             <button key={c.id} onClick={() => setTab(isAice ? "cert" : "code")} style={{
-              textAlign:"left", padding:"14px 16px", borderRadius:12,
-              border:`1px solid ${c.progress > 0 ? c.color+"44" : C.line}`,
-              background: c.progress > 0 ? c.color+"0A" : C.card, cursor:"pointer",
+              textAlign:"left", padding:"16px", borderRadius:14,
+              border:`1px solid ${hasProgress ? c.color+"33" : C.line+"88"}`,
+              background: hasProgress ? c.color+"0C" : C.card,
+              cursor:"pointer", position:"relative", overflow:"hidden",
+              boxShadow:`0 2px 12px ${C.bg}66`,
             }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontSize:20 }}>{c.icon}</span>
-                {c.badge && <span style={{ fontFamily:MONO, fontSize:9, color:c.color, background:c.color+"22", padding:"2px 6px", borderRadius:4, fontWeight:700 }}>{c.badge}</span>}
+              {/* 배경 아이콘 */}
+              <div style={{ position:"absolute", right:-6, bottom:-8, fontSize:58, opacity:0.06, lineHeight:1, pointerEvents:"none", userSelect:"none" }}>{c.icon}</div>
+              {/* 아이콘 + % */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+                <span style={{ fontSize:26 }}>{c.icon}</span>
+                <span style={{ fontFamily:MONO, fontSize:20, fontWeight:900, color: hasProgress ? c.color : C.line, lineHeight:1 }}>
+                  {Math.round(pct)}%
+                </span>
               </div>
-              <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:10 }}>{c.lang}</div>
-              <div style={{ height:4, background:C.line, borderRadius:3, overflow:"hidden" }}>
-                <div style={{ height:"100%", width:`${pct}%`, background:c.color, borderRadius:3, transition:"width .4s" }} />
+              <div style={{ fontFamily:SANS, fontSize:12, fontWeight:800, color:C.text, marginBottom:8 }}>{c.lang}</div>
+              {c.badge && <div style={{ fontFamily:MONO, fontSize:9, color:c.color, background:c.color+"22", padding:"2px 7px", borderRadius:4, fontWeight:700, display:"inline-block", marginBottom:8 }}>{c.badge}</div>}
+              <div style={{ height:5, background:C.line+"88", borderRadius:3, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${pct}%`, background:c.color, borderRadius:3, transition:"width .5s" }} />
               </div>
-              <div style={{ fontFamily:MONO, fontSize:10, color: c.progress > 0 ? c.color : C.muted, marginTop:5, fontWeight: c.progress > 0 ? 700 : 400 }}>
-                {isAice ? (c.progress > 0 ? `${c.progress}문제 정답` : "도전해보세요") : `${c.progress} / ${c.total} 완료`}
+              <div style={{ fontFamily:MONO, fontSize:9, color: hasProgress ? c.color : C.muted, marginTop:6, fontWeight: hasProgress ? 700 : 400 }}>
+                {isAice ? (hasProgress ? `${c.progress}문제 정답` : "도전해보세요") : `${c.progress} / ${c.total} 완료`}
               </div>
             </button>
           );
