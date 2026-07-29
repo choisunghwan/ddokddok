@@ -5381,6 +5381,7 @@ function AdminScreen() {
   const [deleting, setDeleting] = useState(false);
   const [editNick, setEditNick] = useState(null); // { id, value }
   const [savingNick, setSavingNick] = useState(false);
+  const isMobile = useIsMobile();
 
   const fetchUsers = () => {
     setLoading(true);
@@ -5473,7 +5474,8 @@ function AdminScreen() {
 
   const ThCol = ({ k, label }) => (
     <th onClick={() => toggleSort(k)} style={{
-      padding:"10px 14px", textAlign:"left", fontFamily:SANS, fontSize:11, fontWeight:700,
+      padding: isMobile ? "6px 7px" : "10px 14px", textAlign:"left", fontFamily:SANS,
+      fontSize: isMobile ? 10 : 11, fontWeight:700,
       color: sortKey===k ? C.accent : C.muted, cursor:"pointer", userSelect:"none",
       whiteSpace:"nowrap", background:C.card2, borderBottom:`1px solid ${C.line}`,
     }}>
@@ -5481,42 +5483,46 @@ function AdminScreen() {
     </th>
   );
 
+  const cellPad = isMobile ? "6px 7px" : "10px 14px";
+
   return (
-    <div style={{ padding:"28px 28px 40px", maxWidth:1100, margin:"0 auto" }}>
+    <div style={{ padding: isMobile ? "16px 10px 80px" : "28px 28px 40px", maxWidth:1100, margin:"0 auto" }}>
       {/* 헤더 */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:24 }}>
-        <Shield size={22} color={C.accent} />
-        <h1 style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, margin:0 }}>회원 관리</h1>
-        <button onClick={fetchUsers} style={{ marginLeft:"auto", background:"none", border:`1px solid ${C.line}`, borderRadius:8, padding:"6px 12px", color:C.muted, cursor:"pointer", fontFamily:SANS, fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
-          <RefreshCw size={13} /> 새로고침
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom: isMobile ? 14 : 24 }}>
+        <Shield size={isMobile ? 16 : 22} color={C.accent} />
+        <h1 style={{ fontFamily:SANS, fontSize: isMobile ? 16 : 20, fontWeight:800, color:C.text, margin:0 }}>회원 관리</h1>
+        <button onClick={fetchUsers} style={{ marginLeft:"auto", background:"none", border:`1px solid ${C.line}`, borderRadius:8, padding:"5px 10px", color:C.muted, cursor:"pointer", fontFamily:SANS, fontSize:11, display:"flex", alignItems:"center", gap:5 }}>
+          <RefreshCw size={11} /> 새로고침
         </button>
       </div>
 
       {/* 요약 카드 */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:24 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap: isMobile ? 6 : 12, marginBottom: isMobile ? 12 : 24 }}>
         {[
           { icon: UserCheck, label:"총 회원", value: totalUsers, color: C.blue },
-          { icon: Clock,     label:"이번 주 활성", value: activeThisWeek, color: C.green },
-          { icon: Users,     label:"스터디 참여 중", value: studyingUsers, color: C.purple },
+          { icon: Clock,     label:"활성(주)", value: activeThisWeek, color: C.green },
+          { icon: Users,     label:"스터디 중", value: studyingUsers, color: C.purple },
         ].map(({ icon: Icon, label, value, color }) => (
-          <div key={label} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ width:38, height:38, borderRadius:10, background:color+"22", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <Icon size={18} color={color} />
-            </div>
+          <div key={label} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius: isMobile ? 10 : 12, padding: isMobile ? "10px 8px" : "16px 18px", display:"flex", alignItems:"center", gap: isMobile ? 6 : 12 }}>
+            {!isMobile && (
+              <div style={{ width:38, height:38, borderRadius:10, background:color+"22", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <Icon size={18} color={color} />
+              </div>
+            )}
             <div>
-              <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text }}>{value}</div>
-              <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{label}</div>
+              <div style={{ fontFamily:SANS, fontSize: isMobile ? 18 : 22, fontWeight:800, color:C.text }}>{value}</div>
+              <div style={{ fontFamily:SANS, fontSize: isMobile ? 10 : 11, color:C.muted }}>{label}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* 검색 */}
-      <div style={{ marginBottom:14 }}>
+      <div style={{ marginBottom: isMobile ? 10 : 14 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="닉네임 또는 이메일로 검색..."
-          style={{ width:"100%", background:C.card, border:`1px solid ${C.line}`, borderRadius:9, padding:"9px 14px", fontFamily:SANS, fontSize:13, color:C.text, outline:"none", boxSizing:"border-box" }}
+          placeholder="닉네임 또는 이메일 검색..."
+          style={{ width:"100%", background:C.card, border:`1px solid ${C.line}`, borderRadius:9, padding: isMobile ? "7px 12px" : "9px 14px", fontFamily:SANS, fontSize: isMobile ? 12 : 13, color:C.text, outline:"none", boxSizing:"border-box" }}
         />
       </div>
 
@@ -5525,75 +5531,73 @@ function AdminScreen() {
         <div style={{ textAlign:"center", padding:40, fontFamily:SANS, fontSize:13, color:C.muted }}>불러오는 중…</div>
       ) : (
         <div style={{ overflowX:"auto", borderRadius:12, border:`1px solid ${C.line}` }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", minWidth:760 }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", minWidth: isMobile ? 0 : 760 }}>
             <thead>
               <tr>
                 <ThCol k="nickname" label="닉네임" />
-                <ThCol k="email" label="이메일" />
-                <ThCol k="created_at" label="가입일" />
+                {!isMobile && <ThCol k="email" label="이메일" />}
+                {!isMobile && <ThCol k="created_at" label="가입일" />}
                 <ThCol k="last_active_at" label="최근 접속" />
-                <ThCol k="weekly_minutes" label="이번 주 학습" />
+                <ThCol k="weekly_minutes" label={isMobile ? "학습" : "이번 주 학습"} />
                 <ThCol k="study_groups" label="스터디" />
-                <ThCol k="solved_problems" label="문제 수" />
-                <th style={{ padding:"10px 14px", background:C.card2, borderBottom:`1px solid ${C.line}` }} />
+                {!isMobile && <ThCol k="solved_problems" label="문제 수" />}
+                <th style={{ padding: cellPad, background:C.card2, borderBottom:`1px solid ${C.line}` }} />
               </tr>
             </thead>
             <tbody>
               {sorted.length === 0 && (
-                <tr><td colSpan={8} style={{ padding:32, textAlign:"center", fontFamily:SANS, fontSize:13, color:C.muted }}>회원이 없습니다</td></tr>
+                <tr><td colSpan={isMobile ? 5 : 8} style={{ padding:32, textAlign:"center", fontFamily:SANS, fontSize:13, color:C.muted }}>회원이 없습니다</td></tr>
               )}
               {sorted.map((u, i) => (
                 <tr key={u.id} style={{ background: i%2===0 ? C.card : C.card2+"88", borderBottom:`1px solid ${C.line}` }}>
-                  <td style={{ padding:"10px 14px" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <div style={{ width:28, height:28, borderRadius:"50%", background: u.is_admin ? C.yellow+"33" : GRAD, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:11, color: u.is_admin ? C.yellow : "#fff", fontWeight:700, flexShrink:0 }}>
+                  <td style={{ padding: cellPad }}>
+                    <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 5 : 8 }}>
+                      <div style={{ width: isMobile ? 22 : 28, height: isMobile ? 22 : 28, borderRadius:"50%", background: u.is_admin ? C.yellow+"33" : GRAD, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize: isMobile ? 9 : 11, color: u.is_admin ? C.yellow : "#fff", fontWeight:700, flexShrink:0 }}>
                         {u.nickname?.[0]?.toUpperCase()}
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
                         {editNick?.id === u.id ? (
-                          <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:3 }}>
                             <input
                               autoFocus
                               value={editNick.value}
                               onChange={e => setEditNick(n => ({ ...n, value: e.target.value }))}
                               onKeyDown={e => { if (e.key === "Enter") saveNickname(); if (e.key === "Escape") setEditNick(null); }}
-                              style={{ width:90, background:C.card2, border:`1px solid ${C.accent}`, borderRadius:6, padding:"3px 7px", fontFamily:SANS, fontSize:12, color:C.text, outline:"none" }}
+                              style={{ width: isMobile ? 70 : 90, background:C.card2, border:`1px solid ${C.accent}`, borderRadius:6, padding:"2px 6px", fontFamily:SANS, fontSize: isMobile ? 11 : 12, color:C.text, outline:"none" }}
                             />
-                            <button onClick={saveNickname} disabled={savingNick} style={{ background:C.accent, border:"none", borderRadius:5, padding:"3px 8px", color:"#fff", fontFamily:SANS, fontSize:11, fontWeight:700, cursor:"pointer" }}>저장</button>
-                            <button onClick={() => setEditNick(null)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", padding:"3px 4px" }}>✕</button>
+                            <button onClick={saveNickname} disabled={savingNick} style={{ background:C.accent, border:"none", borderRadius:5, padding:"2px 6px", color:"#fff", fontFamily:SANS, fontSize:10, fontWeight:700, cursor:"pointer" }}>저장</button>
+                            <button onClick={() => setEditNick(null)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", padding:"2px 3px" }}>✕</button>
                           </div>
                         ) : (
-                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                            <span style={{ fontFamily:SANS, fontSize:13, fontWeight:600, color:C.text }}>{u.nickname}</span>
+                          <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 3 : 6 }}>
+                            <span style={{ fontFamily:SANS, fontSize: isMobile ? 11 : 13, fontWeight:600, color:C.text }}>{u.nickname}</span>
                             <button onClick={() => setEditNick({ id: u.id, value: u.nickname })} title="닉네임 수정" style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", padding:2, display:"flex", opacity:0.6 }}>
-                              <PenLine size={11} />
+                              <PenLine size={isMobile ? 9 : 11} />
                             </button>
                           </div>
                         )}
                         <div>
-                          {u.is_admin && <span style={{ fontFamily:SANS, fontSize:9, color:C.yellow, fontWeight:700 }}>관리자</span>}
-                          {u.kakao_linked && <span style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginLeft:4 }}>카카오</span>}
+                          {u.is_admin && <span style={{ fontFamily:SANS, fontSize: isMobile ? 8 : 9, color:C.yellow, fontWeight:700 }}>관리자</span>}
+                          {u.kakao_linked && <span style={{ fontFamily:SANS, fontSize: isMobile ? 8 : 9, color:C.muted, marginLeft:4 }}>카카오</span>}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding:"10px 14px", fontFamily:MONO, fontSize:11, color:C.muted }}>{u.email}</td>
-                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color:C.muted }}>{fmtJoin(u.created_at)}</td>
-                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.last_active_at && (new Date()-new Date(u.last_active_at))<3600000 ? C.green : C.muted }}>
+                  {!isMobile && <td style={{ padding: cellPad, fontFamily:MONO, fontSize:11, color:C.muted }}>{u.email}</td>}
+                  {!isMobile && <td style={{ padding: cellPad, fontFamily:SANS, fontSize:12, color:C.muted }}>{fmtJoin(u.created_at)}</td>}
+                  <td style={{ padding: cellPad, fontFamily:SANS, fontSize: isMobile ? 10 : 12, color: u.last_active_at && (new Date()-new Date(u.last_active_at))<3600000 ? C.green : C.muted }}>
                     {fmtDate(u.last_active_at)}
                   </td>
-                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.weekly_minutes>0 ? C.text : C.muted }}>
+                  <td style={{ padding: cellPad, fontFamily:SANS, fontSize: isMobile ? 10 : 12, color: u.weekly_minutes>0 ? C.text : C.muted }}>
                     {fmtMins(u.weekly_minutes)}
                   </td>
-                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.study_groups>0 ? C.text : C.muted, textAlign:"center" }}>
+                  <td style={{ padding: cellPad, fontFamily:SANS, fontSize: isMobile ? 10 : 12, color: u.study_groups>0 ? C.text : C.muted, textAlign:"center" }}>
                     {u.study_groups || "—"}
                   </td>
-                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.solved_problems>0 ? C.text : C.muted, textAlign:"center" }}>
-                    {u.solved_problems || "—"}
-                  </td>
-                  <td style={{ padding:"6px 10px", textAlign:"center" }}>
+                  {!isMobile && <td style={{ padding: cellPad, fontFamily:SANS, fontSize:12, color: u.solved_problems>0 ? C.text : C.muted, textAlign:"center" }}>{u.solved_problems || "—"}</td>}
+                  <td style={{ padding: isMobile ? "4px 5px" : "6px 10px", textAlign:"center" }}>
                     {!u.is_admin && (
-                      <button onClick={() => setDeleteTarget({ id: u.id, nickname: u.nickname })} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.coral}44`, background:C.coral+"11", color:C.coral, fontFamily:SANS, fontSize:11, fontWeight:600, cursor:"pointer" }}>
+                      <button onClick={() => setDeleteTarget({ id: u.id, nickname: u.nickname })} style={{ padding: isMobile ? "3px 7px" : "4px 10px", borderRadius:6, border:`1px solid ${C.coral}44`, background:C.coral+"11", color:C.coral, fontFamily:SANS, fontSize: isMobile ? 10 : 11, fontWeight:600, cursor:"pointer" }}>
                         탈퇴
                       </button>
                     )}
