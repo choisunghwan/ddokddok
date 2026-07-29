@@ -5662,6 +5662,10 @@ function StudyScreen() {
   const firstLoadRef    = useRef(true);
   const nickConfirmedRef = useRef(false);
   const [nickCheckPending, setNickCheckPending] = useState(null);
+  const [nickEditMode, setNickEditMode] = useState(false);
+  const [nickEditVal, setNickEditVal] = useState("");
+  const [nickEditSaving, setNickEditSaving] = useState(false);
+  const [nickEditErr, setNickEditErr] = useState("");
   const isMobile        = useIsMobile();
 
   const gateEnterRoom = (proceed) => {
@@ -6118,23 +6122,74 @@ function StudyScreen() {
       {/* 닉네임 확인 모달 */}
       {nickCheckPending && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
-          onClick={e=>e.target===e.currentTarget&&setNickCheckPending(null)}>
+          onClick={e=>e.target===e.currentTarget&&(setNickCheckPending(null),setNickEditMode(false),setNickEditErr(""))}>
           <div style={{width:"100%",maxWidth:320,background:C.card,borderRadius:20,padding:"28px 24px",border:`1px solid ${C.line}`,boxShadow:"0 12px 48px #0006"}}>
             <div style={{fontFamily:SANS,fontSize:16,fontWeight:800,color:C.text,marginBottom:6}}>닉네임 확인</div>
             <div style={{fontFamily:SANS,fontSize:13,color:C.muted,marginBottom:20,lineHeight:1.6}}>
-              이 닉네임으로 스터디 방에 입장합니다.<br/>실명이라면 설정에서 변경해 주세요.
+              이 닉네임으로 스터디 방에 입장합니다.
             </div>
-            <div style={{fontFamily:SANS,fontSize:22,fontWeight:800,color:C.blue,textAlign:"center",padding:"14px 0",borderRadius:12,background:`${C.blue}12`,marginBottom:24}}>
-              {localStorage.getItem("nickname")||"?"}
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setNickCheckPending(null)} style={{flex:1,padding:"11px 0",borderRadius:10,border:`1px solid ${C.line}`,background:"transparent",color:C.muted,fontFamily:SANS,fontSize:14,cursor:"pointer",fontWeight:500}}>
-                취소
-              </button>
-              <button onClick={()=>{nickConfirmedRef.current=true;const fn=nickCheckPending;setNickCheckPending(null);fn();}} style={{flex:2,padding:"11px 0",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:14,fontWeight:700,cursor:"pointer"}}>
-                이 닉네임으로 입장
-              </button>
-            </div>
+
+            {nickEditMode ? (
+              <div style={{marginBottom:16}}>
+                <input
+                  autoFocus
+                  value={nickEditVal}
+                  onChange={e=>{setNickEditVal(e.target.value);setNickEditErr("");}}
+                  onKeyDown={async e=>{
+                    if(e.key==="Enter"){
+                      const v=nickEditVal.trim();
+                      if(!v){setNickEditErr("닉네임을 입력해 주세요");return;}
+                      setNickEditSaving(true);
+                      const r=await fetch(`${API}/api/auth/nickname`,{method:"PUT",headers:{"Content-Type":"application/json",...authHeader()},body:JSON.stringify({nickname:v})}).catch(()=>null);
+                      setNickEditSaving(false);
+                      if(!r?.ok){setNickEditErr("저장 실패. 다시 시도해 주세요");return;}
+                      localStorage.setItem("nickname",v);
+                      setNickEditMode(false);
+                    }
+                    if(e.key==="Escape") setNickEditMode(false);
+                  }}
+                  placeholder="새 닉네임"
+                  style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:10,border:`1.5px solid ${C.blue}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:15,outline:"none"}}
+                />
+                {nickEditErr&&<div style={{fontFamily:SANS,fontSize:11,color:C.coral,marginTop:5}}>{nickEditErr}</div>}
+                <div style={{display:"flex",gap:6,marginTop:10}}>
+                  <button onClick={()=>{setNickEditMode(false);setNickEditErr("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.line}`,background:"transparent",color:C.muted,fontFamily:SANS,fontSize:13,cursor:"pointer"}}>
+                    취소
+                  </button>
+                  <button disabled={nickEditSaving} onClick={async()=>{
+                    const v=nickEditVal.trim();
+                    if(!v){setNickEditErr("닉네임을 입력해 주세요");return;}
+                    setNickEditSaving(true);
+                    const r=await fetch(`${API}/api/auth/nickname`,{method:"PUT",headers:{"Content-Type":"application/json",...authHeader()},body:JSON.stringify({nickname:v})}).catch(()=>null);
+                    setNickEditSaving(false);
+                    if(!r?.ok){setNickEditErr("저장 실패. 다시 시도해 주세요");return;}
+                    localStorage.setItem("nickname",v);
+                    setNickEditMode(false);
+                  }} style={{flex:2,padding:"8px 0",borderRadius:8,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer",opacity:nickEditSaving?0.6:1}}>
+                    {nickEditSaving?"저장 중…":"저장"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",borderRadius:12,background:`${C.blue}12`,marginBottom:20}}>
+                <span style={{fontFamily:SANS,fontSize:20,fontWeight:800,color:C.blue,flex:1}}>{localStorage.getItem("nickname")||"?"}</span>
+                <button onClick={()=>{setNickEditVal(localStorage.getItem("nickname")||"");setNickEditMode(true);setNickEditErr("");}}
+                  style={{display:"flex",alignItems:"center",gap:4,background:"none",border:`1px solid ${C.blue}44`,borderRadius:7,padding:"5px 10px",color:C.blue,fontFamily:SANS,fontSize:12,cursor:"pointer"}}>
+                  <PenLine size={11}/> 수정
+                </button>
+              </div>
+            )}
+
+            {!nickEditMode && (
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>(setNickCheckPending(null),setNickEditMode(false))} style={{flex:1,padding:"11px 0",borderRadius:10,border:`1px solid ${C.line}`,background:"transparent",color:C.muted,fontFamily:SANS,fontSize:14,cursor:"pointer",fontWeight:500}}>
+                  취소
+                </button>
+                <button onClick={()=>{nickConfirmedRef.current=true;const fn=nickCheckPending;setNickCheckPending(null);fn();}} style={{flex:2,padding:"11px 0",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                  이 닉네임으로 입장
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
