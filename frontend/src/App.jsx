@@ -6993,127 +6993,99 @@ function StudyIsland() {
   const pct        = Math.min((todayTotal / goalSecs) * 100, 100);
   const cur        = SOUNDS.find(s => s.id === active);
 
-  // 필 버튼 스타일
-  const pillBg     = running ? `${C.blue}18` : active ? `${cur.color}18` : C.card2;
-  const pillBorder = running ? `${C.blue}66` : active ? `${cur.color}66` : C.line;
-  const pillGlow   = running ? `0 0 18px ${C.blue}44` : active ? `0 0 16px ${cur?.color}44` : "0 2px 10px #0005";
-
-  // 데스크탑: 사이드바 하단 / 모바일: 드래그 가능 플로팅
+  // 모바일: 드래그 가능 플로팅 pill
   const mPos = isMobile ? (mobilePos || getDefaultPos()) : null;
-  const wrapStyle = isMobile
-    ? { position:"fixed", top: mPos.y, left: mPos.x, zIndex:9999, display:"flex", flexDirection:"column", alignItems:"flex-start", gap:8,
-        transition: isDragging ? "none" : "box-shadow .2s",
-        userSelect:"none", WebkitUserSelect:"none",
-      }
-    : { position:"fixed", left:10, bottom:88, width:180, zIndex:9999, display:"flex", flexDirection:"column" };
 
-  return (
-    <div ref={wrapperRef} style={wrapStyle}>
-      <style>{`
-        @keyframes si-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
-        @keyframes si-glow  { 0%,100%{box-shadow:${pillGlow}} 50%{box-shadow:0 0 28px ${running?C.blue:cur?.color||C.blue}66} }
-      `}</style>
-
-      {/* 펼침 패널 — 버튼 위로 팝업 */}
-      {open && (
-        <div style={{
-          position: isMobile ? "relative" : "absolute",
-          bottom: isMobile ? undefined : "calc(100% + 8px)",
-          left: isMobile ? undefined : 0,
-          background:C.card, border:`1px solid ${C.line}`, borderRadius:18,
-          padding:"18px 18px 14px", width:268,
-          boxShadow:"0 12px 40px #0009", display:"flex", flexDirection:"column", gap:0,
-        }}>
-
-          {/* 타이머 섹션 */}
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-            <span style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em" }}>⏱ 현재 세션</span>
-            {token() && (
-              <span style={{ fontFamily:SANS, fontSize:9, color: synced?C.green:C.muted, display:"flex", alignItems:"center", gap:3 }}>
-                <span style={{ width:5, height:5, borderRadius:"50%", background: synced?C.green:C.muted, display:"inline-block" }} />
-                {synced ? "DB 연동" : "동기화 중…"}
-              </span>
-            )}
-          </div>
-          <div style={{ fontFamily:MONO, fontSize:44, fontWeight:800, color: running?C.blue:C.text, letterSpacing:"-.03em", lineHeight:1, marginBottom:14, transition:"color .3s" }}>
-            {fmt(sessionSecs)}
-            {running && <span style={{ display:"inline-block", width:8, height:8, borderRadius:"50%", background:C.blue, marginLeft:8, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
-          </div>
-          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-            <button onClick={running ? handlePause : handleStart} style={{ flex:1, padding:"9px 0", borderRadius:10, border:"none", cursor:"pointer", background: running?`${C.coral}22`:`${C.blue}22`, color: running?C.coral:C.blue, fontFamily:SANS, fontSize:13, fontWeight:700 }}>
-              {running ? "⏸ 일시정지" : sessionSecs>0 ? "▶ 재개" : "▶ 시작"}
-            </button>
-            <button onClick={handleReset} title="세션 저장 & 초기화" style={{ width:42, borderRadius:10, border:`1px solid ${C.line}`, cursor:"pointer", background:C.card2, color:C.muted, fontSize:16 }}>⟳</button>
-          </div>
-
-          {/* 오늘 진행 */}
-          <div style={{ background:C.card2, borderRadius:10, padding:"10px 12px", marginBottom:14 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
-              <span style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".06em" }}>오늘 총 공부</span>
-              <span style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color: pct>=100?C.yellow:C.green }}>{fmtH(todayTotal)}</span>
+  if (isMobile) {
+    const pillBg     = running ? `${C.blue}18` : active ? `${cur.color}18` : C.card2;
+    const pillBorder = running ? `${C.blue}66` : active ? `${cur.color}66` : C.line;
+    const pillGlow   = running ? `0 0 18px ${C.blue}44` : active ? `0 0 16px ${cur?.color}44` : "0 2px 10px #0005";
+    return (
+      <div ref={wrapperRef} style={{ position:"fixed", top: mPos.y, left: mPos.x, zIndex:9999, display:"flex", flexDirection:"column", alignItems:"flex-start", gap:8, transition: isDragging ? "none" : "box-shadow .2s", userSelect:"none", WebkitUserSelect:"none" }}>
+        <style>{`@keyframes si-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
+        {open && (
+          <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:18, padding:"18px 18px 14px", width:260, boxShadow:"0 12px 40px #0009", display:"flex", flexDirection:"column", gap:0 }}>
+            <div style={{ fontFamily:MONO, fontSize:40, fontWeight:800, color:running?C.blue:C.text, letterSpacing:"-.03em", lineHeight:1, marginBottom:12 }}>
+              {fmt(sessionSecs)}
+              {running && <span style={{ display:"inline-block", width:7, height:7, borderRadius:"50%", background:C.blue, marginLeft:7, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
             </div>
-            <div style={{ background:C.line, borderRadius:99, height:4, overflow:"hidden" }}>
-              <div style={{ width:`${pct}%`, height:"100%", background: pct>=100?C.yellow:"linear-gradient(90deg,#2563EB,#6D28D9)", borderRadius:99, transition:"width .5s" }} />
+            <div style={{ display:"flex", gap:7, marginBottom:14 }}>
+              <button onClick={running ? handlePause : handleStart} style={{ flex:1, padding:"9px 0", borderRadius:10, border:"none", cursor:"pointer", background:running?`${C.coral}22`:`${C.blue}22`, color:running?C.coral:C.blue, fontFamily:SANS, fontSize:13, fontWeight:700 }}>
+                {running ? "⏸ 일시정지" : sessionSecs>0 ? "▶ 재개" : "▶ 시작"}
+              </button>
+              <button onClick={handleReset} style={{ width:40, borderRadius:10, border:`1px solid ${C.line}`, cursor:"pointer", background:C.card2, color:C.muted, fontSize:15 }}>⟳</button>
             </div>
-            <div style={{ fontFamily:SANS, fontSize:10, color:C.muted, marginTop:5, textAlign:"right" }}>목표 4시간 {pct>=100?"🎉 달성!": `${Math.round(pct)}%`}</div>
-          </div>
-
-          {/* 소리 섹션 */}
-          <div style={{ borderTop:`1px solid ${C.line}`, paddingTop:14 }}>
-            <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:10 }}>🎵 집중 사운드</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7 }}>
-              {SOUNDS.map(s => (
-                <button key={s.id} onClick={() => play(s.id)} style={{ display:"flex", alignItems:"center", gap:7, background: active===s.id?`${s.color}22`:C.card2, border:`1px solid ${active===s.id?s.color:C.line}`, borderRadius:10, padding:"8px 10px", cursor:"pointer", transition:"all .15s" }}>
-                  <span style={{ fontSize:15 }}>{s.emoji}</span>
-                  <span style={{ fontFamily:SANS, fontSize:12, color: active===s.id?s.color:C.text, fontWeight: active===s.id?700:400 }}>{s.label}</span>
-                </button>
-              ))}
-            </div>
-            {active && (
-              <div style={{ marginTop:12 }}>
-                <div style={{ fontFamily:SANS, fontSize:10, color:C.muted, marginBottom:5 }}>볼륨</div>
-                <input type="range" min={0} max={1} step={0.01} value={vol}
-                  onChange={e => changeVol(parseFloat(e.target.value))}
-                  style={{ width:"100%", accentColor: cur?.color||C.blue }} />
+            <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginBottom:14 }}>오늘 {fmtH(todayTotal)} · 목표 {pct>=100?"🎉 달성":`${Math.round(pct)}%`}</div>
+            <div style={{ borderTop:`1px solid ${C.line}`, paddingTop:12 }}>
+              <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:9 }}>🎵 사운드</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+                {SOUNDS.map(s => (
+                  <button key={s.id} onClick={() => play(s.id)} style={{ display:"flex", alignItems:"center", gap:7, background:active===s.id?`${s.color}22`:C.card2, border:`1px solid ${active===s.id?s.color:C.line}`, borderRadius:9, padding:"8px 10px", cursor:"pointer", transition:"all .15s" }}>
+                    <span style={{ fontSize:14 }}>{s.emoji}</span>
+                    <span style={{ fontFamily:SANS, fontSize:12, color:active===s.id?s.color:C.text, fontWeight:active===s.id?700:400 }}>{s.label}</span>
+                  </button>
+                ))}
               </div>
-            )}
+              {active && <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e => changeVol(parseFloat(e.target.value))} style={{ width:"100%", marginTop:10, accentColor:cur?.color||C.blue }} />}
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* 드래그 힌트 (모바일 드래그 중) */}
-      {isMobile && isDragging && (
-        <div style={{position:"absolute",inset:-5,border:`2px dashed ${C.blue}88`,borderRadius:14,pointerEvents:"none"}}/>
-      )}
-
-      {/* 필 버튼 */}
-      <button
-        onClick={() => { if (isDraggingRef.current) return; setOpen(o => !o); }}
-        onTouchStart={onPillTouchStart}
-        onTouchEnd={onPillTouchEnd}
-        style={{
-          height:40, borderRadius:10, padding:"0 14px",
-          width: isMobile ? "auto" : "100%", boxSizing:"border-box",
-          background:pillBg, border:`1px solid ${pillBorder}`,
-          cursor: isDragging ? "grabbing" : "pointer",
-          display:"flex", alignItems:"center", gap:8,
-          boxShadow: isDragging ? `0 8px 28px ${C.blue}44` : pillGlow,
-          transition:"all .2s",
-          animation: (running||active) && !isDragging ? "si-glow 2.5s ease-in-out infinite" : "none",
-          transform: isDragging ? "scale(1.05)" : "scale(1)",
-        }}>
-        <span style={{ fontSize:14 }}>⏱</span>
-        <span style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color: running?C.blue:C.muted }}>
-          {running ? fmt(sessionSecs) : "타이머"}
-        </span>
-        {active && <>
-          <span style={{ color:C.line, fontSize:10, marginLeft:"auto" }}>·</span>
-          <span style={{ fontSize:14 }}>{cur?.emoji}</span>
-        </>}
-        {!isMobile && !running && !active && (
-          <span style={{ marginLeft:"auto", fontSize:10, color:C.muted }}>클릭</span>
         )}
-      </button>
+        {isDragging && <div style={{ position:"absolute", inset:-5, border:`2px dashed ${C.blue}88`, borderRadius:14, pointerEvents:"none" }} />}
+        <button onClick={() => { if (isDraggingRef.current) return; setOpen(o=>!o); }} onTouchStart={onPillTouchStart} onTouchEnd={onPillTouchEnd}
+          style={{ height:40, borderRadius:10, padding:"0 14px", background:pillBg, border:`1px solid ${pillBorder}`, cursor:isDragging?"grabbing":"pointer", display:"flex", alignItems:"center", gap:8, boxShadow:isDragging?`0 8px 28px ${C.blue}44`:pillGlow, transition:"all .2s", transform:isDragging?"scale(1.05)":"scale(1)" }}>
+          <span style={{ fontSize:13 }}>⏱</span>
+          <span style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color:running?C.blue:C.muted }}>{running ? fmt(sessionSecs) : "타이머"}</span>
+          {active && <><span style={{ color:C.line, fontSize:10, marginLeft:"auto" }}>·</span><span style={{ fontSize:13 }}>{cur?.emoji}</span></>}
+        </button>
+      </div>
+    );
+  }
+
+  // 데스크탑: 타이머 + 사운드 항상 표시 (분리)
+  return (
+    <div ref={wrapperRef} style={{ position:"fixed", left:10, bottom:88, width:180, zIndex:9999, display:"flex", flexDirection:"column", gap:8 }}>
+      <style>{`@keyframes si-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
+
+      {/* 🎵 사운드 카드 */}
+      <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"11px 11px 10px" }}>
+        <div style={{ fontFamily:SANS, fontSize:10, fontWeight:700, color:C.muted, letterSpacing:".08em", marginBottom:8 }}>🎵 사운드</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
+          {SOUNDS.map(s => (
+            <button key={s.id} onClick={() => play(s.id)} style={{ background:active===s.id?`${s.color}22`:"transparent", border:`1px solid ${active===s.id?s.color:C.line}`, borderRadius:9, padding:"7px 0 5px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, transition:"all .15s" }}>
+              <span style={{ fontSize:16 }}>{s.emoji}</span>
+              <span style={{ fontFamily:SANS, fontSize:9, color:active===s.id?s.color:C.muted, fontWeight:active===s.id?700:400 }}>{s.label}</span>
+            </button>
+          ))}
+        </div>
+        {active && (
+          <input type="range" min={0} max={1} step={0.01} value={vol}
+            onChange={e => changeVol(parseFloat(e.target.value))}
+            style={{ width:"100%", marginTop:9, accentColor:cur?.color||C.blue }} />
+        )}
+      </div>
+
+      {/* ⏱ 타이머 카드 */}
+      <div style={{ background:C.card, border:`1px solid ${running?C.blue+"55":C.line}`, borderRadius:14, padding:"11px 11px 10px", boxShadow:running?`0 0 14px ${C.blue}22`:"none", transition:"border-color .3s, box-shadow .3s" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+          <span style={{ fontFamily:MONO, fontSize:22, fontWeight:800, color:running?C.blue:C.text, letterSpacing:"-.03em", flex:1, transition:"color .3s" }}>
+            {fmt(sessionSecs)}
+            {running && <span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:C.blue, marginLeft:6, verticalAlign:"middle", animation:"si-pulse 1s ease-in-out infinite" }} />}
+          </span>
+          <button onClick={running ? handlePause : handleStart} style={{ width:30, height:30, borderRadius:8, border:"none", cursor:"pointer", background:running?`${C.coral}18`:`${C.blue}18`, color:running?C.coral:C.blue, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {running ? "⏸" : "▶"}
+          </button>
+          <button onClick={handleReset} title="저장 & 초기화" style={{ width:30, height:30, borderRadius:8, border:`1px solid ${C.line}`, cursor:"pointer", background:C.card2, color:C.muted, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            ⟳
+          </button>
+        </div>
+        <div style={{ background:C.card2, borderRadius:7, padding:"6px 9px", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+          <span style={{ fontFamily:SANS, fontSize:10, color:C.muted }}>오늘 {fmtH(todayTotal)}</span>
+          <span style={{ fontFamily:SANS, fontSize:10, color:pct>=100?C.yellow:C.green, fontWeight:700 }}>{pct>=100?"🎉 달성":`${Math.round(pct)}%`}</span>
+        </div>
+        <div style={{ background:C.line, borderRadius:99, height:3, overflow:"hidden" }}>
+          <div style={{ width:`${pct}%`, height:"100%", background:pct>=100?C.yellow:C.blue, borderRadius:99, transition:"width .5s" }} />
+        </div>
+      </div>
     </div>
   );
 }
