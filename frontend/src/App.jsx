@@ -5766,7 +5766,7 @@ function StudyScreen() {
     const runningCnt = members.filter(m=>m.online&&m.timer_running).length;
     return (
       <div style={{paddingBottom:80}}>
-        {/* 뒤로 + 그룹명 */}
+        {/* 뒤로 + 그룹명 + ⋯ */}
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,paddingTop:4}}>
           <button onClick={()=>{setSelectedGroup(null);selectedIdRef.current=null;}}
             style={{display:"flex",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",color:C.muted,fontFamily:SANS,fontSize:13,padding:"6px 0",flexShrink:0}}>
@@ -5781,6 +5781,36 @@ function StudyScreen() {
             </div>
             {g.topic&&<div style={{fontFamily:MONO,fontSize:11,color:C.muted,marginTop:2}}>📌 {g.topic}</div>}
           </div>
+          {/* 멤버일 때 ⋯ 드롭다운을 헤더 우측에 */}
+          {g.is_member&&(
+            <div style={{position:"relative",flexShrink:0}}>
+              <button onClick={(e)=>{e.stopPropagation();setSettingsOpen(v=>v===g.id?false:g.id);}}
+                style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
+                ⋯
+              </button>
+              {settingsOpen===g.id&&(
+                <div style={{position:"absolute",right:0,top:40,background:C.card,border:`1px solid ${C.line}`,borderRadius:12,boxShadow:"0 6px 24px #0003",minWidth:148,zIndex:100,overflow:"hidden"}}
+                  onClick={e=>e.stopPropagation()}>
+                  {g.is_creator&&(
+                    <button onClick={()=>{setSettingsOpen(false);openEdit(g);}}
+                      style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.text,cursor:"pointer",borderBottom:`1px solid ${C.line}`}}>
+                      <span style={{fontSize:15}}>⚙️</span> 방 설정
+                    </button>
+                  )}
+                  <button onClick={()=>{setSettingsOpen(false);leaveGroup(g.id);}}
+                    style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.text,cursor:"pointer",borderBottom:g.is_creator?`1px solid ${C.line}`:"none"}}>
+                    <span style={{fontSize:15}}>🚪</span> 나가기
+                  </button>
+                  {g.is_creator&&(
+                    <button onClick={()=>{setSettingsOpen(false);deleteGroup(g.id,g.name);}}
+                      style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.coral,cursor:"pointer"}}>
+                      <span style={{fontSize:15}}>🗑</span> 방 삭제
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 현황 요약 바 */}
@@ -5854,45 +5884,12 @@ function StudyScreen() {
           );
         })()}
 
-        {/* 액션 */}
-        <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:14,padding:"14px 16px",marginTop:4}}>
-          {!g.is_member?(
-            <button onClick={()=>handleJoin(g)} style={{width:"100%",padding:"12px 0",borderRadius:10,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:14,fontWeight:700,cursor:"pointer"}}>
-              {g.has_password?"🔒 비밀번호로 참가하기":"참가하기"}
-            </button>
-          ):(
-            <div style={{display:"flex",alignItems:"center",gap:10,justifyContent:"flex-end"}}>
-              {/* ⋯ 설정 드롭다운 */}
-              <div style={{position:"relative"}}>
-                <button onClick={(e)=>{e.stopPropagation();setSettingsOpen(v=>v===g.id?false:g.id);}}
-                  style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
-                  ⋯
-                </button>
-                {settingsOpen===g.id&&(
-                  <div style={{position:"absolute",right:0,bottom:42,background:C.card,border:`1px solid ${C.line}`,borderRadius:12,boxShadow:"0 6px 24px #0003",minWidth:148,zIndex:100,overflow:"hidden"}}
-                    onClick={e=>e.stopPropagation()}>
-                    {g.is_creator&&(
-                      <button onClick={()=>{setSettingsOpen(false);openEdit(g);}}
-                        style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.text,cursor:"pointer",borderBottom:`1px solid ${C.line}`}}>
-                        <span style={{fontSize:15}}>⚙️</span> 방 설정
-                      </button>
-                    )}
-                    <button onClick={()=>{setSettingsOpen(false);leaveGroup(g.id);}}
-                      style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.text,cursor:"pointer",borderBottom:g.is_creator?`1px solid ${C.line}`:"none"}}>
-                      <span style={{fontSize:15}}>🚪</span> 나가기
-                    </button>
-                    {g.is_creator&&(
-                      <button onClick={()=>{setSettingsOpen(false);deleteGroup(g.id,g.name);}}
-                        style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.coral,cursor:"pointer"}}>
-                        <span style={{fontSize:15}}>🗑</span> 방 삭제
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* 비멤버: 참가 버튼 */}
+        {!g.is_member&&(
+          <button onClick={()=>handleJoin(g)} style={{width:"100%",padding:"13px 0",borderRadius:12,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:14,fontWeight:700,cursor:"pointer",marginTop:4}}>
+            {g.has_password?"🔒 비밀번호로 참가하기":"참가하기"}
+          </button>
+        )}
       </div>
     );
   };
