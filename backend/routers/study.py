@@ -22,6 +22,13 @@ class GroupCreate(BaseModel):
     max_members: int | None = None
 
 
+class GroupUpdate(BaseModel):
+    name: str | None = None
+    topic: str | None = None
+    password: str | None = None   # "" = 비번 제거, None = 변경 없음
+    max_members: int | None = None  # 0 = 제한 없음, None = 변경 없음
+
+
 class JoinGroup(BaseModel):
     password: str = ""
 
@@ -312,6 +319,32 @@ def checkin(
     return {"ok": True}
 
 
+@router.patch("/groups/{group_id}")
+def update_group(
+    group_id: int,
+    body: GroupUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    group = db.query(StudyGroup).filter(StudyGroup.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    if group.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="방장만 수정할 수 있습니다")
+    if body.name is not None:
+        if not body.name.strip():
+            raise HTTPException(status_code=400, detail="그룹 이름을 입력하세요")
+        group.name = body.name.strip()
+    if body.topic is not None:
+        group.topic = body.topic.strip()
+    if body.password is not None:
+        group.password_hash = _hash_pw(body.password) if body.password else None
+    if body.max_members is not None:
+        group.max_members = min(body.max_members, 20) if body.max_members > 0 else None
+    db.commit()
+    return _group_dict(group, current_user.id, db)
+
+
 @router.delete("/groups/{group_id}")
 def delete_group(
     group_id: int,
@@ -337,16 +370,38 @@ def leave_group(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    group = db.query(StudyGroup).filter(StudyGroup.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
     member = db.query(StudyMember).filter(
         StudyMember.group_id == group_id,
         StudyMember.user_id == current_user.id,
     ).first()
     if not member:
         raise HTTPException(status_code=400, detail="그룹 멤버가 아닙니다")
+
+    remaining = db.query(StudyMember).filter(
+        StudyMember.group_id == group_id,
+        StudyMember.user_id != current_user.id,
+    ).order_by(StudyMember.joined_at.asc()).all()
+
+    # 마지막 멤버 → 그룹 전체 삭제
+    if not remaining:
+        db.query(StudyPresence).filter(StudyPresence.group_id == group_id).delete()
+        db.query(StudyCheckin).filter(StudyCheckin.group_id == group_id).delete()
+        db.query(StudyMember).filter(StudyMember.group_id == group_id).delete()
+        db.delete(group)
+        db.commit()
+        return {"ok": True, "group_deleted": True}
+
+    # 방장이 나가면 가장 오래된 멤버에게 방장 이전
+    if group.created_by == current_user.id:
+        group.created_by = remaining[0].user_id
+
     db.query(StudyPresence).filter(
         StudyPresence.group_id == group_id,
         StudyPresence.user_id == current_user.id,
     ).delete()
     db.delete(member)
     db.commit()
-    return {"ok": True}
+    return {"ok": True, "group_deleted": False}

@@ -5321,6 +5321,11 @@ function StudyScreen() {
   const [showPw,       setShowPw]       = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null); // null=목록, object=룸뷰
   const [settingsOpen,  setSettingsOpen]  = useState(false);
+  const [editTarget,    setEditTarget]    = useState(null); // 수정 중인 그룹
+  const [editForm,      setEditForm]      = useState({ name:"", topic:"", password:"", max_members:"", clearPw: false });
+  const [editErr,       setEditErr]       = useState("");
+  const [editSaving,    setEditSaving]    = useState(false);
+  const [editShowPw,    setEditShowPw]    = useState(false);
   const groupsRef     = useRef([]);
   const selectedIdRef = useRef(null);
   const firstLoadRef  = useRef(true);
@@ -5400,6 +5405,34 @@ function StudyScreen() {
     finally{setCreating(false);}
   };
 
+  const openEdit = (g) => {
+    setEditTarget(g);
+    setEditForm({ name: g.name, topic: g.topic||"", password:"", max_members: g.max_members||"", clearPw: false });
+    setEditErr(""); setEditShowPw(false);
+  };
+  const saveEdit = async () => {
+    if (!editForm.name.trim()) { setEditErr("그룹 이름을 입력하세요"); return; }
+    setEditSaving(true);
+    try {
+      const body = {
+        name: editForm.name.trim(),
+        topic: editForm.topic.trim(),
+        password: editForm.clearPw ? "" : (editForm.password || null),
+        max_members: editForm.max_members ? Math.min(20, parseInt(editForm.max_members)) : 0,
+      };
+      const res = await fetch(`${API}/api/study/groups/${editTarget.id}`, {
+        method:"PATCH", headers:{"Content-Type":"application/json",...authHeader()},
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) { const d=await res.json(); setEditErr(d.detail||"오류"); return; }
+      const updated = await res.json();
+      setEditTarget(null);
+      setSelectedGroup(updated);
+      load(true);
+    } catch { setEditErr("서버에 연결할 수 없습니다"); }
+    finally { setEditSaving(false); }
+  };
+
   const handleJoin = (g) => {
     if (g.has_password) { setJoinTarget({id:g.id,name:g.name}); setJoinPw(""); setJoinErr(""); }
     else doJoin(g.id, "");
@@ -5417,7 +5450,7 @@ function StudyScreen() {
   };
 
   const checkin    = async(id)=>{ await fetch(`${API}/api/study/groups/${id}/checkin`,{method:"POST",headers:authHeader()}); load(true); };
-  const leaveGroup = async(id)=>{ if(!window.confirm("탈퇴하시겠습니까?"))return; await fetch(`${API}/api/study/groups/${id}/leave`,{method:"DELETE",headers:authHeader()}); setSelectedGroup(null); selectedIdRef.current=null; load(); };
+  const leaveGroup = async(id)=>{ if(!window.confirm("나가시겠습니까?"))return; const res=await fetch(`${API}/api/study/groups/${id}/leave`,{method:"DELETE",headers:authHeader()}); const d=res.ok?await res.json():null; setSelectedGroup(null); selectedIdRef.current=null; load(); };
   const deleteGroup= async(id,n)=>{ if(!window.confirm(`"${n}" 그룹을 삭제하시겠습니까?`))return; await fetch(`${API}/api/study/groups/${id}`,{method:"DELETE",headers:authHeader()}); setSelectedGroup(null); selectedIdRef.current=null; load(); };
 
   const q = search.trim().toLowerCase();
@@ -5568,8 +5601,14 @@ function StudyScreen() {
                 {settingsOpen===g.id&&(
                   <div style={{position:"absolute",right:0,bottom:42,background:C.card,border:`1px solid ${C.line}`,borderRadius:12,boxShadow:"0 6px 24px #0003",minWidth:148,zIndex:100,overflow:"hidden"}}
                     onClick={e=>e.stopPropagation()}>
+                    {g.is_creator&&(
+                      <button onClick={()=>{setSettingsOpen(false);openEdit(g);}}
+                        style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.text,cursor:"pointer",borderBottom:`1px solid ${C.line}`}}>
+                        <span style={{fontSize:15}}>⚙️</span> 방 설정
+                      </button>
+                    )}
                     <button onClick={()=>{setSettingsOpen(false);leaveGroup(g.id);}}
-                      style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.text,cursor:"pointer",borderBottom:`1px solid ${C.line}`}}>
+                      style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"12px 16px",background:"none",border:"none",textAlign:"left",fontFamily:SANS,fontSize:13,color:C.text,cursor:"pointer",borderBottom:g.is_creator?`1px solid ${C.line}`:"none"}}>
                       <span style={{fontSize:15}}>🚪</span> 나가기
                     </button>
                     {g.is_creator&&(
@@ -5703,6 +5742,55 @@ function StudyScreen() {
             {formErr&&<div style={{fontFamily:SANS,fontSize:12,color:C.coral,marginBottom:10}}>{formErr}</div>}
             <button onClick={createGroup} disabled={creating} style={{width:"100%",padding:"11px 0",borderRadius:9,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
               {creating?"만드는 중…":"그룹 만들기"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 방 수정 모달 */}
+      {editTarget&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
+          onClick={e=>e.target===e.currentTarget&&setEditTarget(null)}>
+          <div style={{width:"100%",maxWidth:360,background:C.card,borderRadius:20,padding:"28px 24px",border:`1px solid ${C.line}`}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+              <div style={{fontFamily:SANS,fontSize:16,fontWeight:800,color:C.text}}>방 설정</div>
+              <button onClick={()=>setEditTarget(null)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer"}}><X size={18}/></button>
+            </div>
+            <input placeholder="그룹 이름" value={editForm.name}
+              onChange={e=>{setEditForm(f=>({...f,name:e.target.value}));setEditErr("");}}
+              style={{width:"100%",padding:"10px 14px",borderRadius:9,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:10}}
+            />
+            <input placeholder="주제 (선택)" value={editForm.topic}
+              onChange={e=>setEditForm(f=>({...f,topic:e.target.value}))}
+              style={{width:"100%",padding:"10px 14px",borderRadius:9,border:`1px solid ${C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:10}}
+            />
+            <div style={{display:"flex",gap:8,marginBottom:4}}>
+              <div style={{position:"relative",flex:1}}>
+                <input type={editShowPw?"text":"password"}
+                  placeholder={editForm.clearPw?"(비밀번호 제거됨)":editTarget.has_password?"비밀번호 변경":"🔒 비밀번호 설정"}
+                  value={editForm.password} disabled={editForm.clearPw}
+                  onChange={e=>setEditForm(f=>({...f,password:e.target.value}))}
+                  style={{width:"100%",padding:"10px 36px 10px 14px",borderRadius:9,border:`1px solid ${editForm.password?C.blue+"66":C.line}`,background:editForm.clearPw?C.card2+"88":C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box",opacity:editForm.clearPw?0.5:1}}
+                />
+                <button onClick={()=>setEditShowPw(v=>!v)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13}}>{editShowPw?"🙈":"👁"}</button>
+              </div>
+              <input type="number" placeholder="최대 인원" min={2} max={20}
+                value={editForm.max_members}
+                onChange={e=>{const v=Math.min(20,Math.max(2,parseInt(e.target.value)||0));setEditForm(f=>({...f,max_members:e.target.value===""?"":String(v)}));}}
+                style={{width:88,padding:"10px 10px",borderRadius:9,border:`1px solid ${editForm.max_members?C.blue+"66":C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box"}}
+              />
+            </div>
+            {editTarget.has_password&&(
+              <label style={{display:"flex",alignItems:"center",gap:7,fontFamily:SANS,fontSize:12,color:C.muted,marginBottom:12,cursor:"pointer"}}>
+                <input type="checkbox" checked={editForm.clearPw} onChange={e=>setEditForm(f=>({...f,clearPw:e.target.checked,password:""}))} />
+                비밀번호 제거 (공개방으로 변경)
+              </label>
+            )}
+            <div style={{fontFamily:SANS,fontSize:11,color:C.muted,marginBottom:14}}>비밀번호 비워두면 기존 유지 · 최대 인원 비워두면 제한 없음</div>
+            {editErr&&<div style={{fontFamily:SANS,fontSize:12,color:C.coral,marginBottom:10}}>{editErr}</div>}
+            <button onClick={saveEdit} disabled={editSaving}
+              style={{width:"100%",padding:"11px 0",borderRadius:9,border:"none",background:C.blue,color:"#fff",fontFamily:SANS,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+              {editSaving?"저장 중…":"저장하기"}
             </button>
           </div>
         </div>
