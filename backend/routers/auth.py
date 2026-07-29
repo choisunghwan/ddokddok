@@ -3,11 +3,13 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from database import get_db
 from models import User, AiceSubmission, StudySession, CourseProgress, StudyMember, StudyCheckin, StudyNote, StudyTimerStat
 from deps import get_current_user
 import os, httpx
+
+ADMIN_EMAILS = {e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()}
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -58,6 +60,8 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == body.email).first()
     if not user or not pwd_context.verify(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀렸습니다")
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
     return TokenResponse(access_token=create_token(user.id), nickname=user.nickname)
 
 
@@ -68,6 +72,7 @@ def me(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "nickname": current_user.nickname,
         "kakao_linked": bool(current_user.kakao_id),
+        "is_admin": current_user.email.lower() in ADMIN_EMAILS,
     }
 
 
@@ -152,6 +157,8 @@ def kakao_login(body: KakaoLoginRequest, db: Session = Depends(get_db)):
                     password_hash=pwd_context.hash(f"kakao_{kakao_id}"))
         db.add(user); db.commit(); db.refresh(user)
 
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
     return TokenResponse(access_token=create_token(user.id), nickname=user.nickname)
 
 

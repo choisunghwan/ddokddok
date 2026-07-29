@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut, PenLine, Trash2, ArrowLeft, Tag, Plus, Sun, Moon } from "lucide-react";
+import { Home, Code2, BookOpen, Users, Play, RotateCcw, ChevronRight, Check, X, AlertTriangle, Flame, Target, TrendingUp, Star, Clock, Zap, ArrowRight, RefreshCw, Network, Settings, LogOut, PenLine, Trash2, ArrowLeft, Tag, Plus, Sun, Moon, Shield, Mail, Calendar, Timer, BarChart2, UserCheck } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, ResponsiveContainer } from "recharts";
 import { marked } from "marked";
 
@@ -616,7 +616,7 @@ function useIsMobile() {
   return mobile;
 }
 
-function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, onToggleTheme }) {
+function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, onToggleTheme, isAdmin }) {
   const isMobile = useIsMobile();
   const items = [
     { key:"home",   icon: Home,    label:"홈"        },
@@ -624,6 +624,7 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
     { key:"cert",   icon: BookOpen,label:"자격증"    },
     { key:"notes",  icon: PenLine, label:"노트"      },
     { key:"study",  icon: Users,   label:"스터디"    },
+    ...(isAdmin ? [{ key:"admin", icon: Shield, label:"관리자" }] : []),
   ];
 
   if (isMobile) return (
@@ -5305,6 +5306,188 @@ function DevScreen({ isGuest }) {
   );
 }
 
+// ── 관리자 화면 ─────────────────────────────────
+function AdminScreen() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState("created_at");
+  const [sortDesc, setSortDesc] = useState(true);
+
+  const fetchUsers = () => {
+    setLoading(true);
+    fetch(`${API}/api/admin/users`, { headers: authHeader() })
+      .then(r => r.json())
+      .then(d => { setUsers(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  const fmtDate = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffM = Math.floor(diffMs / 60000);
+    if (diffM < 1) return "방금";
+    if (diffM < 60) return `${diffM}분 전`;
+    const diffH = Math.floor(diffM / 60);
+    if (diffH < 24) return `${diffH}시간 전`;
+    const diffD = Math.floor(diffH / 24);
+    if (diffD < 7) return `${diffD}일 전`;
+    return d.toLocaleDateString("ko-KR", { month:"short", day:"numeric" });
+  };
+
+  const fmtJoin = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleDateString("ko-KR", { year:"numeric", month:"short", day:"numeric" });
+  };
+
+  const fmtMins = (m) => {
+    if (!m) return "0분";
+    if (m < 60) return `${m}분`;
+    return `${Math.floor(m/60)}시간 ${m%60}분`;
+  };
+
+  const filtered = users.filter(u =>
+    u.nickname.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const sorted = [...filtered].sort((a, b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (av == null) av = "";
+    if (bv == null) bv = "";
+    if (typeof av === "number") return sortDesc ? bv - av : av - bv;
+    return sortDesc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+  });
+
+  const toggleSort = (k) => {
+    if (sortKey === k) setSortDesc(d => !d);
+    else { setSortKey(k); setSortDesc(true); }
+  };
+
+  const totalUsers = users.length;
+  const activeThisWeek = users.filter(u => {
+    if (!u.last_active_at) return false;
+    const d = new Date(u.last_active_at);
+    return (new Date() - d) < 7 * 24 * 3600 * 1000;
+  }).length;
+  const studyingUsers = users.filter(u => u.study_groups > 0).length;
+
+  const ThCol = ({ k, label }) => (
+    <th onClick={() => toggleSort(k)} style={{
+      padding:"10px 14px", textAlign:"left", fontFamily:SANS, fontSize:11, fontWeight:700,
+      color: sortKey===k ? C.accent : C.muted, cursor:"pointer", userSelect:"none",
+      whiteSpace:"nowrap", background:C.card2, borderBottom:`1px solid ${C.line}`,
+    }}>
+      {label} {sortKey===k ? (sortDesc?"↓":"↑") : ""}
+    </th>
+  );
+
+  return (
+    <div style={{ padding:"28px 28px 40px", maxWidth:1100, margin:"0 auto" }}>
+      {/* 헤더 */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:24 }}>
+        <Shield size={22} color={C.accent} />
+        <h1 style={{ fontFamily:SANS, fontSize:20, fontWeight:800, color:C.text, margin:0 }}>회원 관리</h1>
+        <button onClick={fetchUsers} style={{ marginLeft:"auto", background:"none", border:`1px solid ${C.line}`, borderRadius:8, padding:"6px 12px", color:C.muted, cursor:"pointer", fontFamily:SANS, fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
+          <RefreshCw size={13} /> 새로고침
+        </button>
+      </div>
+
+      {/* 요약 카드 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:24 }}>
+        {[
+          { icon: UserCheck, label:"총 회원", value: totalUsers, color: C.blue },
+          { icon: Clock,     label:"이번 주 활성", value: activeThisWeek, color: C.green },
+          { icon: Users,     label:"스터디 참여 중", value: studyingUsers, color: C.purple },
+        ].map(({ icon: Icon, label, value, color }) => (
+          <div key={label} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ width:38, height:38, borderRadius:10, background:color+"22", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <Icon size={18} color={color} />
+            </div>
+            <div>
+              <div style={{ fontFamily:SANS, fontSize:22, fontWeight:800, color:C.text }}>{value}</div>
+              <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 검색 */}
+      <div style={{ marginBottom:14 }}>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="닉네임 또는 이메일로 검색..."
+          style={{ width:"100%", background:C.card, border:`1px solid ${C.line}`, borderRadius:9, padding:"9px 14px", fontFamily:SANS, fontSize:13, color:C.text, outline:"none", boxSizing:"border-box" }}
+        />
+      </div>
+
+      {/* 테이블 */}
+      {loading ? (
+        <div style={{ textAlign:"center", padding:40, fontFamily:SANS, fontSize:13, color:C.muted }}>불러오는 중…</div>
+      ) : (
+        <div style={{ overflowX:"auto", borderRadius:12, border:`1px solid ${C.line}` }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", minWidth:760 }}>
+            <thead>
+              <tr>
+                <ThCol k="nickname" label="닉네임" />
+                <ThCol k="email" label="이메일" />
+                <ThCol k="created_at" label="가입일" />
+                <ThCol k="last_active_at" label="최근 접속" />
+                <ThCol k="weekly_minutes" label="이번 주 학습" />
+                <ThCol k="study_groups" label="스터디" />
+                <ThCol k="solved_problems" label="문제 수" />
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.length === 0 && (
+                <tr><td colSpan={7} style={{ padding:32, textAlign:"center", fontFamily:SANS, fontSize:13, color:C.muted }}>회원이 없습니다</td></tr>
+              )}
+              {sorted.map((u, i) => (
+                <tr key={u.id} style={{ background: i%2===0 ? C.card : C.card2+"88", borderBottom:`1px solid ${C.line}` }}>
+                  <td style={{ padding:"10px 14px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <div style={{ width:28, height:28, borderRadius:"50%", background: u.is_admin ? C.yellow+"33" : GRAD, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:11, color: u.is_admin ? C.yellow : "#fff", fontWeight:700, flexShrink:0 }}>
+                        {u.nickname?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontFamily:SANS, fontSize:13, fontWeight:600, color:C.text }}>{u.nickname}</div>
+                        {u.is_admin && <span style={{ fontFamily:SANS, fontSize:9, color:C.yellow, fontWeight:700 }}>관리자</span>}
+                        {u.kakao_linked && <span style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginLeft:4 }}>카카오</span>}
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding:"10px 14px", fontFamily:MONO, fontSize:11, color:C.muted }}>{u.email}</td>
+                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color:C.muted }}>{fmtJoin(u.created_at)}</td>
+                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.last_active_at && (new Date()-new Date(u.last_active_at))<3600000 ? C.green : C.muted }}>
+                    {fmtDate(u.last_active_at)}
+                  </td>
+                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.weekly_minutes>0 ? C.text : C.muted }}>
+                    {fmtMins(u.weekly_minutes)}
+                  </td>
+                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.study_groups>0 ? C.text : C.muted, textAlign:"center" }}>
+                    {u.study_groups || "—"}
+                  </td>
+                  <td style={{ padding:"10px 14px", fontFamily:SANS, fontSize:12, color: u.solved_problems>0 ? C.text : C.muted, textAlign:"center" }}>
+                    {u.solved_problems || "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div style={{ marginTop:12, fontFamily:SANS, fontSize:11, color:C.muted, textAlign:"right" }}>
+        {filtered.length}명 / 전체 {totalUsers}명
+      </div>
+    </div>
+  );
+}
+
 // ── 스터디 그룹 ─────────────────────────────────
 function StudyScreen() {
   const [groups,       setGroups]       = useState([]);
@@ -7278,7 +7461,8 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showStudyModal, setShowStudyModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, notes:0, arch:0, study:0 });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [screenKeys, setScreenKeys] = useState({ home:0, code:0, cert:0, notes:0, arch:0, study:0, admin:0 });
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("ddok_theme") !== "light");
   const [kakaoLoading, setKakaoLoading] = useState(false);
   const [kakaoLinked, setKakaoLinked] = useState(false);
@@ -7290,7 +7474,7 @@ export default function App() {
     if (!token) return;
     fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setKakaoLinked(!!d.kakao_linked); })
+      .then(d => { if (d) { setKakaoLinked(!!d.kakao_linked); setIsAdmin(!!d.is_admin); } })
       .catch(() => {});
   }, [nickname]);
 
@@ -7404,7 +7588,7 @@ export default function App() {
       {showBanner && <GuestBanner onLogin={handleBackToLogin} onDismiss={() => setBannerDismissed(true)} />}
       {showStudyModal && <StudyLoginModal onLogin={handleBackToLogin} onClose={() => setShowStudyModal(false)} />}
       {showSettings && !isGuest && <SettingsModal nickname={nickname} onClose={() => setShowSettings(false)} onNicknameChange={setNickname} onLogout={handleLogout} kakaoLinked={kakaoLinked} onKakaoLink={handleKakaoLink} onKakaoUnlink={() => setKakaoLinked(false)} />}
-      <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} darkMode={darkMode} onToggleTheme={toggleTheme} />
+      <Nav tab={tab} setTab={handleSetTab} nickname={nickname} onLogout={handleLogout} onSettings={() => setShowSettings(true)} isGuest={isGuest} darkMode={darkMode} onToggleTheme={toggleTheme} isAdmin={isAdmin} />
       <StudyIsland />
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?122:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
@@ -7412,6 +7596,7 @@ export default function App() {
         {tab === "cert"  && <CertScreen key={screenKeys.cert} />}
         {tab === "notes" && <NoteScreen key={screenKeys.notes} isGuest={isGuest} onLogin={handleBackToLogin} nickname={nickname} />}
         {tab === "study" && !isGuest && <StudyScreen key={screenKeys.study} />}
+        {tab === "admin" && isAdmin && <AdminScreen key={screenKeys.admin} />}
       </div>
     </div>
   );
