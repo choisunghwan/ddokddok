@@ -1300,7 +1300,7 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         const liveTodayMin = Math.floor(getLocalTimer() / 60);
         const MO = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
         const DL = ["월","화","수","목","금","토","일"];
-        const SHOW = [true,false,true,false,true,false,false]; // 월·수·금만
+        const SHOW = [true,true,true,true,true,true,true];
         // 0=빈셀, 1~4=연한→진한 초록
         const LV_BG = ["transparent", C.green+"28", C.green+"55", C.green+"99", C.green];
         const LV_BD = [C.line+"66",   C.green+"44", C.green+"77", C.green+"bb", C.green+"dd"];
