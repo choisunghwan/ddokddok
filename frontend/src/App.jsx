@@ -5861,28 +5861,7 @@ function StudyScreen() {
               {g.has_password?"🔒 비밀번호로 참가하기":"참가하기"}
             </button>
           ):(
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              {/* 오공완 진행 상태 */}
-              {g.checked_in_today?(
-                <div style={{flex:1,display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:18}}>✅</span>
-                  <span style={{fontFamily:SANS,fontSize:13,fontWeight:700,color:C.green}}>오공완 완료!</span>
-                </div>
-              ):(()=>{
-                const todaySecs = typeof window._siSecs==="number"?window._siSecs:(()=>{try{const d=JSON.parse(localStorage.getItem("study_today")||"{}");return d.date===new Date().toDateString()?(d.s||d.secs||0):0;}catch{return 0;}})();
-                const pct = Math.min(100, Math.round(todaySecs/1800*100));
-                return (
-                  <div style={{flex:1}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                      <span style={{fontFamily:SANS,fontSize:12,color:C.muted}}>오공완까지</span>
-                      <span style={{fontFamily:SANS,fontSize:12,fontWeight:700,color:C.accent}}>{pct}%</span>
-                    </div>
-                    <div style={{height:6,borderRadius:3,background:C.line,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${pct}%`,background:C.accent,borderRadius:3,transition:"width .3s"}}/>
-                    </div>
-                  </div>
-                );
-              })()}
+            <div style={{display:"flex",alignItems:"center",gap:10,justifyContent:"flex-end"}}>
               {/* ⋯ 설정 드롭다운 */}
               <div style={{position:"relative"}}>
                 <button onClick={(e)=>{e.stopPropagation();setSettingsOpen(v=>v===g.id?false:g.id);}}
