@@ -5802,24 +5802,27 @@ function StudyScreen() {
     const runningCnt = members.filter(m=>m.online&&m.timer_running).length;
     return (
       <div style={{paddingBottom:80}}>
-        {/* 뒤로 + 그룹명 + ⋯ */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,paddingTop:4}}>
-          <button onClick={()=>{setSelectedGroup(null);selectedIdRef.current=null;}}
-            style={{display:"flex",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",color:C.muted,fontFamily:SANS,fontSize:13,padding:"6px 0",flexShrink:0}}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><polyline points="15 18 9 12 15 6"/></svg>
-            목록
-          </button>
+        {/* 뒤로 버튼 (단독 행) */}
+        <button onClick={()=>{setSelectedGroup(null);selectedIdRef.current=null;}}
+          style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",color:C.muted,fontFamily:SANS,fontSize:12,padding:"0 0 14px 0",letterSpacing:"0.02em"}}>
+          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><polyline points="15 18 9 12 15 6"/></svg>
+          목록으로
+        </button>
+
+        {/* 그룹명 헤더 */}
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,marginBottom:18}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontFamily:SANS,fontSize:17,fontWeight:800,color:C.text}}>{g.name}</span>
-              {g.has_password&&<span style={{fontFamily:SANS,fontSize:10,padding:"1px 7px",borderRadius:99,color:C.muted,background:C.card2,border:`1px solid ${C.line}`,fontWeight:600}}>🔒 비번방</span>}
-              <span style={{fontFamily:MONO,fontSize:11,color:C.yellow}}>🔥 {g.streak}일</span>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+              <span style={{fontFamily:SANS,fontSize:20,fontWeight:800,color:C.text,lineHeight:1.2}}>{g.name}</span>
+              {g.has_password&&<span style={{fontFamily:SANS,fontSize:10,padding:"2px 8px",borderRadius:99,color:C.muted,background:C.card2,border:`1px solid ${C.line}`,fontWeight:600}}>🔒 비번방</span>}
+              <span style={{fontFamily:MONO,fontSize:11,color:C.yellow,fontWeight:700}}>🔥 {g.streak}일</span>
             </div>
-            {g.topic&&<div style={{fontFamily:MONO,fontSize:11,color:C.muted,marginTop:2}}>📌 {g.topic}</div>}
+            {g.topic&&<div style={{fontFamily:SANS,fontSize:12,color:C.muted}}>📌 {g.topic}</div>}
           </div>
-          {/* 멤버일 때 ⋯ 드롭다운을 헤더 우측에 */}
+
+          {/* ⋯ 드롭다운 */}
           {g.is_member&&(
-            <div style={{position:"relative",flexShrink:0}}>
+            <div style={{position:"relative",flexShrink:0,marginTop:2}}>
               <button onClick={(e)=>{e.stopPropagation();setSettingsOpen(v=>v===g.id?false:g.id);}}
                 style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.line}`,background:"none",color:C.muted,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
                 ⋯
