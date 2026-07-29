@@ -1308,6 +1308,11 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         let cells = activity.map(d =>
           d.date === todayStr ? { ...d, min: Math.max(d.min||0, liveTodayMin) } : d
         );
+        // 월=0 … 일=6 기준으로 오늘 요일 계산
+        const todayDow = (new Date().getDay() + 6) % 7;
+        // 이번 주 남은 날(오늘 이후)만큼 빈 셀 추가 → 일요일이 항상 row 6에 위치
+        const endPad = 6 - todayDow;
+        for (let i = 0; i < endPad; i++) cells.push({ date:"", min:0 });
         const need = WEEKS * 7;
         while (cells.length < need) cells = [{ date:"", min:0 }, ...cells];
         cells = cells.slice(-need);
