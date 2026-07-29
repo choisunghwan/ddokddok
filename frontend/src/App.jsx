@@ -1320,6 +1320,19 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         const activeDays = cells.filter(d=>d.min>0).length;
         const maxMin     = Math.max(...cells.map(d=>d.min||0), 1);
 
+        // 이번 주 (마지막 7일)
+        const weekMin  = cells.slice(-7).reduce((s,d) => s+(d.min||0), 0);
+        const weekH    = Math.floor(weekMin/60);
+        const weekM    = weekMin%60;
+
+        // 이번 달 (현재 연-월 기준)
+        const thisMonth = new Date().toISOString().slice(0,7); // "2026-07"
+        const monthMin  = cells.filter(d => d.date?.startsWith(thisMonth)).reduce((s,d) => s+(d.min||0), 0);
+        const monthH    = Math.floor(monthMin/60);
+        const monthM    = monthMin%60;
+
+        const fmtDur = (h, m) => h > 0 ? `${h}h ${m}m` : `${m}m`;
+
         let streak = 0;
         for (let i = cells.length-1; i >= 0; i--) {
           if ((cells[i].min||0) > 0) streak++;
@@ -1345,28 +1358,43 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         return (
         <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"18px 18px 14px", marginBottom:28 }}>
           {/* 헤더 */}
-          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:10 }}>
             <div>
               <div style={{ fontFamily:SANS, fontSize:13, fontWeight:800, color:C.text }}>학습 잔디</div>
               <div style={{ fontFamily:SANS, fontSize:11, color:C.muted, marginTop:3 }}>
                 최근 1년 ·&nbsp;<span style={{ color:C.green, fontWeight:700 }}>{activeDays}일</span> 공부
               </div>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-              <div style={{ textAlign:"center" }}>
-                <div style={{ fontFamily:MONO, fontSize:17, fontWeight:900, color:C.green, lineHeight:1 }}>
-                  {totalH > 0 ? `${totalH}h ${totalM}m` : `${totalMin}m`}
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              {/* 이번 주 */}
+              <div style={{ textAlign:"center", background:C.card2, borderRadius:10, padding:"6px 12px", minWidth:58 }}>
+                <div style={{ fontFamily:MONO, fontSize:14, fontWeight:900, color:C.blue, lineHeight:1 }}>
+                  {fmtDur(weekH, weekM)}
+                </div>
+                <div style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginTop:3 }}>이번 주</div>
+              </div>
+              {/* 이번 달 */}
+              <div style={{ textAlign:"center", background:C.card2, borderRadius:10, padding:"6px 12px", minWidth:58 }}>
+                <div style={{ fontFamily:MONO, fontSize:14, fontWeight:900, color:C.purple, lineHeight:1 }}>
+                  {fmtDur(monthH, monthM)}
+                </div>
+                <div style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginTop:3 }}>이번 달</div>
+              </div>
+              {/* 총 학습 */}
+              <div style={{ textAlign:"center", background:C.card2, borderRadius:10, padding:"6px 12px", minWidth:58 }}>
+                <div style={{ fontFamily:MONO, fontSize:14, fontWeight:900, color:C.green, lineHeight:1 }}>
+                  {fmtDur(totalH, totalM)}
                 </div>
                 <div style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginTop:3 }}>총 학습</div>
               </div>
               {streak > 0 && (
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ fontFamily:MONO, fontSize:17, fontWeight:900, color:C.yellow, lineHeight:1 }}>{streak}🔥</div>
+                <div style={{ textAlign:"center", background:C.card2, borderRadius:10, padding:"6px 12px" }}>
+                  <div style={{ fontFamily:MONO, fontSize:14, fontWeight:900, color:C.yellow, lineHeight:1 }}>{streak}🔥</div>
                   <div style={{ fontFamily:SANS, fontSize:9, color:C.muted, marginTop:3 }}>연속</div>
                 </div>
               )}
               <button onClick={fetchStats} disabled={loading}
-                style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:13, padding:2, opacity:loading?0.4:1 }}>↻</button>
+                style={{ background:"none", border:"none", cursor:"pointer", color:C.muted, fontSize:13, padding:4, opacity:loading?0.4:1 }}>↻</button>
             </div>
           </div>
 
