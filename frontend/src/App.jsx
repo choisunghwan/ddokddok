@@ -7230,7 +7230,14 @@ function StudyIsland() {
   const lsLoad   = () => {
     try { const d = JSON.parse(localStorage.getItem("study_today")||"{}"); return d.date===todayKey() ? (d.s||d.secs||0) : 0; } catch { return 0; }
   };
-  const lsSave = (s) => { localStorage.setItem("study_today", JSON.stringify({ date: todayKey(), s })); window._siSecs = s; };
+  const lsLoadMeta = () => {
+    try { return JSON.parse(localStorage.getItem("study_today")||"{}"); } catch { return {}; }
+  };
+  const lsSave = (s, extra = {}) => {
+    const prev = lsLoadMeta();
+    localStorage.setItem("study_today", JSON.stringify({ ...prev, date: todayKey(), s, ...extra }));
+    window._siSecs = s;
+  };
 
   // ── 타이머 state ──
   const [open,       setOpen]      = useState(false);
@@ -7345,39 +7352,65 @@ function StudyIsland() {
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  // DB 로드
+  // DB 로드 + 새로고침 후 타이머 자동 재시작
   useEffect(() => {
     const tok = token();
     if (!tok) { setSynced(true); return; }
     fetch(`${API}/api/dashboard/timer-stat`, { headers:{ Authorization:`Bearer ${tok}` } })
       .then(r => r.ok ? r.json() : null)
       .then(d => {
-        if (d?.total_seconds != null) {
-          const best = Math.max(d.total_seconds, lsLoad());
-          setBaseToday(best); baseTodayRef.current = best; lsSave(best);
-          window._siSecs = best;
-          // DB 로드 시 이미 30분 이상이면 자동 오공완
-          if (!autoCheckinRef.current && best >= 30*60) {
-            autoCheckinRef.current = true;
-            localStorage.setItem("auto_checkin_date", new Date().toDateString());
-            window.dispatchEvent(new CustomEvent("auto-checkin"));
-          }
+        const meta = lsLoadMeta();
+        let base = lsLoad();
+        if (d?.total_seconds != null) base = Math.max(d.total_seconds, base);
+
+        // 새로고침 전에 타이머가 돌고 있었으면 경과 시간 보정
+        if (meta.running && meta.startedAt && meta.date === todayKey()) {
+          const elapsed = Math.floor((Date.now() - meta.startedAt) / 1000);
+          if (elapsed > 0 && elapsed < 3600 * 8) base += elapsed;
+        }
+
+        setBaseToday(base); baseTodayRef.current = base;
+        lsSave(base, { running: false, startedAt: null });
+        window._siSecs = base;
+
+        if (!autoCheckinRef.current && base >= 30*60) {
+          autoCheckinRef.current = true;
+          localStorage.setItem("auto_checkin_date", new Date().toDateString());
+          window.dispatchEvent(new CustomEvent("auto-checkin"));
         }
         setSynced(true);
+
+        // 이전에 타이머가 켜져 있었으면 자동 재시작
+        if (meta.running && meta.startedAt && meta.date === todayKey()) {
+          setTimeout(() => handleStart(), 200);
+        }
       }).catch(() => setSynced(true));
   }, []);
+
+  // 5분간 타이머 안 켜면 알림 토스트
+  useEffect(() => {
+    if (!token()) return;
+    const t = setTimeout(() => {
+      setShowReminder(prev => {
+        if (window._siRunning) return false;
+        return true;
+      });
+    }, 5 * 60 * 1000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const [showReminder, setShowReminder] = useState(false);
 
   const dbSave = (secs) => {
     const tok = token(); if (!tok) return;
     fetch(`${API}/api/dashboard/timer-stat`, { method:"POST", headers:{ Authorization:`Bearer ${tok}`,"Content-Type":"application/json" }, body:JSON.stringify({ total_seconds: secs }) }).catch(()=>{});
   };
-  const persist = (total) => {
-    lsSave(total); dbSave(total);
-    window.dispatchEvent(new CustomEvent("timer-saved", { detail:{ total } }));
-  };
 
   useEffect(() => {
-    const save = () => { const t = baseTodayRef.current + sessionRef.current; if (t>0){ lsSave(t); dbSave(t); } };
+    const save = () => {
+      const t = baseTodayRef.current + sessionRef.current;
+      if (t > 0) { lsSave(t, { running: false, startedAt: null }); dbSave(t); }
+    };
     window.addEventListener("beforeunload", save);
     document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
     return () => window.removeEventListener("beforeunload", save);
@@ -7389,33 +7422,47 @@ function StudyIsland() {
     localStorage.getItem("auto_checkin_date") === new Date().toDateString()
   );
 
-  const handleStart = () => {
+  const handleStart = (skipReminder = false) => {
+    if (skipReminder) setShowReminder(false);
     window._siRunning = true;
+    const startedAt = Date.now();
+    lsSave(baseTodayRef.current + sessionRef.current, { running: true, startedAt });
     intervalRef.current = setInterval(() => {
       sessionRef.current += 1;
       setSession(sessionRef.current);
       const total = baseTodayRef.current + sessionRef.current;
       window._siSecs = total;
-      // 30분 달성 → 자동 오공완 이벤트
       if (!autoCheckinRef.current && total >= AUTO_CHECKIN_SECS) {
         autoCheckinRef.current = true;
         localStorage.setItem("auto_checkin_date", new Date().toDateString());
         window.dispatchEvent(new CustomEvent("auto-checkin"));
       }
     }, 1000);
-    autoSaveRef.current = setInterval(() => persist(baseTodayRef.current + sessionRef.current), 30000);
+    autoSaveRef.current = setInterval(() => {
+      const t = baseTodayRef.current + sessionRef.current;
+      lsSave(t, { running: true, startedAt });
+      dbSave(t);
+      window.dispatchEvent(new CustomEvent("timer-saved", { detail:{ total: t } }));
+    }, 30000);
     setRunning(true);
   };
   const handlePause = () => {
     window._siRunning = false;
     clearInterval(intervalRef.current); clearInterval(autoSaveRef.current);
-    setRunning(false); persist(baseTodayRef.current + sessionRef.current);
+    setRunning(false);
+    const t = baseTodayRef.current + sessionRef.current;
+    lsSave(t, { running: false, startedAt: null });
+    dbSave(t);
+    window.dispatchEvent(new CustomEvent("timer-saved", { detail:{ total: t } }));
   };
   const handleReset = () => {
     clearInterval(intervalRef.current); clearInterval(autoSaveRef.current);
     setRunning(false);
     const total = baseTodayRef.current + sessionRef.current;
-    persist(total); setBaseToday(total); baseTodayRef.current = total;
+    lsSave(total, { running: false, startedAt: null });
+    dbSave(total);
+    window.dispatchEvent(new CustomEvent("timer-saved", { detail:{ total } }));
+    setBaseToday(total); baseTodayRef.current = total;
     sessionRef.current = 0; setSession(0);
   };
 
@@ -7446,11 +7493,32 @@ function StudyIsland() {
   const pct        = Math.min((todayTotal / goalSecs) * 100, 100);
   const cur        = SOUNDS.find(s => s.id === active);
 
+  const ReminderToast = showReminder && !running ? (
+    <div style={{
+      position:"fixed", bottom: isMobile ? 80 : 20, right:16, zIndex:9999,
+      background:C.card, border:`1px solid ${C.accent}55`,
+      borderRadius:14, padding:"12px 16px", boxShadow:"0 4px 24px #0006",
+      display:"flex", alignItems:"center", gap:12, maxWidth:260,
+      animation:"si-remind-in .3s ease",
+    }}>
+      <span style={{ fontSize:20 }}>⏱</span>
+      <div style={{ flex:1 }}>
+        <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>공부 시작했나요?</div>
+        <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>타이머를 켜면 학습이 기록돼요</div>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+        <button onClick={() => handleStart(true)} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:C.accent, color:"#fff", fontFamily:SANS, fontSize:12, fontWeight:700, cursor:"pointer" }}>시작</button>
+        <button onClick={() => setShowReminder(false)} style={{ padding:"3px 0", background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:10, cursor:"pointer" }}>나중에</button>
+      </div>
+    </div>
+  ) : null;
+
   // 모바일: Spotify 미니 플레이어
   if (isMobile) {
     return (
       <>
-        <style>{`@keyframes si-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
+        <style>{`@keyframes si-pulse{0%,100%{opacity:1}50%{opacity:.45}} @keyframes si-remind-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+        {ReminderToast}
 
         {/* 바텀시트 풀 패널 */}
         {open && (
@@ -7531,8 +7599,10 @@ function StudyIsland() {
 
   // 데스크탑: 타이머 + 사운드 항상 표시
   return (
+    <>
+    <style>{`@keyframes si-pulse{0%,100%{opacity:1}50%{opacity:.45}} @keyframes si-remind-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    {ReminderToast}
     <div ref={wrapperRef} style={{ position:"fixed", left:10, bottom:88, width:180, zIndex:9999, display:"flex", flexDirection:"column", gap:8 }}>
-      <style>{`@keyframes si-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
 
       {/* 🎵 사운드 카드 */}
       <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:"11px 11px 10px" }}>
@@ -7575,6 +7645,7 @@ function StudyIsland() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
