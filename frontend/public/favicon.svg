@@ -1,29 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <radialGradient id="glow" cx="50%" cy="60%" r="50%">
-      <stop offset="0%" stop-color="#E8C56A" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#D4854A" stop-opacity="0"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0E1D36"/>
+      <stop offset="100%" stop-color="#0C0A09"/>
+    </linearGradient>
+    <linearGradient id="chr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#A78BFA"/>
+    </linearGradient>
+    <linearGradient id="bdr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#6D28D9" stop-opacity="0.15"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="38%" cy="38%" r="55%">
+      <stop offset="0%" stop-color="#1D4ED8" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <!-- 따뜻한 다크 배경 -->
-  <rect width="100" height="100" rx="22" fill="#1D1916"/>
+  <!-- 배경 -->
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+  <!-- 블루 글로우 -->
+  <rect width="100" height="100" rx="22" fill="url(#glow)"/>
+  <!-- 안쪽 테두리 (입체감) -->
+  <rect x="1.5" y="1.5" width="97" height="97" rx="21" fill="none"
+        stroke="url(#bdr)" stroke-width="1.5"/>
 
-  <!-- 앰버 글로우 -->
-  <ellipse cx="50" cy="62" rx="36" ry="30" fill="url(#glow)"/>
-
-  <!-- 촛불 바디 -->
-  <rect x="38" y="56" width="24" height="30" rx="5" fill="#EDE8E2"/>
-  <!-- 왁스 녹은 부분 -->
-  <ellipse cx="50" cy="56" rx="12" ry="4" fill="#EDE8E2"/>
-
-  <!-- 심지 -->
-  <line x1="50" y1="52" x2="50" y2="46" stroke="#7A6E66" stroke-width="2" stroke-linecap="round"/>
-
-  <!-- 불꽃 외부 (골드) -->
-  <path d="M50 44 C46 38 42 30 50 18 C58 30 54 38 50 44Z" fill="#E8C56A"/>
-  <!-- 불꽃 중간 (앰버) -->
-  <path d="M50 43 C47 37 44 31 50 21 C56 31 53 37 50 43Z" fill="#D4854A"/>
-  <!-- 불꽃 코어 (밝은 노랑) -->
-  <path d="M50 41 C48 37 47 33 50 25 C53 33 52 37 50 41Z" fill="#FCD34D" opacity="0.85"/>
+  <!-- 똑 모노그램 -->
+  <text x="50" y="70"
+    font-family="'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif"
+    font-size="58" font-weight="900" text-anchor="middle"
+    fill="url(#chr)">똑</text>
 </svg>

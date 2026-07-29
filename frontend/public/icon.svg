@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0E1D36"/>
+      <stop offset="100%" stop-color="#0C0A09"/>
+    </linearGradient>
+    <linearGradient id="chr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#A78BFA"/>
+    </linearGradient>
+    <linearGradient id="sub" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#93C5FD" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#C4B5FD" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="bdr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#6D28D9" stop-opacity="0.15"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="38%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#1D4ED8" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="70%" cy="72%" r="40%">
+      <stop offset="0%" stop-color="#6D28D9" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow2)"/>
+  <!-- 안쪽 테두리 -->
+  <rect x="8" y="8" width="496" height="496" rx="106" fill="none"
+        stroke="url(#bdr)" stroke-width="8"/>
+
+  <!-- 메인: 똑똑 두 글자 -->
+  <text x="256" y="310"
+    font-family="'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif"
+    font-size="240" font-weight="900" text-anchor="middle"
+    fill="url(#chr)" letter-spacing="-8">똑똑</text>
+
+  <!-- 앱 이름 서브텍스트 -->
+  <text x="256" y="388"
+    font-family="'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif"
+    font-size="42" font-weight="500" text-anchor="middle"
+    fill="url(#sub)" letter-spacing="6">공부를 똑똑하게</text>
+</svg>
