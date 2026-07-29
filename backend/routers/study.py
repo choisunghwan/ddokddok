@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import date, datetime, timedelta, timezone
+from collections import defaultdict
 from database import get_db
 from models import StudyGroup, StudyMember, StudyCheckin, StudyPresence, User
 from deps import get_current_user
@@ -29,15 +30,7 @@ class PresenceUpdate(BaseModel):
     timer_seconds: int = 0
 
 
-def _calc_streak(group_id: int, db: Session) -> int:
-    rows = (
-        db.query(StudyCheckin.date)
-        .filter(StudyCheckin.group_id == group_id)
-        .distinct()
-        .order_by(StudyCheckin.date.desc())
-        .all()
-    )
-    dates = [r[0] for r in rows]
+def _calc_streak_from_dates(dates: list) -> int:
     if not dates:
         return 0
     today = date.today()
@@ -52,6 +45,17 @@ def _calc_streak(group_id: int, db: Session) -> int:
         else:
             break
     return streak
+
+
+def _calc_streak(group_id: int, db: Session) -> int:
+    rows = (
+        db.query(StudyCheckin.date)
+        .filter(StudyCheckin.group_id == group_id)
+        .distinct()
+        .order_by(StudyCheckin.date.desc())
+        .all()
+    )
+    return _calc_streak_from_dates([r[0] for r in rows])
 
 
 def _is_online(last_seen) -> bool:
@@ -120,7 +124,79 @@ def list_groups(
     current_user: User = Depends(get_current_user),
 ):
     groups = db.query(StudyGroup).order_by(StudyGroup.created_at.desc()).all()
-    return [_group_dict(g, current_user.id, db) for g in groups]
+    if not groups:
+        return []
+
+    group_ids = [g.id for g in groups]
+    today = date.today()
+
+    # 6개 쿼리로 전체 배치 처리 (그룹 수에 무관)
+    all_members   = db.query(StudyMember).filter(StudyMember.group_id.in_(group_ids)).all()
+    all_checkins  = db.query(StudyCheckin).filter(StudyCheckin.group_id.in_(group_ids), StudyCheckin.date == today).all()
+    all_presences = db.query(StudyPresence).filter(StudyPresence.group_id.in_(group_ids)).all()
+
+    all_uid = list({m.user_id for m in all_members})
+    users   = {u.id: u for u in db.query(User).filter(User.id.in_(all_uid)).all()}
+
+    streak_rows = (
+        db.query(StudyCheckin.group_id, StudyCheckin.date)
+        .filter(StudyCheckin.group_id.in_(group_ids))
+        .distinct()
+        .order_by(StudyCheckin.group_id, StudyCheckin.date.desc())
+        .all()
+    )
+
+    members_by   = defaultdict(list)
+    for m in all_members:
+        members_by[m.group_id].append(m.user_id)
+
+    checkins_by  = defaultdict(set)
+    for c in all_checkins:
+        checkins_by[c.group_id].add(c.user_id)
+
+    presences_by = defaultdict(dict)
+    for p in all_presences:
+        presences_by[p.group_id][p.user_id] = p
+
+    streak_dates_by = defaultdict(list)
+    for row in streak_rows:
+        streak_dates_by[row.group_id].append(row.date)
+
+    result = []
+    for g in groups:
+        uid_list        = members_by[g.id]
+        today_checkins  = checkins_by[g.id]
+        presences       = presences_by[g.id]
+
+        member_list = []
+        for uid in uid_list:
+            u = users.get(uid)
+            if u:
+                p      = presences.get(uid)
+                online = _is_online(p.last_seen) if p else False
+                member_list.append({
+                    "nickname":        u.nickname,
+                    "user_id":         uid,
+                    "checked_in_today": uid in today_checkins,
+                    "online":          online,
+                    "timer_running":   bool(p.timer_running) if (p and online) else False,
+                    "timer_seconds":   int(p.timer_seconds)  if (p and online) else 0,
+                })
+
+        result.append({
+            "id":             g.id,
+            "name":           g.name,
+            "topic":          g.topic or "",
+            "has_password":   bool(getattr(g, "password_hash", None)),
+            "member_count":   len(uid_list),
+            "members":        member_list,
+            "is_member":      current_user.id in set(uid_list),
+            "is_creator":     g.created_by == current_user.id,
+            "checked_in_today": current_user.id in today_checkins,
+            "streak":         _calc_streak_from_dates(streak_dates_by[g.id]),
+        })
+
+    return result
 
 
 @router.post("/groups")
