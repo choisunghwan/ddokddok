@@ -5690,8 +5690,12 @@ function StudyScreen() {
                 />
                 <button onClick={()=>setShowPw(v=>!v)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,padding:2}}>{showPw?"🙈":"👁"}</button>
               </div>
-              <input type="number" placeholder="최대 인원" min={2} max={50}
-                value={form.max_members} onChange={e=>setForm(f=>({...f,max_members:e.target.value}))}
+              <input type="number" placeholder="최대 인원" min={2} max={20}
+                value={form.max_members}
+                onChange={e => {
+                  const v = Math.min(20, Math.max(2, parseInt(e.target.value)||0));
+                  setForm(f=>({...f, max_members: e.target.value === "" ? "" : String(v)}));
+                }}
                 style={{width:88,padding:"10px 10px",borderRadius:9,border:`1px solid ${form.max_members?C.blue+"66":C.line}`,background:C.card2,color:C.text,fontFamily:SANS,fontSize:13,outline:"none",boxSizing:"border-box"}}
               />
             </div>

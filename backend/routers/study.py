@@ -211,7 +211,7 @@ def create_group(
     if not body.name.strip():
         raise HTTPException(status_code=400, detail="그룹 이름을 입력하세요")
     pw = body.password.strip() if body.password else ""
-    max_m = body.max_members if body.max_members and body.max_members > 0 else None
+    max_m = min(body.max_members, 20) if body.max_members and body.max_members > 0 else None
     group = StudyGroup(
         name=body.name.strip(),
         topic=body.topic.strip(),
