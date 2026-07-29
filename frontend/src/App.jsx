@@ -960,9 +960,9 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
   );
 
   const FEATURES = [
-    ["📚", "코딩 · 자격증 학습", "Python, Java, SQL, AICE, ADsP"],
-    ["📝", "나만의 학습 노트",   "서식 에디터로 깔끔하게 정리"],
-    ["👥", "스터디 그룹",        "함께 공부하며 연속 학습일 유지"],
+    ["👥", "온라인 스터디 그룹",  "함께 공부하며 연속 학습일을 유지해요"],
+    ["⏱️", "학습 기록 & 잔디",   "매일 공부 시간을 기록하고 시각화해요"],
+    ["📝", "코딩 · 자격증 · 노트", "Python, Java, AICE, ADsP & 학습 노트"],
   ];
 
   return (
@@ -988,10 +988,10 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
                 <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:26, color:"#fff", letterSpacing:"-.02em" }}>똑똑</span>
               </div>
               <div style={{ fontFamily:SANS, fontSize:28, fontWeight:800, color:"#fff", lineHeight:1.25, marginBottom:14, letterSpacing:"-.02em" }}>
-                스마트한<br/>IT 학습의 시작
+                공부를<br/>똑똑하게 관리해요
               </div>
               <div style={{ fontFamily:SANS, fontSize:14, color:"rgba(255,255,255,0.65)", lineHeight:1.85 }}>
-                자격증부터 코딩까지,<br/>목표에 맞는 학습을 시작하세요.
+                스터디 그룹, 학습 기록, 노트까지<br/>공부의 모든 것을 한 곳에서.
               </div>
             </div>
 
