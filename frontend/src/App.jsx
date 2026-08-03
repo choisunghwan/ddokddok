@@ -5662,6 +5662,7 @@ function StudyScreen() {
   const firstLoadRef    = useRef(true);
   const syncAtRef       = useRef(Date.now()); // 마지막 서버 동기화 시각(로컬 틱 보정 기준)
   const [nowTick, setNowTick] = useState(Date.now());
+  const lastShownRef    = useRef({}); // user_id -> 마지막으로 화면에 보여준 초 (역행 방지)
   const nickConfirmedRef = useRef(false);
   const [nickCheckPending, setNickCheckPending] = useState(null);
   const [nickEditMode, setNickEditMode] = useState(false);
@@ -5815,12 +5816,17 @@ function StudyScreen() {
       if (m.nickname === myNick) {
         const secs = typeof window._siSecs === "number" ? window._siSecs
           : (() => { try { const d=JSON.parse(localStorage.getItem("study_today")||"{}"); return d.date===new Date().toDateString()?(d.s||d.secs||0):0; } catch{return 0;} })();
+        lastShownRef.current[m.user_id] = secs;
         return { ...m, online:true, timer_running:window._siRunning||false, timer_seconds:secs };
       }
       if (m.online && m.timer_running) {
         const elapsed = Math.max(0, Math.floor((nowTick - syncAtRef.current)/1000));
-        return { ...m, timer_seconds: m.timer_seconds + elapsed };
+        // 서버값+로컬 경과와 직전에 보여준 값 중 큰 쪽 채택 → 폴링 타이밍 차로 인한 역행(시간이 줄어드는 것처럼 보이는 현상) 방지
+        const shown = Math.max(m.timer_seconds + elapsed, lastShownRef.current[m.user_id] || 0);
+        lastShownRef.current[m.user_id] = shown;
+        return { ...m, timer_seconds: shown };
       }
+      lastShownRef.current[m.user_id] = m.timer_seconds;
       return m;
     });
     const onlineCnt = members.filter(m=>m.online).length;
