@@ -5660,6 +5660,8 @@ function StudyScreen() {
   const groupsRef       = useRef([]);
   const selectedIdRef   = useRef(null);
   const firstLoadRef    = useRef(true);
+  const syncAtRef       = useRef(Date.now()); // 마지막 서버 동기화 시각(로컬 틱 보정 기준)
+  const [nowTick, setNowTick] = useState(Date.now());
   const nickConfirmedRef = useRef(false);
   const [nickCheckPending, setNickCheckPending] = useState(null);
   const [nickEditMode, setNickEditMode] = useState(false);
@@ -5700,6 +5702,7 @@ function StudyScreen() {
       .then(data=>{
         const arr=Array.isArray(data)?data:[];
         setGroups(arr); groupsRef.current=arr; setLoading(false);
+        syncAtRef.current = Date.now();
         if (selectedIdRef.current) {
           const fresh=arr.find(g=>g.id===selectedIdRef.current);
           if (fresh) setSelectedGroup(fresh);
@@ -5718,6 +5721,7 @@ function StudyScreen() {
       broadcast();
       setTimeout(()=>load(true), 1500);
     }, 5000);
+    const tickIv = setInterval(()=>setNowTick(Date.now()), 1000);
 
     const handleAutoCheckin = () => {
       groupsRef.current.filter(g=>g.is_member).forEach(g=>{
@@ -5730,7 +5734,7 @@ function StudyScreen() {
     const handleClickOutside = () => setSettingsOpen(false);
     window.addEventListener("auto-checkin", handleAutoCheckin);
     window.addEventListener("click", handleClickOutside);
-    return ()=>{ clearInterval(iv); window.removeEventListener("auto-checkin", handleAutoCheckin); window.removeEventListener("click", handleClickOutside); };
+    return ()=>{ clearInterval(iv); clearInterval(tickIv); window.removeEventListener("auto-checkin", handleAutoCheckin); window.removeEventListener("click", handleClickOutside); };
   },[]);
 
   const createGroup = async()=>{
@@ -5805,11 +5809,17 @@ function StudyScreen() {
     const g = selectedGroup;
     if (!g) return null;
     const myNick = localStorage.getItem("nickname") || "";
-    // 본인 멤버 데이터 보정 (presence 아직 미반영 시 optimistic으로 online 표시)
+    // 본인 멤버 데이터는 항상 라이브 값(window._siSecs)으로 매초 갱신
+    // 다른 멤버는 마지막 서버 동기화 시각(syncAtRef) 이후 경과 시간을 로컬에서 더해 폴링 사이 공백을 메움
     const members = g.members.map(m => {
-      if (m.nickname === myNick && !m.online) {
-        const secs = (() => { try { const d=JSON.parse(localStorage.getItem("study_today")||"{}"); return d.date===new Date().toDateString()?(d.s||d.secs||0):0; } catch{return 0;} })();
+      if (m.nickname === myNick) {
+        const secs = typeof window._siSecs === "number" ? window._siSecs
+          : (() => { try { const d=JSON.parse(localStorage.getItem("study_today")||"{}"); return d.date===new Date().toDateString()?(d.s||d.secs||0):0; } catch{return 0;} })();
         return { ...m, online:true, timer_running:window._siRunning||false, timer_seconds:secs };
+      }
+      if (m.online && m.timer_running) {
+        const elapsed = Math.max(0, Math.floor((nowTick - syncAtRef.current)/1000));
+        return { ...m, timer_seconds: m.timer_seconds + elapsed };
       }
       return m;
     });
