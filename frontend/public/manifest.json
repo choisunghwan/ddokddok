@@ -4,8 +4,8 @@
   "description": "스터디 그룹, 학습 기록, 노트까지 공부의 모든 것을 한 곳에서",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#13100D",
-  "theme_color": "#13100D",
+  "background_color": "#0B1220",
+  "theme_color": "#0B1220",
   "orientation": "portrait",
   "icons": [
     {

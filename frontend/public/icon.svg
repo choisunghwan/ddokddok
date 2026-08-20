@@ -1,87 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1D1916"/>
-      <stop offset="100%" stop-color="#13100D"/>
+    <!-- 아이티센 블루 3-블레이드 핀휠 심볼 -->
+    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#16224F"/>
+      <stop offset="100%" stop-color="#26418F"/>
     </linearGradient>
-    <linearGradient id="lp" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#F0C96A"/>
-      <stop offset="100%" stop-color="#D4854A"/>
+    <linearGradient id="p2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1E4FCB"/>
+      <stop offset="100%" stop-color="#2F6FED"/>
     </linearGradient>
-    <linearGradient id="rp" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#D4854A"/>
-      <stop offset="100%" stop-color="#A0622E"/>
+    <linearGradient id="p3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2F8FEF"/>
+      <stop offset="100%" stop-color="#5CB2FF"/>
     </linearGradient>
-    <linearGradient id="ag" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#F0C96A"/>
-      <stop offset="100%" stop-color="#D4854A"/>
-    </linearGradient>
-    <linearGradient id="bdr" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#E8C56A" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#D4854A" stop-opacity="0.12"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#D4854A" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#D4854A" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="sh" x="-25%" y="-25%" width="150%" height="160%">
-      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0A0806" flood-opacity="0.6"/>
-    </filter>
-    <filter id="ash" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0A0806" flood-opacity="0.4"/>
+    <filter id="sh" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0B1220" flood-opacity="0.32"/>
     </filter>
   </defs>
 
-  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
-  <rect width="100" height="100" rx="22" fill="url(#glow)"/>
-  <rect x="1.5" y="1.5" width="97" height="97" rx="21" fill="none"
-        stroke="url(#bdr)" stroke-width="1.5"/>
+  <rect width="100" height="100" rx="22" fill="#FFFFFF"/>
 
-  <!-- 스터디 그룹 아바타 3인 -->
-  <g filter="url(#ash)">
-    <circle cx="34" cy="19" r="7" fill="#A0622E" stroke="rgba(19,16,13,0.9)" stroke-width="2"/>
-    <circle cx="66" cy="19" r="7" fill="#D4854A" stroke="rgba(19,16,13,0.9)" stroke-width="2"/>
-    <circle cx="50" cy="15" r="9" fill="url(#ag)" stroke="rgba(19,16,13,0.9)" stroke-width="2.5"/>
-  </g>
-  <!-- 사람 실루엣 -->
-  <circle cx="34" cy="17.5" r="2.2" fill="rgba(237,232,226,0.7)"/>
-  <path d="M29.5,24 Q30,20.5 34,20.5 Q38,20.5 38.5,24" fill="rgba(237,232,226,0.5)"/>
-  <circle cx="66" cy="17.5" r="2.2" fill="rgba(237,232,226,0.7)"/>
-  <path d="M61.5,24 Q62,20.5 66,20.5 Q70,20.5 70.5,24" fill="rgba(237,232,226,0.5)"/>
-  <circle cx="50" cy="13" r="2.8" fill="rgba(237,232,226,0.85)"/>
-  <path d="M44.5,20 Q45.5,16 50,16 Q54.5,16 55.5,20" fill="rgba(237,232,226,0.65)"/>
-
-  <!-- 책 본체 -->
   <g filter="url(#sh)">
-    <path d="M50,34 L16,32 Q12,32 12,36 L12,73 Q12,77 16,77 L50,75 Z" fill="url(#lp)"/>
-    <path d="M50,34 L84,32 Q88,32 88,36 L88,73 Q88,77 84,77 L50,75 Z" fill="url(#rp)"/>
+    <path d="M50,50 C30,50 18,38 20,22 C21,12 32,6 46,8 C60,10 66,20 64,32 C63,40 58,46 50,50 Z" fill="url(#p1)"/>
+    <path d="M50,50 C30,50 18,38 20,22 C21,12 32,6 46,8 C60,10 66,20 64,32 C63,40 58,46 50,50 Z" fill="url(#p2)" transform="rotate(120 50 50)"/>
+    <path d="M50,50 C30,50 18,38 20,22 C21,12 32,6 46,8 C60,10 66,20 64,32 C63,40 58,46 50,50 Z" fill="url(#p3)" transform="rotate(240 50 50)"/>
   </g>
-
-  <!-- 상단 shimmer -->
-  <path d="M50,34 L16,32 Q12,32 12,36 L12,39 Q12,35 15.5,35 L50,37 Z"
-        fill="rgba(255,240,200,0.25)"/>
-  <path d="M50,34 L84,32 Q88,32 88,36 L88,39 Q88,35 84.5,35 L50,37 Z"
-        fill="rgba(255,240,200,0.16)"/>
-
-  <!-- 왼쪽 페이지 라인 -->
-  <line x1="17" y1="44" x2="47" y2="43" stroke="rgba(237,232,226,0.32)" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="17" y1="52" x2="47" y2="51" stroke="rgba(237,232,226,0.22)" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="17" y1="60" x2="47" y2="59" stroke="rgba(237,232,226,0.13)" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="17" y1="68" x2="37" y2="67" stroke="rgba(237,232,226,0.07)" stroke-width="1.6" stroke-linecap="round"/>
-
-  <!-- 오른쪽 페이지 라인 -->
-  <line x1="53" y1="43" x2="83" y2="44" stroke="rgba(237,232,226,0.32)" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="53" y1="51" x2="83" y2="52" stroke="rgba(237,232,226,0.22)" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="53" y1="59" x2="83" y2="60" stroke="rgba(237,232,226,0.13)" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="53" y1="67" x2="73" y2="68" stroke="rgba(237,232,226,0.07)" stroke-width="1.6" stroke-linecap="round"/>
-
-  <!-- 척추 곡선 -->
-  <path d="M50,34 C48.5,54.5 51.5,54.5 50,75"
-        fill="none" stroke="rgba(237,232,226,0.55)" stroke-width="1.6" stroke-linecap="round"/>
-
-  <!-- 워드마크 -->
-  <text x="50" y="91"
-    font-family="'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',sans-serif"
-    font-size="9" font-weight="800" text-anchor="middle" letter-spacing="3"
-    fill="rgba(237,232,226,0.35)">똑똑</text>
 </svg>

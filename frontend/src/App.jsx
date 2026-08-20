@@ -4,42 +4,42 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, R
 import { marked } from "marked";
 
 // ── 디자인 토큰 ──────────────────────────────────
-// Lo-fi Amber — 따뜻한 다크, 앰버 단일 포인트
+// ITCEN Blue — 아이티센 네이비 다크, 블루 단일 포인트
 const DARK = {
-  bg:    "#13100D",
-  card:  "#1D1916",
-  card2: "#252019",
-  line:  "#302820",
-  blue:  "#D4854A",  // 앰버 (메인 포인트)
+  bg:    "#0B1220",
+  card:  "#111A2E",
+  card2: "#16213B",
+  line:  "#223052",
+  blue:  "#3B82F6",  // 아이티센 블루 (메인 포인트)
   green: "#6DBF88",  // 세이지 그린 (완료/긍정)
   coral: "#E07070",  // 소프트 레드 (경고/삭제)
   yellow:"#E8C56A",  // 머트 골드 (연속 학습)
   purple:"#9B8AE0",
-  text:  "#EDE8E2",  // 따뜻한 오프화이트
-  muted: "#7A6E66",  // 따뜻한 뮤트
+  text:  "#E8ECF5",  // 쿨 오프화이트
+  muted: "#7C8AA8",  // 쿨 뮤트
   white: "#FFFFFF",
-  accent:"#D4854A",
+  accent:"#3B82F6",
 };
 const LIGHT = {
-  bg:    "#F4EFE6",
+  bg:    "#F3F6FC",
   card:  "#FFFFFF",
-  card2: "#EDE8DE",
-  line:  "#E0D8CD",
-  blue:  "#C47122",  // 번트 앰버
+  card2: "#EAF0FA",
+  line:  "#D7E1F0",
+  blue:  "#1D4ED8",  // 아이티센 블루
   green: "#4A9E6A",
   coral: "#C45050",
   yellow:"#A07B20",
   purple:"#7B5EA8",
-  text:  "#1A1410",
-  muted: "#8C7E72",
+  text:  "#0F1B33",
+  muted: "#5E6E8C",
   white: "#FFFFFF",
-  accent:"#C47122",
+  accent:"#1D4ED8",
 };
 const _savedTheme = typeof localStorage !== "undefined" ? localStorage.getItem("ddok_theme") : "dark";
 const C = { ...(_savedTheme === "light" ? LIGHT : DARK) };
 const SANS = "'Pretendard','Inter',system-ui,sans-serif";
 const MONO = "'JetBrains Mono','Fira Code',monospace";
-const GRAD = "linear-gradient(135deg, #D4854A 0%, #B86030 100%)";
+const GRAD = "linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)";
 
 // ── 목 데이터 ──────────────────────────────────
 const WEEKLY = [
@@ -1045,7 +1045,7 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
 
           {mode === "login" && (
             <label style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, cursor:"pointer" }}>
-              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width:15, height:15, accentColor:"#5B21B6", cursor:"pointer" }}/>
+              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ width:15, height:15, accentColor:"#3B82F6", cursor:"pointer" }}/>
               <span style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>아이디 저장</span>
             </label>
           )}
