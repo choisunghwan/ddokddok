@@ -621,7 +621,7 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
   const items = [
     { key:"home",   icon: Home,    label:"홈"    },
     { key:"learn",  icon: BookOpen,label:"학습"  },
-    { key:"study",  icon: Users,   label:"스터디" },
+    { key:"study",  icon: Users,   label:"학습조직" },
     ...(isAdmin ? [{ key:"admin", icon: Shield, label:"관리자" }] : []),
   ];
 
@@ -870,7 +870,7 @@ function GuestBanner({ onLogin, onDismiss }) {
       display:"flex", alignItems:"center", gap:10,
     }}>
       <span style={{ fontFamily:SANS, fontSize:isMobile?10.5:12, color:C.muted, flex:1, lineHeight:1.4 }}>
-        📚 게스트 모드 — 진도 저장 및 스터디 그룹은 로그인 후 이용 가능해요
+        📚 게스트 모드 — 진도 저장 및 학습조직은 로그인 후 이용 가능해요
       </span>
       <button onClick={onLogin} style={{
         padding:"4px 10px", borderRadius:6, border:`1px solid ${C.blue}`,
@@ -896,10 +896,10 @@ function StudyLoginModal({ onLogin, onClose }) {
         background:C.card, borderRadius:16, padding:"28px 24px", maxWidth:320, width:"90%",
         border:`1px solid ${C.line}`,
       }}>
-        <div style={{ fontFamily:SANS, fontSize:18, fontWeight:800, color:C.text, marginBottom:8 }}>👥 스터디 그룹</div>
+        <div style={{ fontFamily:SANS, fontSize:18, fontWeight:800, color:C.text, marginBottom:8 }}>👥 학습조직</div>
         <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, lineHeight:1.7, marginBottom:22 }}>
-          스터디 그룹은 로그인 후 이용 가능해요.<br/>
-          로그인하면 그룹 참여·생성·출석 체크인을 할 수 있어요.
+          학습조직은 로그인 후 이용 가능해요.<br/>
+          로그인하면 학습조직 신청·일정 등록·활동내역서 작성을 할 수 있어요.
         </div>
         <div style={{ display:"flex", gap:8 }}>
           <button onClick={onLogin} style={{
@@ -960,7 +960,7 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
   );
 
   const FEATURES = [
-    ["👥", "온라인 스터디 그룹",  "함께 공부하며 연속 학습일을 유지해요"],
+    ["👥", "사내 학습조직",  "신청부터 일정·활동내역서까지 폰으로 간편하게"],
     ["⏱️", "학습 기록 & 잔디",   "매일 공부 시간을 기록하고 시각화해요"],
     ["📝", "코딩 · 자격증 · 노트", "Python, Java, AICE, ADsP & 학습 노트"],
   ];
@@ -991,7 +991,7 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
                 공부를<br/>똑똑하게 관리해요
               </div>
               <div style={{ fontFamily:SANS, fontSize:14, color:"rgba(255,255,255,0.65)", lineHeight:1.85 }}>
-                스터디 그룹, 학습 기록, 노트까지<br/>공부의 모든 것을 한 곳에서.
+                학습조직, 학습 기록, 노트까지<br/>공부의 모든 것을 한 곳에서.
               </div>
             </div>
 
@@ -1126,7 +1126,7 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
     Promise.all([
       fetch(`${API}/api/dashboard/stats`,      { headers: authHeader() }).then(r => r.json()),
       fetch(`${API}/api/dashboard/activity?weeks=52`, { headers: authHeader() }).then(r => r.json()),
-      fetch(`${API}/api/study/groups`,         { headers: authHeader() }).then(r => r.json()),
+      fetch(`${API}/api/learning-org/orgs`,    { headers: authHeader() }).then(r => r.json()),
     ])
       .then(([s, a, g]) => {
         setStats(s);
@@ -1262,7 +1262,7 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         const statItems = [
           { label:"연속 학습일",   value: streak ? `${streak}일`  : "-", icon:"🔥", color:C.yellow },
           { label:"오늘 공부",     value: fmtSec(todaySec),               icon:"⏱️", color:C.blue   },
-          { label:"참여 스터디",     value: studyGroups.length ? `${studyGroups.length}개` : "-", icon:"📚", color:C.green  },
+          { label:"참여 학습조직",   value: studyGroups.length ? `${studyGroups.length}개` : "-", icon:"📚", color:C.green  },
         ];
         return (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:28 }}>
@@ -1481,44 +1481,30 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
         );
       })()}
 
-      {/* 온라인 도서관 */}
+      {/* 내 학습조직 */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-        <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.muted, letterSpacing:"0.1em", textTransform:"uppercase" }}>📚 온라인 도서관</div>
+        <div style={{ fontFamily:SANS, fontSize:12, fontWeight:700, color:C.muted, letterSpacing:"0.1em", textTransform:"uppercase" }}>📋 내 학습조직</div>
         <button onClick={() => setTab("study")} style={{ fontFamily:SANS, fontSize:11, color:C.blue, background:"none", border:"none", cursor:"pointer", fontWeight:700 }}>전체 보기 →</button>
       </div>
 
       {!isGuest && studyGroups.length > 0 ? (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {studyGroups.slice(0, 4).map(g => {
-            const onlineCnt = (g.members||[]).filter(m => m.online).length;
-            const hasOnline = onlineCnt > 0;
-            return (
-              <button key={g.id} onClick={() => setTab("study")} style={{
-                display:"flex", alignItems:"center", justifyContent:"space-between",
-                padding:"14px 16px", borderRadius:14, textAlign:"left", cursor:"pointer",
-                background: hasOnline ? C.blue+"0C" : C.card,
-                border:`1px solid ${hasOnline ? C.blue+"40" : C.line}`,
-                boxShadow: hasOnline ? `0 2px 20px ${C.blue}18` : "none",
-                transition:"all .2s",
-              }}>
-                <div>
-                  <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{g.name}</div>
-                  <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{g.member_count}명 참여</div>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                  {hasOnline ? (<>
-                    <div style={{ width:7, height:7, borderRadius:"50%", background:C.green, boxShadow:`0 0 8px ${C.green}99` }}/>
-                    <div style={{ fontFamily:MONO, fontSize:12, fontWeight:800, color:C.green }}>{onlineCnt}명 공부 중</div>
-                  </>) : (
-                    <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>조용해요</div>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+          {studyGroups.slice(0, 4).map(g => (
+            <button key={g.id} onClick={() => setTab("study")} style={{
+              display:"flex", alignItems:"center", justifyContent:"space-between",
+              padding:"14px 16px", borderRadius:14, textAlign:"left", cursor:"pointer",
+              background:C.card, border:`1px solid ${C.line}`, transition:"all .2s",
+            }}>
+              <div>
+                <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{g.name}{g.is_leader && <span style={{ marginLeft:6, fontSize:10, color:C.blue, fontWeight:700 }}>리더</span>}</div>
+                <div style={{ fontFamily:SANS, fontSize:11, color:C.muted }}>{g.member_count}명 참여 · 일정 {g.schedule_count}건</div>
+              </div>
+              <div style={{ fontFamily:MONO, fontSize:12, fontWeight:800, color:C.green }}>활동내역서 {g.report_count}건</div>
+            </button>
+          ))}
           {studyGroups.length > 4 && (
             <button onClick={() => setTab("study")} style={{ padding:"12px", borderRadius:12, border:`1px solid ${C.line}`, background:"none", color:C.muted, fontFamily:SANS, fontSize:12, cursor:"pointer" }}>
-              +{studyGroups.length - 4}개 그룹 더 보기
+              +{studyGroups.length - 4}개 더 보기
             </button>
           )}
         </div>
@@ -1527,9 +1513,9 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
           width:"100%", padding:"28px 20px", borderRadius:16,
           border:`2px dashed ${C.line}`, background:"none", cursor:"pointer", textAlign:"center",
         }}>
-          <div style={{ fontSize:32, marginBottom:10 }}>📚</div>
-          <div style={{ fontFamily:SANS, fontSize:14, fontWeight:800, color:C.text, marginBottom:6 }}>스터디 그룹 참가하기</div>
-          <div style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>함께 공부하면 더 오래 집중돼요</div>
+          <div style={{ fontSize:32, marginBottom:10 }}>📋</div>
+          <div style={{ fontFamily:SANS, fontSize:14, fontWeight:800, color:C.text, marginBottom:6 }}>학습조직 신청하기</div>
+          <div style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>일정과 활동내역서까지 폰으로 간편하게 관리해요</div>
         </button>
       )}
     </div>
@@ -5636,6 +5622,323 @@ function AdminScreen() {
   );
 }
 
+// ── 학습조직 ────────────────────────────────────
+const inputStyle = { width:"100%", padding:"10px 14px", borderRadius:9, border:`1px solid ${C.line}`, background:C.card2, color:C.text, fontFamily:SANS, fontSize:13, outline:"none", boxSizing:"border-box", marginBottom:10 };
+
+function LearningOrgScreen() {
+  const isMobile = useIsMobile();
+  const [orgs, setOrgs]         = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm]         = useState({ name:"", goal:"" });
+  const [formErr, setFormErr]   = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const [selectedId, setSelectedId] = useState(null);
+  const [detail, setDetail]     = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailTab, setDetailTab] = useState("schedule"); // schedule | report | members
+
+  const [schForm, setSchForm]   = useState({ title:"", date:"", memo:"" });
+  const [schErr, setSchErr]     = useState("");
+  const [showSchForm, setShowSchForm] = useState(false);
+
+  const [repForm, setRepForm]   = useState({ activity_date:"", title:"", participant_ids:[], content:"" });
+  const [repErr, setRepErr]     = useState("");
+  const [showRepForm, setShowRepForm] = useState(false);
+
+  const loadOrgs = () => {
+    setLoading(true);
+    fetch(`${API}/api/learning-org/orgs`, { headers: authHeader() })
+      .then(r => r.json())
+      .then(data => { setOrgs(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  const loadDetail = (id) => {
+    setDetailLoading(true);
+    fetch(`${API}/api/learning-org/orgs/${id}`, { headers: authHeader() })
+      .then(r => r.json())
+      .then(data => { setDetail(data); setDetailLoading(false); })
+      .catch(() => setDetailLoading(false));
+  };
+
+  useEffect(() => { loadOrgs(); }, []);
+
+  const openOrg = (id) => { setSelectedId(id); setDetailTab("schedule"); loadDetail(id); };
+  const backToList = () => { setSelectedId(null); setDetail(null); loadOrgs(); };
+
+  const createOrg = async () => {
+    if (!form.name.trim()) { setFormErr("학습조직 이름을 입력하세요"); return; }
+    setCreating(true);
+    try {
+      const res = await fetch(`${API}/api/learning-org/orgs`, {
+        method:"POST", headers:{ "Content-Type":"application/json", ...authHeader() },
+        body: JSON.stringify({ name: form.name.trim(), goal: form.goal.trim() }),
+      });
+      if (!res.ok) { const d = await res.json(); setFormErr(d.detail || "오류"); return; }
+      const d = await res.json();
+      setForm({ name:"", goal:"" }); setFormErr(""); setShowCreate(false);
+      loadOrgs(); openOrg(d.id);
+    } catch { setFormErr("서버에 연결할 수 없습니다"); }
+    finally { setCreating(false); }
+  };
+
+  const joinOrg = async (id) => {
+    const res = await fetch(`${API}/api/learning-org/orgs/${id}/join`, { method:"POST", headers:authHeader() }).catch(() => null);
+    if (res && res.ok) openOrg(id); else loadOrgs();
+  };
+
+  const leaveOrg = async () => {
+    if (!detail || !window.confirm(`'${detail.name}'에서 나가시겠어요?`)) return;
+    await fetch(`${API}/api/learning-org/orgs/${detail.id}/leave`, { method:"DELETE", headers:authHeader() }).catch(() => null);
+    backToList();
+  };
+
+  const addSchedule = async () => {
+    if (!schForm.title.trim() || !schForm.date) { setSchErr("제목과 날짜를 입력하세요"); return; }
+    const res = await fetch(`${API}/api/learning-org/orgs/${detail.id}/schedules`, {
+      method:"POST", headers:{ "Content-Type":"application/json", ...authHeader() },
+      body: JSON.stringify(schForm),
+    }).catch(() => null);
+    if (!res || !res.ok) { setSchErr("일정 등록에 실패했습니다"); return; }
+    setSchForm({ title:"", date:"", memo:"" }); setSchErr(""); setShowSchForm(false);
+    loadDetail(detail.id);
+  };
+
+  const deleteSchedule = async (id) => {
+    await fetch(`${API}/api/learning-org/orgs/${detail.id}/schedules/${id}`, { method:"DELETE", headers:authHeader() }).catch(() => null);
+    loadDetail(detail.id);
+  };
+
+  const toggleParticipant = (uid) => {
+    setRepForm(f => ({
+      ...f,
+      participant_ids: f.participant_ids.includes(uid)
+        ? f.participant_ids.filter(x => x !== uid)
+        : [...f.participant_ids, uid],
+    }));
+  };
+
+  const addReport = async () => {
+    if (!repForm.title.trim() || !repForm.activity_date) { setRepErr("활동명과 날짜를 입력하세요"); return; }
+    const res = await fetch(`${API}/api/learning-org/orgs/${detail.id}/reports`, {
+      method:"POST", headers:{ "Content-Type":"application/json", ...authHeader() },
+      body: JSON.stringify(repForm),
+    }).catch(() => null);
+    if (!res || !res.ok) { setRepErr("활동내역서 등록에 실패했습니다"); return; }
+    setRepForm({ activity_date:"", title:"", participant_ids:[], content:"" }); setRepErr(""); setShowRepForm(false);
+    loadDetail(detail.id);
+  };
+
+  const deleteReport = async (id) => {
+    if (!window.confirm("이 활동내역서를 삭제할까요?")) return;
+    await fetch(`${API}/api/learning-org/orgs/${detail.id}/reports/${id}`, { method:"DELETE", headers:authHeader() }).catch(() => null);
+    loadDetail(detail.id);
+  };
+
+  const wrap = { padding: isMobile ? "20px 16px 100px" : "32px" };
+
+  // ── 상세 화면 ──
+  if (selectedId) {
+    if (detailLoading || !detail) {
+      return <div style={wrap}><div style={{ fontFamily:SANS, color:C.muted, fontSize:13 }}>불러오는 중…</div></div>;
+    }
+    const tabs = [
+      { key:"schedule", label:`일정 ${detail.schedules.length}` },
+      { key:"report",   label:`활동내역서 ${detail.reports.length}` },
+      { key:"members",  label:`멤버 ${detail.members.length}` },
+    ];
+    return (
+      <div style={wrap}>
+        <button onClick={backToList} style={{ display:"flex", alignItems:"center", gap:4, background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:12, cursor:"pointer", marginBottom:14, padding:0 }}>
+          <ArrowLeft size={14} /> 목록으로
+        </button>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:6 }}>
+          <div>
+            <div style={{ fontFamily:SANS, fontSize:isMobile?19:22, fontWeight:800, color:C.text }}>
+              {detail.name}{detail.is_leader && <span style={{ marginLeft:8, fontSize:11, color:C.blue, fontWeight:700, verticalAlign:"middle" }}>리더</span>}
+            </div>
+            {detail.goal && <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, marginTop:4 }}>{detail.goal}</div>}
+          </div>
+          <button onClick={leaveOrg} style={{ background:"none", border:`1px solid ${C.line}`, borderRadius:8, color:C.coral, fontFamily:SANS, fontSize:11, fontWeight:700, padding:"6px 10px", cursor:"pointer", flexShrink:0 }}>나가기</button>
+        </div>
+        <div style={{ fontFamily:MONO, fontSize:11, color:C.muted, marginBottom:20 }}>{detail.year}년도</div>
+
+        <div style={{ display:"flex", gap:6, marginBottom:18, borderBottom:`1px solid ${C.line}` }}>
+          {tabs.map(t => (
+            <button key={t.key} onClick={() => setDetailTab(t.key)} style={{
+              padding:"9px 4px", marginRight:14, background:"none", border:"none", cursor:"pointer",
+              fontFamily:SANS, fontSize:13, fontWeight: detailTab===t.key ? 700 : 500,
+              color: detailTab===t.key ? C.blue : C.muted,
+              borderBottom: detailTab===t.key ? `2px solid ${C.blue}` : "2px solid transparent",
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {detailTab === "schedule" && (
+          <div>
+            <button onClick={() => setShowSchForm(v => !v)} style={{ display:"flex", alignItems:"center", gap:6, background:C.blue+"18", border:`1px solid ${C.blue}44`, borderRadius:10, color:C.blue, fontFamily:SANS, fontSize:12, fontWeight:700, padding:"9px 14px", cursor:"pointer", marginBottom:14 }}>
+              <Plus size={14} /> 일정 추가
+            </button>
+            {showSchForm && (
+              <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:16, marginBottom:16 }}>
+                <input placeholder="일정 제목 (예: 3월 정기 스터디)" value={schForm.title}
+                  onChange={e => { setSchForm(f => ({ ...f, title:e.target.value })); setSchErr(""); }} style={inputStyle} />
+                <input type="date" value={schForm.date}
+                  onChange={e => setSchForm(f => ({ ...f, date:e.target.value }))} style={inputStyle} />
+                <textarea placeholder="메모 (선택)" value={schForm.memo} rows={2}
+                  onChange={e => setSchForm(f => ({ ...f, memo:e.target.value }))}
+                  style={{ ...inputStyle, resize:"vertical", fontFamily:SANS }} />
+                {schErr && <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10 }}>{schErr}</div>}
+                <button onClick={addSchedule} style={{ width:"100%", padding:"10px 0", borderRadius:9, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer" }}>등록</button>
+              </div>
+            )}
+            {detail.schedules.length === 0 ? (
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, padding:"20px 0", textAlign:"center" }}>등록된 일정이 없어요</div>
+            ) : detail.schedules.map(s => (
+              <div key={s.id} style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"12px 14px", marginBottom:8 }}>
+                <div>
+                  <div style={{ fontFamily:MONO, fontSize:11, color:C.blue, fontWeight:700, marginBottom:3 }}>{s.date}</div>
+                  <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>{s.title}</div>
+                  {s.memo && <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginTop:3 }}>{s.memo}</div>}
+                </div>
+                {(s.created_by === detail.my_user_id || detail.is_leader) && (
+                  <button onClick={() => deleteSchedule(s.id)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", padding:2, flexShrink:0 }}><Trash2 size={14} /></button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {detailTab === "report" && (
+          <div>
+            <button onClick={() => setShowRepForm(v => !v)} style={{ display:"flex", alignItems:"center", gap:6, background:C.blue+"18", border:`1px solid ${C.blue}44`, borderRadius:10, color:C.blue, fontFamily:SANS, fontSize:12, fontWeight:700, padding:"9px 14px", cursor:"pointer", marginBottom:14 }}>
+              <Plus size={14} /> 활동내역서 작성
+            </button>
+            {showRepForm && (
+              <div style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:14, padding:16, marginBottom:16 }}>
+                <input placeholder="활동명 (예: Q9 머신러닝 모델링 스터디)" value={repForm.title}
+                  onChange={e => { setRepForm(f => ({ ...f, title:e.target.value })); setRepErr(""); }} style={inputStyle} />
+                <input type="date" value={repForm.activity_date}
+                  onChange={e => setRepForm(f => ({ ...f, activity_date:e.target.value }))} style={inputStyle} />
+                <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:6 }}>참여자</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:12 }}>
+                  {detail.members.map(m => (
+                    <label key={m.user_id} style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, border:`1px solid ${repForm.participant_ids.includes(m.user_id) ? C.blue+"66" : C.line}`, background: repForm.participant_ids.includes(m.user_id) ? C.blue+"14" : "transparent", cursor:"pointer" }}>
+                      <input type="checkbox" checked={repForm.participant_ids.includes(m.user_id)} onChange={() => toggleParticipant(m.user_id)} />
+                      <span style={{ fontFamily:SANS, fontSize:12, color:C.text }}>{m.nickname}</span>
+                    </label>
+                  ))}
+                </div>
+                <textarea placeholder="활동 내용" value={repForm.content} rows={4}
+                  onChange={e => setRepForm(f => ({ ...f, content:e.target.value }))}
+                  style={{ ...inputStyle, resize:"vertical", fontFamily:SANS }} />
+                {repErr && <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10 }}>{repErr}</div>}
+                <button onClick={addReport} style={{ width:"100%", padding:"10px 0", borderRadius:9, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer" }}>제출</button>
+              </div>
+            )}
+            {detail.reports.length === 0 ? (
+              <div style={{ fontFamily:SANS, fontSize:13, color:C.muted, padding:"20px 0", textAlign:"center" }}>제출된 활동내역서가 없어요</div>
+            ) : detail.reports.map(r => (
+              <div key={r.id} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"14px 16px", marginBottom:10 }}>
+                <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10 }}>
+                  <div>
+                    <div style={{ fontFamily:MONO, fontSize:11, color:C.blue, fontWeight:700, marginBottom:3 }}>{r.activity_date}</div>
+                    <div style={{ fontFamily:SANS, fontSize:13, fontWeight:700, color:C.text }}>{r.title}</div>
+                  </div>
+                  {(r.author_id === detail.my_user_id || detail.is_leader) && (
+                    <button onClick={() => deleteReport(r.id)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", padding:2, flexShrink:0 }}><Trash2 size={14} /></button>
+                  )}
+                </div>
+                {r.participants && <div style={{ fontFamily:SANS, fontSize:11.5, color:C.muted, marginTop:6 }}>참여자: {r.participants}</div>}
+                {r.content && <div style={{ fontFamily:SANS, fontSize:12.5, color:C.text, marginTop:8, lineHeight:1.6, whiteSpace:"pre-wrap" }}>{r.content}</div>}
+                <div style={{ fontFamily:SANS, fontSize:10.5, color:C.muted, marginTop:8 }}>작성자 {r.author_nickname}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {detailTab === "members" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {detail.members.map(m => (
+              <div key={m.user_id} style={{ display:"flex", alignItems:"center", gap:10, background:C.card, border:`1px solid ${C.line}`, borderRadius:12, padding:"12px 14px" }}>
+                <div style={{ width:30, height:30, borderRadius:"50%", background:GRAD, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:MONO, fontSize:12, color:"#fff", fontWeight:700 }}>{m.nickname?.[0]?.toUpperCase()}</div>
+                <div style={{ fontFamily:SANS, fontSize:13, fontWeight:600, color:C.text }}>{m.nickname}</div>
+                {m.is_leader && <span style={{ fontFamily:SANS, fontSize:10, color:C.blue, fontWeight:700 }}>리더</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── 목록 화면 ──
+  return (
+    <div style={wrap}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+        <div style={{ fontFamily:SANS, fontSize:isMobile?19:22, fontWeight:800, color:C.text }}>학습조직</div>
+        <button onClick={() => setShowCreate(true)} style={{ display:"flex", alignItems:"center", gap:6, background:C.blue, border:"none", borderRadius:10, color:"#fff", fontFamily:SANS, fontSize:12, fontWeight:700, padding:"9px 14px", cursor:"pointer" }}>
+          <Plus size={14} /> 신청하기
+        </button>
+      </div>
+      <div style={{ fontFamily:SANS, fontSize:12.5, color:C.muted, marginBottom:22 }}>일정 등록과 활동내역서 제출을 폰으로 간편하게 관리하세요</div>
+
+      {loading ? (
+        <div style={{ fontFamily:SANS, color:C.muted, fontSize:13 }}>불러오는 중…</div>
+      ) : orgs.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"48px 20px", border:`2px dashed ${C.line}`, borderRadius:16 }}>
+          <div style={{ fontSize:32, marginBottom:10 }}>📋</div>
+          <div style={{ fontFamily:SANS, fontSize:14, fontWeight:800, color:C.text, marginBottom:6 }}>아직 학습조직이 없어요</div>
+          <div style={{ fontFamily:SANS, fontSize:12, color:C.muted }}>새 학습조직을 신청해보세요</div>
+        </div>
+      ) : (
+        <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2,1fr)", gap:12 }}>
+          {orgs.map(o => (
+            <div key={o.id} style={{ background:C.card, border:`1px solid ${C.line}`, borderRadius:16, padding:"16px 18px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                <div style={{ fontFamily:SANS, fontSize:15, fontWeight:800, color:C.text }}>{o.name}</div>
+                {o.is_leader && <span style={{ fontSize:10, color:C.blue, fontWeight:700 }}>리더</span>}
+              </div>
+              {o.goal && <div style={{ fontFamily:SANS, fontSize:12, color:C.muted, marginBottom:10, lineHeight:1.5 }}>{o.goal}</div>}
+              <div style={{ fontFamily:MONO, fontSize:11, color:C.muted, marginBottom:14 }}>
+                {o.year}년도 · {o.member_count}명 · 일정 {o.schedule_count} · 활동내역서 {o.report_count}
+              </div>
+              {o.is_member ? (
+                <button onClick={() => openOrg(o.id)} style={{ width:"100%", padding:"9px 0", borderRadius:9, border:`1px solid ${C.blue}`, background:C.blue+"18", color:C.blue, fontFamily:SANS, fontSize:12.5, fontWeight:700, cursor:"pointer" }}>입장하기</button>
+              ) : (
+                <button onClick={() => joinOrg(o.id)} style={{ width:"100%", padding:"9px 0", borderRadius:9, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:12.5, fontWeight:700, cursor:"pointer" }}>신청하기</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showCreate && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
+          onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
+          <div style={{ width:"100%", maxWidth:360, background:C.card, borderRadius:20, padding:"28px 24px", border:`1px solid ${C.line}` }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ fontFamily:SANS, fontSize:16, fontWeight:800, color:C.text }}>새 학습조직 신청</div>
+              <button onClick={() => setShowCreate(false)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer" }}><X size={18} /></button>
+            </div>
+            <input placeholder="학습조직 이름" value={form.name}
+              onChange={e => { setForm(f => ({ ...f, name:e.target.value })); setFormErr(""); }} style={inputStyle} />
+            <textarea placeholder="학습 목표 (선택)" value={form.goal} rows={3}
+              onChange={e => setForm(f => ({ ...f, goal:e.target.value }))}
+              style={{ ...inputStyle, resize:"vertical", fontFamily:SANS }} />
+            {formErr && <div style={{ fontFamily:SANS, fontSize:12, color:C.coral, marginBottom:10 }}>{formErr}</div>}
+            <button onClick={createOrg} disabled={creating} style={{ width:"100%", padding:"11px 0", borderRadius:9, border:"none", background:C.blue, color:"#fff", fontFamily:SANS, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              {creating ? "신청 중…" : "신청하기"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 스터디 그룹 ─────────────────────────────────
 function StudyScreen() {
   const [groups,       setGroups]       = useState([]);
@@ -7913,7 +8216,7 @@ export default function App() {
       <div style={{ marginLeft:isMobile?0:200, paddingBottom:isMobile?122:0, flex:1, overflowY:"auto", paddingTop: showBanner ? BANNER_H : 0 }}>
         {tab === "home"  && <HomeScreen key={screenKeys.home} setTab={handleSetTab} nickname={nickname} onSettings={() => setShowSettings(true)} onLogout={handleLogout} isGuest={isGuest} onLogin={handleBackToLogin} />}
         {tab === "learn" && <LearnScreen key={screenKeys.learn} subTab={learnSubTab} setSubTab={setLearnSubTab} isGuest={isGuest} onLogin={handleBackToLogin} nickname={nickname} />}
-        {tab === "study" && !isGuest && <StudyScreen key={screenKeys.study} />}
+        {tab === "study" && !isGuest && <LearningOrgScreen key={screenKeys.study} />}
         {tab === "admin" && isAdmin && <AdminScreen key={screenKeys.admin} />}
       </div>
     </div>

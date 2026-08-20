@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from database import engine
 import models
-from routers import aice, auth, dashboard, study, notes, admin
+from routers import aice, auth, dashboard, study, notes, admin, learning_org
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -46,6 +46,7 @@ app.include_router(dashboard.router)
 app.include_router(study.router)
 app.include_router(notes.router)
 app.include_router(admin.router)
+app.include_router(learning_org.router)
 
 
 @app.get("/health")

@@ -109,6 +109,54 @@ class StudyTimerStat(Base):
     __table_args__ = (UniqueConstraint("user_id", "date"),)
 
 
+class LearningOrg(Base):
+    __tablename__ = "learning_orgs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    goal = Column(String(300), default="")
+    year = Column(Integer, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class LearningOrgMember(Base):
+    __tablename__ = "learning_org_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("learning_orgs.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_leader = Column(Boolean, default=False, nullable=False, server_default="false")
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("org_id", "user_id"),)
+
+
+class LearningOrgSchedule(Base):
+    __tablename__ = "learning_org_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("learning_orgs.id"), nullable=False)
+    title = Column(String(200), nullable=False)
+    date = Column(Date, nullable=False)
+    memo = Column(String(500), default="")
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class LearningOrgReport(Base):
+    __tablename__ = "learning_org_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("learning_orgs.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    activity_date = Column(Date, nullable=False)
+    title = Column(String(200), nullable=False)
+    participants = Column(String(500), default="")
+    content = Column(Text, default="")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class StudyNote(Base):
     __tablename__ = "study_notes"
 
