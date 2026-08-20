@@ -29,7 +29,7 @@ except Exception as _e:
     import logging
     logging.getLogger(__name__).warning("Migration warning (non-fatal): %s", _e)
 
-app = FastAPI(title="똑똑 API")
+app = FastAPI(title="아이티센 학습조직 API")
 
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")]
 

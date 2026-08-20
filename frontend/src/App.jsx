@@ -647,11 +647,12 @@ function Nav({ tab, setTab, nickname, onLogout, onSettings, isGuest, darkMode, o
 
   return (
     <div style={{ position:"fixed", left:0, top:0, bottom:0, width:200, background:C.card, borderRight:`1px solid ${C.line}`, display:"flex", flexDirection:"column", padding:"24px 12px", zIndex:10 }}>
-      <div onClick={() => setTab("home")} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:36, paddingLeft:8, cursor:"pointer" }}>
+      <div onClick={() => setTab("home")} style={{ display:"flex", alignItems:"center", gap:9, marginBottom:36, paddingLeft:8, cursor:"pointer" }}>
         <img src="/favicon.svg" width={30} height={30} style={{ borderRadius:8, flexShrink:0 }} />
-        <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:20, color:C.text }}>
-          <span style={{ backgroundImage:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>똑</span>똑
-        </span>
+        <div style={{ lineHeight:1.15 }}>
+          <div style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:14, backgroundImage:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>아이티센</div>
+          <div style={{ fontFamily:SANS, fontWeight:600, fontSize:10.5, color:C.muted, letterSpacing:"0.02em" }}>학습조직</div>
+        </div>
       </div>
       {items.map(({ key, icon: Icon, label }) => {
         const active = tab === key;
@@ -985,13 +986,13 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
             <div>
               <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:44 }}>
                 <img src="/favicon.svg" width={46} height={46} style={{ borderRadius:13, boxShadow:"0 4px 16px rgba(0,0,0,0.3)" }}/>
-                <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:26, color:"#fff", letterSpacing:"-.02em" }}>똑똑</span>
+                <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:21, color:"#fff", letterSpacing:"-.02em" }}>아이티센 학습조직</span>
               </div>
               <div style={{ fontFamily:SANS, fontSize:28, fontWeight:800, color:"#fff", lineHeight:1.25, marginBottom:14, letterSpacing:"-.02em" }}>
-                공부를<br/>똑똑하게 관리해요
+                학습조직 신청부터<br/>활동내역서까지
               </div>
               <div style={{ fontFamily:SANS, fontSize:14, color:"rgba(255,255,255,0.65)", lineHeight:1.85 }}>
-                학습조직, 학습 기록, 노트까지<br/>공부의 모든 것을 한 곳에서.
+                신청 · 일정 · 활동내역서를<br/>한 곳에서 폰으로 간편하게 관리하세요.
               </div>
             </div>
 
@@ -1016,7 +1017,7 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
           {isMobile && (
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:32 }}>
               <img src="/favicon.svg" width={38} height={38} style={{ borderRadius:11 }}/>
-              <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:24, backgroundImage:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>똑똑</span>
+              <span style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:18, backgroundImage:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>아이티센 학습조직</span>
             </div>
           )}
 
@@ -1084,6 +1085,9 @@ function AuthScreen({ onAuth, onGuest, onKakaoLogin }) {
             <button onClick={onGuest} style={{ background:"none", border:"none", color:C.muted, fontFamily:SANS, fontSize:12, cursor:"pointer", textDecoration:"underline", textUnderlineOffset:3 }}>
               로그인 없이 둘러보기 →
             </button>
+          </div>
+          <div style={{ marginTop:28, textAlign:"center", fontFamily:SANS, fontSize:10.5, color:C.muted+"99" }}>
+            © {new Date().getFullYear()} ITCEN Group
           </div>
         </div>
       </div>
@@ -1202,8 +1206,8 @@ function HomeScreen({ setTab, nickname, onSettings, onLogout, isGuest, onLogin }
       {isMobile && (
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
           <div>
-            <div style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:18, color:C.text }}>
-              <span style={{ color:C.blue }}>똑</span>똑
+            <div style={{ fontFamily:"'Pretendard',sans-serif", fontWeight:800, fontSize:15, color:C.blue }}>
+              아이티센
             </div>
             <div style={{ fontFamily:SANS, fontSize:13, color:C.text, fontWeight:700, marginTop:2 }}>
               {isGuest ? "게스트로 둘러보는 중" : `${nickname}님, ${greet()}`}

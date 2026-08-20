@@ -1,7 +1,7 @@
 {
-  "name": "똑똑 - 공부를 똑똑하게 관리해요",
-  "short_name": "똑똑",
-  "description": "스터디 그룹, 학습 기록, 노트까지 공부의 모든 것을 한 곳에서",
+  "name": "아이티센 학습조직",
+  "short_name": "학습조직",
+  "description": "아이티센 사내 학습조직 신청 · 일정 · 활동내역서 관리",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0B1220",
