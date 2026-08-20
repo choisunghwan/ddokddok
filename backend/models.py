@@ -55,7 +55,7 @@ class StudyGroup(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     topic = Column(String(200), default="")
-    is_public = Column(Boolean, default=True, nullable=False, server_default="true")
+    is_public = Column(Boolean, default=True, nullable=False, server_default="1")
     password_hash = Column(String(64), nullable=True)
     max_members = Column(Integer, nullable=True)  # None = 제한 없음
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -126,7 +126,7 @@ class LearningOrgMember(Base):
     id = Column(Integer, primary_key=True, index=True)
     org_id = Column(Integer, ForeignKey("learning_orgs.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    is_leader = Column(Boolean, default=False, nullable=False, server_default="false")
+    is_leader = Column(Boolean, default=False, nullable=False, server_default="0")
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (UniqueConstraint("org_id", "user_id"),)
@@ -166,6 +166,6 @@ class StudyNote(Base):
     content = Column(Text, default="")
     tags = Column(String(300), default="")
     category = Column(String(50), default="")
-    is_private = Column(Boolean, default=False, nullable=False, server_default="false")
+    is_private = Column(Boolean, default=False, nullable=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
